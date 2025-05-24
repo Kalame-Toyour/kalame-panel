@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root@127.0.0.1:3306/madrese"
+}
+
+model LearningYear {
+  id       Int     @id @default(autoincrement()) @map("ID")
+  name     String  @db.VarChar(255)
+  name_en  String? @db.VarChar(255)
+  order_id Int
+
+  @@map("learning__year")
+}
+
+model LearningField {
+  id   Int    @id @default(autoincrement()) @map("ID")
+  name String @db.VarChar(255)
+
+  @@map("learning__field")
+}
+
+model Book {
+  id                  Int        @id @default(autoincrement()) @map("ID")
+  school_id           Int
+  field_id            Int
+  year_id             Int
+  name                String     @db.VarChar(255)
+  parent              Int        @default(0)
+  pic_url             String     @db.VarChar(255)
+  exam_pic_url        String     @db.VarChar(255)
+  price               Int
+  status              Int        @default(1)
+  show_status         Int        @default(1)
+  is_shaire           Int
+  exam_order          Int
+  zarib               Int
+  tajrobi_zarib       Int
+  answer_file_id      Int
+  have_practice       Int        @default(0)
+  sample_video_id     Int?
+  total_learning_time Int
+  questions           Question[]
+
+  @@index([year_id], map: "year_id")
+  @@map("learning__book")
+}
+
+model Lesson {
+  id                          Int                          @id @default(autoincrement()) @map("ID")
+  book_id                     Int
+  week_id                     Int
+  parent                      Int
+  name                        String                       @db.VarChar(255)
+  order_id                    Int
+  pic_url                     String                       @db.VarChar(255)
+  lesson_plan                 String?                      @db.Text
+  status                      learning__lessons_status
+  learning__lesson_study_plan learning__lesson_study_plan?
+  questions                   Question[]
+  learning__lesson_assignment learning__lesson_assignment?
+  learning__lesson_challenge  learning__lesson_challenge?
+
+  @@index([book_id], map: "book_id")
+  @@map("learning__lessons")
+}
+
+model Question {
+  id                Int                @id @default(autoincrement()) @map("ID")
+  book_id           Int
+  lesson_id         Int
+  question_text     String             @db.Text
+  options           String             @db.Text
+  correct_answer    String
+  explanation       String?            @db.Text
+  difficulty_level  Int                @default(1)
+  question_hash     String?            @unique
+  has_image         Boolean            @default(false)
+  image_description String?            @db.Text
+  image_url         String?            @db.VarChar(255)
+  modelInteractions ModelInteraction[]
+  book              Book               @relation(fields: [book_id], references: [id])
+  lesson            Lesson             @relation(fields: [lesson_id], references: [id])
+
+  @@index([book_id])
+  @@index([lesson_id])
+  @@map("learning__questions")
+}
+
+model ModelInteraction {
+  id          Int      @id @default(autoincrement()) @map("ID")
+  question_id Int
+  model_type  String
+  prompt      String   @db.Text
+  response    String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  question    Question @relation(fields: [question_id], references: [id])
+
+  @@index([question_id], map: "learning__model_interactions_question_id_fkey")
+  @@map("learning__model_interactions")
+}
+
+model learning__five_e_questions {
+  id                          Int                               @id @default(autoincrement())
+  study_plan_id               Int
+  e_type                      learning__five_e_questions_e_type
+  question_text               String                            @db.Text
+  options                     String                            @db.Text
+  correct_answer              Int
+  explanation                 String                            @db.Text
+  learning__lesson_study_plan learning__lesson_study_plan       @relation(fields: [study_plan_id], references: [id], onUpdate: Restrict, map: "fk_study_plan")
+
+  @@unique([study_plan_id, e_type], map: "unique_study_plan_e_type")
+}
+
+model learning__lesson_study_plan {
+  id                         Int                          @id @default(autoincrement())
+  lesson_id                  Int                          @unique(map: "lesson_id")
+  engage                     String                       @db.Text
+  explore                    String                       @db.Text
+  explain                    String                       @db.Text
+  elaborate                  String                       @db.Text
+  evaluate                   String                       @db.Text
+  learning__five_e_questions learning__five_e_questions[]
+  learning__lessons          Lesson                       @relation(fields: [lesson_id], references: [id], onUpdate: Restrict, map: "fk_lesson")
+}
+
+enum learning__lessons_status {
+  Active
+  Inactive
+}
+
+enum learning__five_e_questions_e_type {
+  Engage
+  Explore
+  Explain
+  Elaborate
+  Evaluate
+}
+
+model learning__lesson_assignment {
+  id          Int      @id @default(autoincrement())
+  lesson_id   Int      @unique(map: "lesson_id_assignment")
+  description String   @db.Text
+  tutorial    String   @db.Text
+  steps       learning__lesson_assignment_step[]
+  lesson      Lesson   @relation(fields: [lesson_id], references: [id], onUpdate: Restrict, map: "fk_lesson_assignment")
+}
+
+model learning__lesson_assignment_step {
+  id            Int      @id @default(autoincrement())
+  assignment_id Int
+  step_number   Int
+  content       String   @db.Text
+  question      String   @db.Text
+  options       String   @db.Text // JSON array of 4 options
+  correct_answer Int
+  explanation   String   @db.Text
+  assignment    learning__lesson_assignment @relation(fields: [assignment_id], references: [id], onUpdate: Restrict, map: "fk_assignment_step")
+
+  @@unique([assignment_id, step_number], map: "unique_assignment_step")
+}
+
+model learning__lesson_challenge {
+  id          Int    @id @default(autoincrement())
+  lesson_id   Int    @unique(map: "lesson_id_challenge")
+  question    String @db.Text
+  answer      String @db.Text
+  help1       String @db.Text
+  help2       String @db.Text
+  help3       String @db.Text
+  lesson      Lesson @relation(fields: [lesson_id], references: [id], onUpdate: Restrict, map: "fk_lesson_challenge")
+}

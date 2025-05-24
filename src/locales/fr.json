@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "title": "CoinChat - Assistant Crypto IA",
+    "description": "Votre compagnon intelligent pour le trading et l'analyse de cryptomonnaies"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "notFoundPost": "Article non trouvé",
+    "blogNotFound": "Blog non trouvé",
+    "cancel": "Annuler"
+  },
+  "auth": {
+    "logoutConfirmTitle": "Confirmer la déconnexion",
+    "logoutConfirmMessage": "Êtes-vous sûr de vouloir vous déconnecter ?",
+    "logout": "Déconnexion",
+    "cancel": "Annuler",
+    "signOut": "Se déconnecter"
+  },
+  "support": {
+    "needHelp": "Besoin d'aide ?",
+    "chooseSupport": "Choisissez comment contacter notre équipe de support",
+    "emailSupport": "Support par email",
+    "telegramSupport": "Support Telegram",
+    "close": "Fermer"
+  },
+  "sidebar": {
+    "home": "CoinChat",
+    "chat": "Chat",
+    "myaccounts": "Mes Comptes",
+    "blog": "Blog",
+    "support": "Support",
+    "chatgram": "CoinGram",
+    "plus": "Plus",
+    "gramDesc": "Passez à Plus pour des fonctionnalités avancées et un accès illimité",
+    "upgrade": "Passer à Plus",
+    "logout": "Déconnexion",
+    "about": "Basculer le menu",
+    "lightmode": "Changer le thème",
+    "darkmode": "Mode sombre",
+    "selectLanguage": "Choisir la langue"
+  },
+  "chat": {
+    "welcome": "Welcome to Coin Chat! Ask any question about the market 💬💬💰",
+    "inputPlaceholder": "Write your message...",
+    "send": "Enviar",
+    "thinking": "Pensando...",
+    "chart": "Chart",
+    "portfolio": "Portfolio",
+    "buysell": "Buy/Sell Crypto"
+  },
+  "profile": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "settings": "Configuración"
+  },
+  "nav": {
+    "features": "Fonctionnalités",
+    "blog": "Blog",
+    "about": "À propos",
+    "download": "Télécharger",
+    "pricing": "Tarifs",
+    "dashboard": "Tableau de bord"
+  },
+  "hero": {
+    "title": "Votre Assistant Crypto Alimenté par l'IA",
+    "subtitle": "Découvrez un trading crypto plus intelligent avec des analyses basées sur l'IA en temps réel",
+    "typing": [
+      "Marchés Financiers",
+      "Trading & Investissement",
+      "Analyse des Cryptomonnaies",
+      "Analyses en Temps Réel"
+    ],
+    "tryForFree": "Essayer Gratuitement",
+    "downloadBazaar": "Télécharger sur Bazaar",
+    "downloadGooglePlay": "Télécharger sur Google Play"
+  },
+  "features": {
+    "title": "Features That Will Amaze You"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Answers to all your pressing questions about starryai"
+  }
+}

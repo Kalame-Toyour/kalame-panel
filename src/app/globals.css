@@ -1,0 +1,390 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/Vazir.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/Vazir-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/Vazir-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('/fonts/Vazir-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer utilities {
+  /* Dark mode scrollbar styles */
+  .dark {
+    /* Firefox */
+    scrollbar-color: #4b5563 #1f2937;
+  }
+
+  /* Chrome, Edge, Safari */
+  .dark ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+
+  :root {
+    --scrollbar-position: left;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225); /* Tailwind slate-300 */
+    border-radius: 20px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184); /* Tailwind slate-400 */
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 224 71.4% 4.1%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71.4% 4.1%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71.4% 4.1%;
+
+    --primary: 38 100% 50%; /* amber-600 */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+
+    --accent: 38 100% 50%; /* amber-600 */
+    --accent-foreground: 220.9 39.3% 11%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 38 100% 50%; /* amber-600 */
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 71.4% 4.1%;
+    --foreground: 210 20% 98%;
+
+    --card: 224 71.4% 4.1%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71.4% 4.1%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 38 100% 50%; /* amber-600 */
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+
+    --accent: 38 100% 50%; /* amber-600 */
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 38 100% 50%; /* amber-600 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Mobile responsiveness adjustments */
+@media (max-width: 768px) {
+  main {
+    margin-left: 0 !important;
+    margin-top: 4rem !important;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Vazir', Tahoma, Arial, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* @font-face {
+  font-family: 'Dana';
+  src: url('/fonts/DanaRegular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+} */
+
+/* @layer base {
+  @font-face {
+    font-family: 'Dana';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url(/fonts/DanaRegular.woff2) format('woff2');
+  }
+} */
+
+#nprogress .bar {
+  background: #4f46e5 !important; /* or your preferred color */
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-blink {
+  animation: blink 0.7s infinite;
+}
+
+/* Modern chat background and message colors */
+.chat-container {
+  background-image: linear-gradient(135deg, #e3f0fc 0%, #f8fafc 100%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1.5' fill='%2395c7f8' fill-opacity='0.18'/%3E%3Ccircle cx='0' cy='30' r='1.5' fill='%2395c7f8' fill-opacity='0.12'/%3E%3Ccircle cx='60' cy='30' r='1.5' fill='%2395c7f8' fill-opacity='0.12'/%3E%3Ccircle cx='30' cy='0' r='1.5' fill='%2395c7f8' fill-opacity='0.12'/%3E%3Ccircle cx='30' cy='60' r='1.5' fill='%2395c7f8' fill-opacity='0.12'/%3E%3C/svg%3E");
+  background-size:
+    cover,
+    60px 60px;
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed;
+  box-shadow: 0 2px 16px 0 rgba(37, 99, 235, 0.04);
+}
+
+:is(.dark .chat-container) {
+  background-image: linear-gradient(135deg, #1e293b 0%, #334155 100%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1.5' fill='%235b7bbd' fill-opacity='0.13'/%3E%3Ccircle cx='0' cy='30' r='1.5' fill='%235b7bbd' fill-opacity='0.08'/%3E%3Ccircle cx='60' cy='30' r='1.5' fill='%235b7bbd' fill-opacity='0.08'/%3E%3Ccircle cx='30' cy='0' r='1.5' fill='%235b7bbd' fill-opacity='0.08'/%3E%3Ccircle cx='30' cy='60' r='1.5' fill='%235b7bbd' fill-opacity='0.08'/%3E%3C/svg%3E");
+  background-size:
+    cover,
+    60px 60px;
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed;
+}
+
+.user-message {
+  align-self: flex-end;
+  background-color: #dbeafe; /* very light blue */
+}
+
+.ai-message {
+  align-self: flex-start;
+  background-color: #f3f4f6; /* very light gray */
+}
+
+.message-container {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 18px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  max-width: 75%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.message-container:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 640px) {
+  .message-container {
+    max-width: 85%;
+  }
+}
+.welcome-message-top,
+.welcome-message-bottom {
+  transition: all 0.5s ease-in-out;
+}
+
+.welcome-message-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  z-index: 10;
+}
+
+.welcome-message-bottom {
+  padding: 1rem;
+}
+
+.swiper-pagination-bullet {
+  background-color: #ccc;
+  opacity: 0.5;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: 1;
+}
+
+.swiper-container {
+  padding-bottom: 30px;
+}
+
+.swiper-pagination {
+  bottom: 0 !important;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+    box-shadow:
+      0 0 2px white,
+      0 0 4px rgba(255, 165, 0, 0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow:
+      0 0 4px white,
+      0 0 8px white,
+      0 0 12px rgba(255, 165, 0, 0.85);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 3s infinite;
+}
+
+.star {
+  position: absolute;
+  background: white;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: twinkle 3s infinite;
+}
+
+CSS for Fade-in Animation .chunk {
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.chunk.visible {
+  opacity: 1;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@keyframes loading {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow:
+      0 0 8px 2px #fbbf24,
+      0 0 16px 4px #fde68a;
+  }
+  to {
+    box-shadow:
+      0 0 16px 6px #fbbf24,
+      0 0 32px 8px #fde68a;
+  }
+}
+.animate-glow {
+  animation: glow 1.5s infinite alternate;
+}
+.shadow-glow {
+  box-shadow:
+    0 0 8px 2px #fbbf24,
+    0 0 16px 4px #fde68a;
+}

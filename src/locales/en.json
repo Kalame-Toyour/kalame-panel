@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "title": "CoinChat - AI-Powered Crypto Assistant",
+    "description": "Your intelligent companion for cryptocurrency trading and analysis"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "notFoundPost": "Post not found",
+    "blogNotFound": "Blog not found",
+    "cancel": "Cancel"
+  },
+  "auth": {
+    "logoutConfirmTitle": "Confirm Logout",
+    "logoutConfirmMessage": "Are you sure you want to log out?",
+    "logout": "Logout",
+    "cancel": "Cancel",
+    "signOut": "Sign Out"
+  },
+  "support": {
+    "needHelp": "Need Help?",
+    "chooseSupport": "Choose how you'd like to get in touch with our support team",
+    "emailSupport": "Email Support",
+    "telegramSupport": "Telegram Support",
+    "close": "Close"
+  },
+  "sidebar": {
+    "home": "CoinChat",
+    "chat": "Chat",
+    "myaccounts": "My Accounts",
+    "security": "Security",
+    "language": "Language",
+    "about": "Toggle Sidebar",
+    "darkmode": "Dark Mode",
+    "lightmode": "Light Mode",
+    "blog": "Blog",
+    "support": "Support",
+    "chatgram": "CoinGram",
+    "plus": "Plus",
+    "gramDesc": "Upgrade to Plus for advanced features and unlimited access",
+    "upgrade": "Upgrade Now",
+    "logout": "Logout",
+    "selectLanguage": "Select Language",
+    "freeTokenLimit": "Free tier daily token limit",
+    "monthlyTokenLimit": "Monthly token allowance for your subscription",
+    "renewal": "Renew Subscription",
+    "yourDailyTokens": "Your Daily Tokens",
+    "yourMonthlyTokens": "Your Monthly Tokens"
+  },
+  "chat": {
+    "welcome": "Welcome to Coin Chat! Ask any question about the market 💬💰",
+    "inputPlaceholder": "Write your message...",
+    "send": "Enviar",
+    "thinking": "Pensando...",
+    "chart": "Chart",
+    "portfolio": "Portfolio",
+    "buysell": "Buy/Sell Crypto",
+    "priceChange": "Price Change",
+    "technicalAnalysis": "Technical Analysis",
+    "marketSentiment": "Market Sentiment",
+    "recommendation": "Recommendation",
+    "error": "Error",
+    "didNotUnderstand": "did Not Understand"
+  },
+  "profile": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "settings": "Configuración"
+  },
+  "nav": {
+    "features": "Features",
+    "blog": "Blog",
+    "about": "About",
+    "download": "Download",
+    "pricing": "Pricing",
+    "dashboard": "Dashboard"
+  },
+  "hero": {
+    "title": "Your AI-Powered Crypto Assistant",
+    "subtitle": "Experience smarter crypto trading with AI-driven insights and real-time analysis",
+    "typing": [
+      "Financial Markets",
+      "Trading & Investment",
+      "Digital Currency Analysis",
+      "Real-time Market Insights"
+    ],
+    "tryForFree": "Try for Free",
+    "downloadBazaar": "Download from Bazaar",
+    "downloadGooglePlay": "Download from Google Play"
+  },
+  "features": {
+    "title": "Features That Will Amaze You",
+    "explore": {
+      "ecosystem": {
+        "title": "Explore the ecosystem",
+        "description": "Explore our ecosystem of AI-powered tools and features"
+      },
+      "create": {
+        "title": "Create Art",
+        "description": "Transform your ideas into stunning visual masterpieces"
+      },
+      "community": {
+        "title": "Join Community",
+        "description": "Connect with creators and share your artistic journey"
+      }
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Answers to all your questions about CoinChat",
+    "items": {
+      "what": {
+        "question": "What is CoinChat?",
+        "answer": "CoinChat is an AI-powered assistant for cryptocurrency and financial markets..."
+      }
+    }
+  },
+  "footer": {
+    "social": "Connect With Us",
+    "download": "Download App",
+    "about": "About Us",
+    "learnMore": "Learn More"
+  }
+}

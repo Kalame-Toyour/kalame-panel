@@ -1,0 +1,7 @@
+{
+    "i18n-ally.localesPaths": [
+        "src/locales",
+        "src/app/api/chat/messages"
+    ],
+    "i18n-ally.keystyle": "nested"
+}
