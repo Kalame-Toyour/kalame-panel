@@ -22,7 +22,7 @@ async function checkLessonPlans() {
       AND lesson_plan != ''
     `;
     
-    console.log('Number of lessons with plans:', lessonsWithPlans[0].count);
+    console.log('Number of lessons with plans:', lessonsWithPlans[0]?.count);
     
     // Get some example lessons with plans
     const examples = await prisma.$queryRaw<LessonPreview[]>`

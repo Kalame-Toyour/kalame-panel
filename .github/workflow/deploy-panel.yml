@@ -1,0 +1,54 @@
+name: Deploy Frontend to Servers
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Build Next.js App
+      run: npm run build
+
+    - name: Set up SSH Key and Known Hosts
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.KALAME_API_SSH_PKEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan -H 91.99.111.83 >> ~/.ssh/known_hosts
+        ssh-keyscan -H 49.12.75.136 >> ~/.ssh/known_hosts
+
+    - name: Deploy to Server 1
+      run: |
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" .next root@91.99.111.83:/home/kalame/kalame-panel/.next
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" public root@91.99.111.83:/home/kalame/kalame-panel/public
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" package.json root@91.99.111.83:/home/kalame/kalame-panel/package.json
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" next.config.js root@91.99.111.83:/home/kalame/kalame-panel/next.config.js
+
+        ssh -i ~/.ssh/id_ed25519 root@91.99.111.83 << 'EOF'
+          cd /home/kalame/kalame-panel
+          npm install
+          pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
+        EOF
+
+    - name: Deploy to Server 2
+      run: |
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" .next root@49.12.75.136:/home/kalame/kalame-panel/.next
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" public root@49.12.75.136:/home/kalame/kalame-panel/public
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" package.json root@49.12.75.136:/home/kalame/kalame-panel/package.json
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" next.config.js root@49.12.75.136:/home/kalame/kalame-panel/next.config.js
+
+        ssh -i ~/.ssh/id_ed25519 root@49.12.75.136 << 'EOF'
+          cd /home/kalame/kalame-panel
+          npm install
+          pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
+        EOF
