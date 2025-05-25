@@ -8,7 +8,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const response = await fetch('https://api.kalame.chat/v1/kariz/getMedia', {
+    const response = await fetch('https://api.kalame.chat/kariz/getMedia', {
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`
       }

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'userID is required' }, { status: 400 });
   }
   const incomingAuth = req.headers.get('authorization');
-  const talaatRes = await fetchWithAuthServer(`https://api.kalame.chat/v1/kariz/chats?userID=${userID}`, {
+  const talaatRes = await fetchWithAuthServer(`https://api.kalame.chat/kariz/chats?userID=${userID}`, {
     method: 'GET',
     headers: {
       ...(incomingAuth ? { Authorization: incomingAuth } : {}),
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     accessToken = `Bearer ${body.accessToken}`;
   }
 
-  const talaatRes = await fetchWithAuthServer('https://api.kalame.chat/v1/kariz/createChat', {
+  const talaatRes = await fetchWithAuthServer('https://api.kalame.chat/kariz/createChat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -18,7 +18,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    const response = await fetch('https://api.kalame.chat/v1/auth/registerUser', {
+    const response = await fetch('https://api.kalame.chat/auth/registerUser', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -16,7 +16,7 @@ export async function POST(
       );
     }
 
-    const response = await fetch('https://api.kalame.chat/v1/auth/verifyPhoneNumber', {
+    const response = await fetch('https://api.kalame.chat/verifyPhoneNumber', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

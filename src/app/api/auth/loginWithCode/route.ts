@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'شماره موبایل و کد تایید الزامی است.' }, { status: 400 });
     }
 
-    const response = await fetch('https://api.kalame.chat/v1/auth/loginWithCode', {
+    const response = await fetch('https://api.kalame.chat/auth/loginWithCode', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobile: phone, code }),

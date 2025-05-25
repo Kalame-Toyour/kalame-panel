@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Generate Image Request Body:', body);
 
-    const response = await fetch('https://api.kalame.chat/v1/kariz/generate-image', {
+    const response = await fetch('https://api.kalame.chat/kariz/generate-image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

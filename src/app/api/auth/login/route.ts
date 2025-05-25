@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'شماره موبایل و رمز عبور الزامی است.' }, { status: 400 });
     }
 
-    const response = await fetch('https://api.kalame.chat/v1/auth/login', {
+    const response = await fetch('https://api.kalame.chat/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobile: phone, pass: password }),

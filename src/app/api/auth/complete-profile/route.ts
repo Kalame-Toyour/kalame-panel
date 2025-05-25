@@ -13,7 +13,7 @@ export async function POST(
     const email = body.email;
     const password = body.password;
     const referralCode = body.referralCode;
-    const response = await fetch('https://api.kalame.chat/v1/auth/completeProfile', {
+    const response = await fetch('https://api.kalame.chat/auth/completeProfile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
