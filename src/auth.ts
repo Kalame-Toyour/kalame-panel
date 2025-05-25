@@ -55,7 +55,7 @@ const config = {
         if (!password || !phone) return null;
         try {
           // Call Talaat API for login
-          const response = await fetch('https://api.talaat.ir/v1/auth/login', {
+          const response = await fetch('https://api.kalame.chat/v1/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mobile: phone, pass: password }),

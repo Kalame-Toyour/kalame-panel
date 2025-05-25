@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch('https://api.talaat.ir/v1/auth/sendVerificationCode', {
+    const response = await fetch('https://api.kalame.chat/v1/auth/sendVerificationCode', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

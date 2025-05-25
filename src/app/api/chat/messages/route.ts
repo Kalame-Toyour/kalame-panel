@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     };
     console.log('Outgoing request to external API:', outgoingBody);
     
-    const response = await fetch('https://api.talaat.ir/v1/kariz/process-text', {
+    const response = await fetch('https://api.kalame.chat/v1/kariz/process-text', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     }
 
     const apiRes = await fetch(
-      `https://api.talaat.ir/v1/kariz/chatHistory?chatCode=${encodeURIComponent(chatCode)}&limit=${limit}&order=${order}`,
+      `https://api.kalame.chat/v1/kariz/chatHistory?chatCode=${encodeURIComponent(chatCode)}&limit=${limit}&order=${order}`,
       {
         headers: {
           'Authorization': `Bearer ${session.user.accessToken}`
