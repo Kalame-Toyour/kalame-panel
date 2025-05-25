@@ -1,4 +1,4 @@
-name: Deploy Frontend to Servers
+name: Validate and Deploy Frontend to Servers
 
 on:
   push:
@@ -6,49 +6,65 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
+    name: Build and Validate
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Install Dependencies
-      run: npm install
+      - name: Create .env.production
+        run: |
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.production
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.production
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env.production
+          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env.production
+          echo "NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}" >> .env.production
+          echo "TIME_ZONE=${{ secrets.TIME_ZONE }}" >> .env.production
+          echo "COINGECKO_API_KEYS=${{ secrets.COINGECKO_API_KEYS }}" >> .env.production
 
-    - name: Build Next.js App
-      run: npm run build
+      - name: Install Dependencies
+        run: npm install
 
-    - name: Set up SSH Key and Known Hosts
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.KALAME_API_SSH_PKEY }}" > ~/.ssh/id_ed25519
-        chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H 91.99.111.83 >> ~/.ssh/known_hosts
-        ssh-keyscan -H 49.12.75.136 >> ~/.ssh/known_hosts
+      - name: Build Next.js
+        run: npm run build
 
-    - name: Deploy to Server 1
-      run: |
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" .next root@91.99.111.83:/home/kalame/kalame-panel/.next
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" public root@91.99.111.83:/home/kalame/kalame-panel/public
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" package.json root@91.99.111.83:/home/kalame/kalame-panel/package.json
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" next.config.js root@91.99.111.83:/home/kalame/kalame-panel/next.config.js
+  deploy:
+    name: Deploy to Servers
+    needs: build
+    runs-on: ubuntu-latest
 
-        ssh -i ~/.ssh/id_ed25519 root@91.99.111.83 << 'EOF'
-          cd /home/kalame/kalame-panel
-          npm install
-          pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
-        EOF
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Deploy to Server 2
-      run: |
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" .next root@49.12.75.136:/home/kalame/kalame-panel/.next
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" public root@49.12.75.136:/home/kalame/kalame-panel/public
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" package.json root@49.12.75.136:/home/kalame/kalame-panel/package.json
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" next.config.js root@49.12.75.136:/home/kalame/kalame-panel/next.config.js
+      - name: Set up SSH Key and Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KALAME_API_SSH_PKEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 91.99.111.83 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 49.12.75.136 >> ~/.ssh/known_hosts
 
-        ssh -i ~/.ssh/id_ed25519 root@49.12.75.136 << 'EOF'
-          cd /home/kalame/kalame-panel
-          npm install
-          pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
-        EOF
+      - name: Sync Project to Server 1
+        run: |
+          rsync -avz --exclude=".git" -e "ssh -i ~/.ssh/id_ed25519" ./ root@91.99.111.83:/home/kalame/kalame-panel
+
+          ssh -i ~/.ssh/id_ed25519 root@91.99.111.83 << 'EOF'
+            cd /home/kalame/kalame-panel
+            npm install
+            npm run build
+            pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
+          EOF
+
+      - name: Sync Project to Server 2
+        run: |
+          rsync -avz --exclude=".git" -e "ssh -i ~/.ssh/id_ed25519" ./ root@49.12.75.136:/home/kalame/kalame-panel
+
+          ssh -i ~/.ssh/id_ed25519 root@49.12.75.136 << 'EOF'
+            cd /home/kalame/kalame-panel
+            npm install
+            npm run build
+            pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
+          EOF
