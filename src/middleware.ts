@@ -15,10 +15,21 @@ const isApiRoute = createRoutesMatcher([
   '/api/((?!auth).*)', // Match API routes but exclude auth routes
 ]);
 
-const isProtectedRoute = createRoutesMatcher([
-  '/app(.*)',
-  '/:locale/app(.*)',
-]);
+const isProtectedRoute = (request: NextRequest) => {
+  const path = request.nextUrl.pathname;
+  // Do NOT protect the root ("/" or "/fa" etc.)
+  // Protect all other subpages
+  // Example: /app, /image, /voice, /voice-to-text, etc.
+  const localeMatch = path.match(/^\/(\w{2})(?:\/(.*))?$/);
+  if (path === '/' || (localeMatch && (!localeMatch[2] || localeMatch[2] === ''))) {
+    return false;
+  }
+  // Exclude auth pages
+  if (isAuthPage(request)) return false;
+  // Exclude API routes
+  if (isApiRoute(request) || isAuthEndpoint(request)) return false;
+  return true;
+};
 
 const isAuthPage = createRoutesMatcher([
   '/auth(.*)',
@@ -56,7 +67,7 @@ export default async function middleware(
   // Handle auth pages
   if (isAuthPage(request) && token) {
     const locale = request.nextUrl.pathname.match(/(\/.*)\/auth/)?.at(1) ?? '';
-    const appUrl = new URL(`${locale}/app`, request.url);
+    const appUrl = new URL(`${locale}/`, request.url);
     return NextResponse.redirect(appUrl);
   }
 

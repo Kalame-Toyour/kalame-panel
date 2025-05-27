@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { AppConfig } from '@/utils/AppConfig';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch('https://api.talaat.ir/v1/auth/sendVerificationCode', {
+    const response = await fetch(`${AppConfig.authApiUrl}/sendVerificationCode`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { AppConfig } from '@/utils/AppConfig';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'شماره موبایل و رمز عبور الزامی است.' }, { status: 400 });
     }
 
-    const response = await fetch('https://api.talaat.ir/v1/auth/login', {
+    const response = await fetch(`${AppConfig.authApiUrl}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mobile: phone, pass: password }),

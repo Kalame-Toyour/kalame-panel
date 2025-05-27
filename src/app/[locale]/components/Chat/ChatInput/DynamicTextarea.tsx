@@ -38,7 +38,7 @@ const DynamicTextarea: React.FC<DynamicTextareaProps> = ({
     <textarea
       ref={textareaRef}
       placeholder={t('inputPlaceholder')}
-      className={`flex-1 resize-none overflow-hidden bg-transparent px-4 py-3 text-gray-900
+      className={`flex-1 resize-none overflow-hidden bg-transparent px-2 pt-3 pb-1 text-gray-900
         placeholder:text-gray-500 focus:outline-none dark:text-white dark:placeholder:text-gray-400
         ${isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}
         ${isLoading ? 'cursor-not-allowed opacity-50' : ''}`}

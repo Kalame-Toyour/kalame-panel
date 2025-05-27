@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { AppConfig } from '@/utils/AppConfig';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Generate Image Request Body:', body);
 
-    const response = await fetch('https://api.talaat.ir/v1/kariz/generate-image', {
+    const response = await fetch(`${AppConfig.baseApiUrl}/generate-image`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

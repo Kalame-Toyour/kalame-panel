@@ -1,9 +1,7 @@
 /* eslint-disable no-console */
 'use client';
 
-import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { signIn } from 'next-auth/react';
@@ -21,7 +19,6 @@ type SignupFormData = {
 };
 
 const PhoneAuthFlow = () => {
-  const router = useRouter();
   const [validationError, setValidationError] = useState<string>('');
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<SignupFormData>({
@@ -70,10 +67,9 @@ const PhoneAuthFlow = () => {
       }
       setIsLoading(false);
       return data;
-    } catch (error) {
+    } catch (_error) {
       setValidationError('خطایی رخ داده است');
-      console.error('Error sending verification code:', error);
-      return null;
+      console.error('Error sending verification code:', _error);
     } finally {
       setIsLoading(false);
     }
@@ -98,14 +94,15 @@ const PhoneAuthFlow = () => {
         toast.success('ورود با موفقیت انجام شد');
         setTimeout(() => {
           if (typeof window !== 'undefined') {
-            window.location.replace('/app');
+            window.location.replace('/');
           }
         }, 700);
       } else {
         setValidationError('ورود با خطا مواجه شد.');
       }
-    } catch (error) {
+    } catch (_error) {
       setValidationError('خطای سرور');
+      console.error('Login error:', _error);
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +159,7 @@ const PhoneAuthFlow = () => {
           toast.success('ثبت نام و ورود با موفقیت انجام شد');
           setTimeout(() => {
             if (typeof window !== 'undefined') {
-              window.location.replace('/app');
+              window.location.replace('/');
             }
           }, 700);
         } else {
@@ -172,9 +169,9 @@ const PhoneAuthFlow = () => {
         setValidationError('ثبت نام موفق نبود یا توکن دریافت نشد.');
       }
 
-    } catch (error) {
+    } catch (_error) {
       setValidationError('خطایی رخ داده است');
-      console.error('Error sending verification code:', error);
+      console.error('Error sending verification code:', _error);
     } finally {
       setIsLoading(false);
     }
@@ -215,7 +212,7 @@ const PhoneAuthFlow = () => {
           toast.success('ورود با موفقیت انجام شد');
           setTimeout(() => {
             if (typeof window !== 'undefined') {
-              window.location.replace('/app');
+              window.location.replace('/');
             }
           }, 700);
         } else {
@@ -232,15 +229,16 @@ const PhoneAuthFlow = () => {
           toast.success('ورود با موفقیت انجام شد');
           setTimeout(() => {
             if (typeof window !== 'undefined') {
-              window.location.replace('/app');
+              window.location.replace('/');
             }
           }, 700);
         } else {
           setValidationError('ورود با خطا مواجه شد.');
         }
       }
-    } catch (error) {
+    } catch (_error) {
       setValidationError('خطای سرور');
+      console.error('Login with code error:', _error);
     } finally {
       setIsLoading(false);
     }
@@ -264,8 +262,9 @@ const PhoneAuthFlow = () => {
       setLoginWithCode(true);
       setFormData({ ...formData, verificationCode: '' });
       toast.success('کد تایید ارسال شد');
-    } catch (error) {
+    } catch (_error) {
       setValidationError('خطا در ارسال کد');
+      console.error('Error sending login code:', _error);
     } finally {
       setIsLoading(false);
     }
@@ -302,20 +301,20 @@ const PhoneAuthFlow = () => {
           {/* Right: Main Card View (no nested cards) */}
           <div className="flex-1 flex flex-col items-center justify-center w-full">
             {/* On mobile, show TypingAnimation above card */}
-            <div className="md:hidden w-full flex flex-col items-center mb-6 animate-fade-in-up">
-              <img src="/kalame-logo.png" alt="Logo" className="h-16 mb-2 animate-fade-in" />
+            <div className="md:hidden w-full flex flex-col items-center animate-fade-in-up">
+              <img src="/kalame-logo.png" alt="Logo" className="h-16 mb-2 animate-fade-in drop-shadow-lg" />
               <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","پشتیبانی ۲۴ ساعته","امنیت و سرعت بالا","تحلیل لحظه‌ای بازار"]} />
             </div>
             {/* Main card: only one card, with correct border radius */}
-            <div className="w-full max-w-md rounded-none md:rounded-l-none md:rounded-r-3x border-gray-200 dark:border-gray-800 p-10 animate-fade-in-up transition-all duration-500">
+            <div className="w-full max-w-md rounded-none md:rounded-l-none md:rounded-r-3x border-gray-200 dark:border-gray-800 p-8 animate-fade-in-up transition-all duration-500">
               {/* Header with Back Button and Logo */}
-              <div className="mb-8 flex items-center justify-center">
+              <div className="mb-1 flex items-center justify-start">
                 {step > 1 && (
                   <button
                     onClick={handleBack}
-                    className="absolute left-8 flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+                    className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <ArrowLeft className="size-5" />
+                    <ArrowRight className="size-5" />
                   </button>
                 )}
                 {/* <Link href="/" className="group flex items-center md:hidden">
@@ -365,9 +364,9 @@ const PhoneAuthFlow = () => {
                         )}
                   </button>
 
-                  <p className="text-right text-xs text-gray-500 dark:text-gray-400 animate-fade-in-up">
+                  {/* <p className="text-right text-xs text-gray-500 dark:text-gray-400 animate-fade-in-up">
                     ورود شما به معنای پذیرش شرایط کلمه و قوانین حریم‌خصوصی است
-                  </p>
+                  </p> */}
                 </form>
               )}
 

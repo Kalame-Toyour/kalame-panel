@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
-import { LoadingProvider } from '@/contexts/LoadingContext';
 import { routing } from '@/libs/i18nNavigation';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
-import React from 'react';
-import { ThemeProvider } from './components/ThemeProvider';
 import '../globals.css';
+import ClientLayout from './ClientLayout';
 
 export const metadata: Metadata = {
   icons: [
@@ -44,14 +42,10 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: { locale: string };
 }) {
-  const locale = (await params).locale;
-
-  if (!routing.locales.includes(locale)) {
-    notFound();
-  }
-
+  // Ensure params is properly awaited
+  const { locale } = await Promise.resolve(params);
+  if (!routing.locales.includes(locale)) notFound();
   setRequestLocale(locale);
-
   const messages = await getMessages();
 
   return (
@@ -62,13 +56,35 @@ export default async function RootLayout({
       </head>
       <body className='font-sans'>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <LoadingProvider>
-            <ThemeProvider defaultTheme="light" storageKey="theme">
-              {children}
-            </ThemeProvider>
-          </LoadingProvider>
+          <ClientLayout>{children}</ClientLayout>
         </NextIntlClientProvider>
       </body>
     </html>
   );
 }
+
+// --- SERVER LAYOUT (in a separate file, e.g. layout.server.tsx) ---
+// import type { Metadata } from 'next';
+// import { routing } from '@/libs/i18nNavigation';
+// import { notFound } from 'next/navigation';
+// import { NextIntlClientProvider } from 'next-intl';
+// import { getMessages, setRequestLocale } from 'next-intl/server';
+// import '../globals.css';
+//
+// export const metadata: Metadata = { ... };
+//
+// export function generateStaticParams() { ... }
+//
+// export default async function RootLayout({ children, params }) {
+//   ...
+//   return (
+//     <html ...>
+//       <head>...</head>
+//       <body>
+//         <NextIntlClientProvider ...>
+//           <ClientLayout>{children}</ClientLayout>
+//         </NextIntlClientProvider>
+//       </body>
+//     </html>
+//   );
+// }

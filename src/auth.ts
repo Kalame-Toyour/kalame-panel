@@ -2,6 +2,7 @@ import type { NextAuthConfig } from 'next-auth';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
+import { AppConfig } from '@/utils/AppConfig';
 
 export type AuthUser = {
   id: string;
@@ -55,12 +56,13 @@ const config = {
         if (!password || !phone) return null;
         try {
           // Call Talaat API for login
-          const response = await fetch('https://api.talaat.ir/v1/auth/login', {
+          const response = await fetch(`${AppConfig.authApiUrl}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mobile: phone, pass: password }),
           });
           const data = await response.json();
+          console.log('Login data', data);
           if (!response.ok || !data.accessToken || !data.needUserData) return null;
           return {
             id: data.needUserData.ID.toString(),

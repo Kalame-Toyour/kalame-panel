@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useAuthToken } from '../hooks/useAuthToken';
 import { useProfileModal } from '../hooks/useProfileModal';
@@ -22,6 +23,15 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     isAuthenticated,
     handleLogin,
   } = useAuthToken();
+  const pathname = usePathname();
+  const basePath = (pathname ?? '').split('?')[0]!;
+  const isImagePage = basePath.endsWith('/image');
+  const isTextToVoicePage = basePath.endsWith('/text-to-voice');
+  const isVoiceToTextPage = basePath.endsWith('/voice-to-text');
+
+  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage
+    ? "flex flex-col min-h-screen"
+    : "flex h-screen flex-col overflow-hidden";
 
   useEffect(() => {
     setIsClient(true);
@@ -47,7 +57,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className={rootDivClasses}>
       {/* Mobile Header - Fixed at top */}
       <div className="sticky top-0 z-10 w-full md:hidden">
         <MobileHeader
@@ -71,6 +81,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
         <div className={`
           my-2
           flex-1
+          ${isImagePage || isTextToVoicePage || isVoiceToTextPage ? '' : 'overflow-y-auto'}
           ${getContentMarginClass()}
           transition-all 
           duration-300 

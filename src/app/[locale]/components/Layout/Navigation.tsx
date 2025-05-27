@@ -98,7 +98,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
             {isLoggedIn
               ? (
-                  <Link href="/app">
+                  <Link href="/">
                     <button className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/25 dark:from-amber-600 dark:to-amber-700 dark:hover:shadow-amber-600/20">
                       <Settings className="size-4 transition-transform group-hover:scale-110" />
                       <span>{t('nav.dashboard')}</span>
@@ -147,7 +147,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               <div className="border-t border-gray-200/50 pt-2 dark:border-gray-700/50">
                 {isLoggedIn
                   ? (
-                      <Link href="/app/dashboard">
+                      <Link href="/dashboard">
                         <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25 dark:from-amber-600 dark:to-amber-700 dark:hover:shadow-amber-600/20">
                           <Settings className="size-4" />
                           <span>{t('nav.dashboard')}</span>

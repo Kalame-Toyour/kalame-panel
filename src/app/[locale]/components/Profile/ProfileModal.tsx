@@ -2,29 +2,37 @@
 
 import {
   ChevronLeft,
-  Globe,
   LogOut,
   X,
   Moon,
   Sun,
+  Mic,
+  BookText,
+  ImageIcon,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { useLocale, useTranslations } from 'next-intl';
-import React, { useState } from 'react';
+import { useLocale } from 'next-intl';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import LanguageSwitcherModal from '../LanguageSwitcher';
 import LogoutDialog from '../LogoutDialog';
 import ChatHistorySidebar from '../Chat/ChatHistorySidebar';
 import { useTheme } from '../ThemeProvider';
-import { ImageIcon } from 'lucide-react';
 import fetchWithAuth from '../utils/fetchWithAuth';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type ProfileModalProps = {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
   onLogin?: (email: string, password: string) => Promise<void>;
+};
+
+type NavigationItem = {
+  icon: React.ReactNode;
+  text: string;
+  path: string;
 };
 
 type Chat = {
@@ -36,8 +44,8 @@ type Chat = {
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const locale = useLocale();
-  const t = useTranslations('sidebar');
   const { user } = useAuth();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
@@ -45,7 +53,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(false);
   const { theme, setTheme } = useTheme();
 
-  // Fetch chat history (same as Sidebar)
+  const waveStyle = {
+    display: 'inline-block',
+    animation: 'wave 1.5s infinite',
+    transformOrigin: '70% 70%',
+  };
+
   const refreshChatHistory = async () => {
     if (!user?.id) return;
     setIsChatHistoryLoading(true);
@@ -69,19 +82,33 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  React.useEffect(() => {
-    refreshChatHistory();
-  }, [user?.id]);
-
-  React.useEffect(() => {
-    const handler = () => {
+  useEffect(() => {
+    if (isOpen && user?.id) {
       refreshChatHistory();
-    };
-    window.addEventListener('chat-history-refresh', handler);
-    return () => {
-      window.removeEventListener('chat-history-refresh', handler);
-    };
-  }, []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, user?.id]); // Refresh when modal opens or user changes
+
+  const isRouteActive = (itemPath: string) => {
+    // pathname from usePathname() is like "/image" or "/text-to-voice/some-sub-path"
+    // itemPath from featureNavigationItems is like "image" or "text-to-voice"
+
+    // Normalize pathname: remove leading slash if present to match itemPath format
+    const normalizedPathname = pathname.startsWith('/') ? pathname.substring(1) : pathname;
+
+    if (itemPath === '') { // Should not happen with current featureNavigationItems
+      return normalizedPathname === '' || normalizedPathname.startsWith('?chat=');
+    }
+
+    // Check for exact match or if it's a sub-route
+    return normalizedPathname === itemPath || normalizedPathname.startsWith(`${itemPath}/`);
+  };
+
+  const handleFeatureNavigation = (path: string) => {
+    const fullPath = `/${locale}/${path}`;
+    router.push(fullPath);
+    onClose();
+  };
 
   const handleLogoutClick = () => {
     setIsLogoutDialogOpen(true);
@@ -96,122 +123,183 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const navigationItems = [
-    { icon: <ImageIcon size={24} className="text-gray-800 dark:text-gray-200" />, text: 'ساخت تصویر', path: '/app/image' },
-  ]; 
+  const featureNavigationItems: NavigationItem[] = [
+    { icon: <ImageIcon />, text: 'ساخت تصویر', path: 'image' },
+    { icon: <Mic />, text: 'تبدیل متن به گفتار', path: 'text-to-voice' },
+    { icon: <BookText />, text: 'تبدیل گفتار به متن', path: 'voice-to-text' }, // Assuming this should also be without leading slash for consistency
+  ];
+
+  if (!isOpen && typeof window === 'undefined') return null; // Keep this for SSR, AnimatePresence handles client-side
+
+  const modalVariants = {
+    hidden: {
+      x: locale === 'fa' ? '100%' : '-100%',
+      opacity: 0,
+      transition: { type: 'spring', stiffness: 300, damping: 30, duration: 0.2 },
+    },
+    visible: {
+      x: '0%',
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 300, damping: 30, duration: 0.2 },
+    },
+    exit: {
+      x: locale === 'fa' ? '100%' : '-100%',
+      opacity: 0,
+      transition: { type: 'spring', stiffness: 300, damping: 30, duration: 0.2 },
+    },
+  };
 
   return (
     <>
-      <div
-        className={`fixed inset-0 z-50 transition-transform duration-300 ease-in-out md:hidden md:w-1/3 ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
-        style={{ background: 'rgba(0,0,0,0.25)' }}
-        dir={locale === 'fa' ? 'rtl' : 'ltr'}
-      >
-        <header className="sticky top-0 z-10 flex flex-row-reverse items-center justify-between p-4 bg-primary text-white shadow-md rounded-t-2xl">
-        <button
-              type="button"
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="rounded-lg p-2 transition-colors hover:bg-blue-700 flex items-center gap-1"
-              title={theme === 'light' ? 'تم تاریک' : 'تم روشن'}
-            >
-              {theme === 'light' ? <Moon size={20} className="dark:text-gray-200" /> : <Sun size={20} className="dark:text-gray-200" />}
-              <span className="text-sm">{theme === 'light' ? 'تم تاریک' : 'تم روشن'}</span>
-            </button>
-          <div className="flex items-center gap-2">
-          <button
-              type="button"
+      <style>{`
+        @keyframes wave {
+          0% { transform: rotate(0deg); }
+          10% { transform: rotate(14deg); }
+          20% { transform: rotate(-8deg); }
+          30% { transform: rotate(14deg); }
+          40% { transform: rotate(-4deg); }
+          50% { transform: rotate(10deg); }
+          60% { transform: rotate(0deg); }
+          100% { transform: rotate(0deg); }
+        }
+      `}</style>
+      <AnimatePresence mode="wait">
+        {isOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 z-40 bg-black bg-opacity-25 md:hidden"
               onClick={onClose}
-              className="rounded-lg p-2 transition-colors hover:bg-blue-700"
-            >
-              <X size={24} />
-            </button>
-            <h1 className="mr-3 text-2xl font-bold">سلام {user?.name}</h1>
-
-          </div>
-        </header>
-        <div className="h-[calc(100%-64px)] flex-1 overflow-y-auto p-4 bg-white dark:bg-gray-900">
-          {/* New Chat Button */}
-          <div className="mb-4 flex flex-row items-center justify-center mx-auto px-6">
-            <button
-              onClick={() => {
-                router.push(`/app`);
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new Event('clear-chat-messages'));
-                }
-                onClose();
-              }}
-              className="rounded-lg bg-blue-500 px-10 py-2 text-white hover:bg-blue-600 transition-colors text-sm font-bold"
-            >
-              + گفت‌وگوی جدید
-            </button>
-          </div>
-          {/* Chat History Section */}
-          <div className="mb-6">
-            <ChatHistorySidebar
-              chatHistory={chatHistory}
-              isLoading={isChatHistoryLoading}
-              onChatSelect={onClose}
             />
-            {/* Show message if no chat history */}
-            {!isChatHistoryLoading && chatHistory.length === 0 && (
-              <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-                هیچ تاریخچه‌ای ندارید
-              </div>
-            )}
-          </div>
-          {/* Navigation, Language, Logout - each in its own row */}
-          <div className="flex flex-col gap-2">
-            {navigationItems.map((item, index) => (
-                <button
-                  key={index}
-                  className="w-full flex items-center justify-between px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 hover:bg-slate-100 dark:hover:bg-gray-700 shadow-sm"
-                  onClick={() => {
-                      router.push(`/${locale}${item.path}`);
-                      onClose();
-                  }}
-                  type="button"
-                >
-                    <div className="flex items-center gap-4">
-                      {item.icon}
-                      <span>{item.text}</span>
-                    </div>
-                    <ChevronLeft size={24} className={locale === 'fa' ? '' : 'rotate-180'} />
-                </button>
-            ))}
-            {/* <button
-              className="w-full flex items-center justify-between px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 hover:bg-slate-100 dark:hover:bg-gray-700 shadow-sm"
-              onClick={() => setShowLanguageModal(true)}
-              type="button"
+            <motion.div
+              key="profile-modal"
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className={`fixed inset-y-0 ${locale === 'fa' ? 'right-0' : 'left-0'} z-50 w-full max-w-sm bg-white shadow-xl dark:bg-gray-800 md:hidden`}
+              dir={locale === 'fa' ? 'rtl' : 'ltr'}
             >
-              <div className="flex items-center gap-4">
-                <Globe size={24} />
-                <span>{t('language')}</span>
-              </div>
-              <ChevronLeft size={24} className={locale === 'fa' ? '' : 'rotate-180'} />
-            </button> */}
-            <button
-              className="w-full flex items-center justify-between px-3 py-3 rounded-lg bg-white dark:bg-gray-900 text-red-800 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-gray-700 shadow-sm"
-              onClick={handleLogoutClick}
-            >
-              <div className="flex items-center gap-4">
-                  <LogOut className={locale === 'fa' ? '' : 'rotate-180'} />
-                  <span>{t('logout')}</span>
+              {/* Original Header with bg-primary */}
+              <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-primary text-white">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-full p-1.5 text-white hover:bg-white/20 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                  <h1 className="text-lg font-semibold">
+                    سلام {user?.name}!
+                    <span style={waveStyle} className="ml-1 rtl:mr-1 inline-block">👋</span>
+                  </h1>
                 </div>
-                <ChevronLeft size={24} className={locale === 'fa' ? '' : 'rotate-180'} />
-            </button>
-          </div>
-        </div>
-      </div>
-      <LanguageSwitcherModal
-        isOpen={showLanguageModal}
-        onClose={() => setShowLanguageModal(false)}
-        isCollapsed={false}
-      />
-      <LogoutDialog
-        isOpen={isLogoutDialogOpen}
-        onClose={() => setIsLogoutDialogOpen(false)}
-        onConfirm={handleLogoutConfirm}
-      />
+                <button
+                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                  className="rounded-full p-2 text-white hover:bg-white/20 transition-colors"
+                >
+                  {theme === 'light' ? <Moon size={22} /> : <Sun size={22} />}
+                </button>
+              </header>
+
+              <div className="flex h-[calc(100%-64px)] flex-col overflow-y-auto p-3">
+                {/* Feature Navigation Items - Placed at the top */}
+                <div className="mb-3 space-y-1.5">
+                  {featureNavigationItems.map((item) => {
+                    const isActive = isRouteActive(item.path);
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => handleFeatureNavigation(item.path)}
+                        className={`flex items-center gap-3 w-full rounded-lg px-3 py-2.5 border transition-colors text-right text-sm font-medium
+                          ${isActive
+                            ? 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 border-blue-500 dark:border-blue-600'
+                            : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
+                          }
+                        `}
+                      >
+                        {React.cloneElement(item.icon as React.ReactElement, { className: `w-5 h-5 ${isActive ? 'text-white' : 'text-blue-500 dark:text-blue-400'}` })}
+                        <span>{item.text}</span>
+                        <ChevronLeft size={18} className={`mr-auto ${locale === 'fa' ? '' : 'rotate-180'} ${isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`} />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Original New Chat Button - Centered */}
+                <div className="my-4 text-center">
+                  <button
+                    onClick={() => {
+                      router.push(`/${locale}`);
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new Event('clear-chat-messages'));
+                      }
+                      onClose();
+                    }}
+                    className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark transition-colors"
+                  >
+                    + گفت‌وگوی جدید
+                  </button>
+                </div>
+
+                {/* Chat History Section */}
+                <div className="flex-grow mb-3 border-t border-b dark:border-gray-700 py-2 -mx-3 px-3">
+                  <ChatHistorySidebar
+                    chatHistory={chatHistory}
+                    isLoading={isChatHistoryLoading}
+                    onChatSelect={onClose} // Close modal on chat select
+                    activeChatId={pathname.split('/').pop() || ''} // Simplified active chat ID logic
+                  />
+                  {!isChatHistoryLoading && chatHistory.length === 0 && (
+                    <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      هیچ گفتگویی وجود ندارد
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer items: Language and Logout - Restored to simpler style */}
+                <div className="mt-auto space-y-2 pt-3 dark:border-gray-700">
+                  {user ? (
+                    <button
+                      onClick={handleLogoutClick}
+                      className="flex w-full items-center rounded-lg p-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut size={20} />
+                      <span className="rtl:mx-2 font-medium">خروج</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => router.push(`/${locale}/auth`)}
+                      className="flex w-full items-center rounded-lg p-2.5 text-sm text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                    >
+                      <LogOut size={20} />
+                      <span className="rtl:mx-2 font-medium">ورود به حساب</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      {showLanguageModal && (
+        <LanguageSwitcherModal
+          isOpen={showLanguageModal}
+          onClose={() => setShowLanguageModal(false)}
+          isCollapsed={false} // Added missing prop
+        />
+      )}
+      {isLogoutDialogOpen && (
+        <LogoutDialog
+          isOpen={isLogoutDialogOpen}
+          onClose={() => setIsLogoutDialogOpen(false)}
+          onConfirm={handleLogoutConfirm}
+        />
+      )}
     </>
   );
 };

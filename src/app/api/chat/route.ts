@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fetchWithAuthServer from '../_utils/fetchWithAuthServer';
+import { AppConfig } from '@/utils/AppConfig';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'userID is required' }, { status: 400 });
   }
   const incomingAuth = req.headers.get('authorization');
-  const talaatRes = await fetchWithAuthServer(`https://api.talaat.ir/v1/kariz/chats?userID=${userID}`, {
+  const talaatRes = await fetchWithAuthServer(`${AppConfig.baseApiUrl}/chats?userID=${userID}`, {
     method: 'GET',
     headers: {
       ...(incomingAuth ? { Authorization: incomingAuth } : {}),
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     accessToken = `Bearer ${body.accessToken}`;
   }
 
-  const talaatRes = await fetchWithAuthServer('https://api.talaat.ir/v1/kariz/createChat', {
+  const talaatRes = await fetchWithAuthServer(`${AppConfig.baseApiUrl}/createChat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

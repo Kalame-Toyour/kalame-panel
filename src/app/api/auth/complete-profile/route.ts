@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { AppConfig } from '@/utils/AppConfig';
 
 export async function POST(
   request: NextRequest,
@@ -13,7 +14,7 @@ export async function POST(
     const email = body.email;
     const password = body.password;
     const referralCode = body.referralCode;
-    const response = await fetch('https://api.talaat.ir/v1/auth/completeProfile', {
+    const response = await fetch(`${AppConfig.authApiUrl}/completeProfile`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

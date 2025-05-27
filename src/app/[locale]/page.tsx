@@ -1,118 +1,294 @@
 'use client';
 
 import { useLoading } from '@/contexts/LoadingContext';
-import { Download } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-import LanguageSwitcherModal from './components/LanguageSwitcher';
-import { AnimatedBackground } from './components/Layout/AnimatedBackground';
-import { FAQSection } from './components/Layout/FAQSection';
-import { Navigation } from './components/Layout/Navigation';
-import { StatsSection } from './components/Layout/StatsSection';
-import { TypingAnimation } from './components/Layout/TypingAnimation';
-import './styles/landing.css';
+import { motion } from 'framer-motion';
+import { Loader } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from './hooks/useAuth';
+import ChatInput from './components/Chat/ChatInput/ChatInput';
+import ChatMessageContainer from './components/Chat/ChatMessage/ChatMessageContainer';
+import { useChat } from './hooks/useChat';
+import fetchWithAuth from './components/utils/fetchWithAuth';
+import type { Message } from '@/types';
 
-const LandingPage = () => {
+const MainPage: React.FC = () => {
   const { startLoading, stopLoading } = useLoading();
   const router = useRouter();
-  const pathname = usePathname();
-  const locale = useLocale();
-  const isRTL = locale === 'fa';
-  const t = useTranslations();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const searchParams = useSearchParams();
+  const chatId = searchParams.get('chat');
+  const { user } = useAuth();
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [isPendingMessageLoading, setIsPendingMessageLoading] = useState(false);
+  const [isSwitchingChat, setIsSwitchingChat] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    window.addEventListener('beforeunload', startLoading);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        stopLoading();
+      }
+    });
 
-  const handleNavigation = () => {
-    startLoading();
-    router.push('/app');
+    return () => {
+      window.removeEventListener('beforeunload', startLoading);
+    };
+  }, [startLoading, stopLoading]);
+
+  const {
+    messages,
+    inputText,
+    setInputText,
+    setMessages,
+    handleSend: baseHandleSend,
+    handleSelectAnswer,
+    isLoading,
+    isInitializing,
+    hasStartedChat,
+    setHasStartedChat,
+    chatEndRef,
+    handleChartRequest,
+    handleCryptoTradeRequest,
+    handleCryptoPortfolioRequest,
+  } = useChat();
+
+  // Listen for clear-chat-messages event
+  useEffect(() => {
+    const clearHandler = () => {
+      setMessages([]);
+      setInputText('');
+      if (setHasStartedChat) setHasStartedChat(false);
+    };
+    window.addEventListener('clear-chat-messages', clearHandler);
+    return () => {
+      window.removeEventListener('clear-chat-messages', clearHandler);
+    };
+  }, [setMessages, setHasStartedChat]);
+
+  // Handle chat switching
+  useEffect(() => {
+    const handleChatSelect = () => {
+      setIsSwitchingChat(true);
+      setMessages([]);
+    };
+
+    window.addEventListener('chat-history-select', handleChatSelect);
+    return () => {
+      window.removeEventListener('chat-history-select', handleChatSelect);
+    };
+  }, [setMessages]);
+
+  // Reset switching state when messages are loaded
+  useEffect(() => {
+    if (isSwitchingChat && messages.length > 0) {
+      setIsSwitchingChat(false);
+      // Add a small delay to ensure the messages are rendered
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [messages, isSwitchingChat, chatEndRef]);
+
+  // Handle pending message after chat creation
+  useEffect(() => {
+    async function sendPendingMessage() {
+      if (pendingMessage && chatId) {
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          text: pendingMessage,
+          sender: 'user',
+          type: 'text',
+        };
+        setMessages(prev => [...prev, userMessage]);
+        setHasStartedChat(true);
+        setIsPendingMessageLoading(true);
+        
+        try {
+          const response = await fetch('/api/chat/messages', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              chatId,
+              text: pendingMessage,
+              modelType: 'gpt-4',
+              subModel: 'gpt4_standard',
+            }),
+          });
+          
+          const data = await response.json();
+          if (response.ok && data.success) {
+            const aiMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              text: data.response,
+              sender: 'ai',
+              type: 'text',
+            };
+            setMessages(prev => [...prev, aiMessage]);
+          }
+        } catch (error) {
+          console.error('Error sending pending message:', error);
+        } finally {
+          setIsPendingMessageLoading(false);
+          setPendingMessage(null);
+        }
+      }
+    }
+
+    sendPendingMessage();
+  }, [pendingMessage, chatId, setMessages, setHasStartedChat]);
+
+  // Custom handleSend to support chat creation and navigation
+  const handleSend = async (text?: string) => {
+    if (!user) {
+      window.alert('برای ارسال پیام باید وارد حساب کاربری خود شوید.');
+      router.push('/auth');
+      return;
+    }
+    const sendText = typeof text === 'string' ? text : inputText;
+    if (chatId === null && user?.id) {
+      // Create new chat first
+      setIsCreatingChat(true);
+      try {
+        const res = await fetchWithAuth('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userID: user.id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.chat) {
+            setPendingMessage(sendText);
+            setInputText('');
+            await router.replace(`?chat=${data.chat}`);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('chat-history-refresh', { detail: { chatId: data.chat } }));
+            }
+          }
+        } else {
+          console.error('createChat API failed', res.status, await res.text());
+        }
+      } catch (err) {
+        console.error('Error in createChat API:', err);
+      } finally {
+        setIsCreatingChat(false);
+      }
+    } else {
+      baseHandleSend(sendText);
+      setInputText('');
+    }
   };
 
-  useEffect(() => {
-    return () => {
-      stopLoading();
-    };
-  }, [pathname, stopLoading]);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--scrollbar-color', '#FDE68A');
-    document.documentElement.style.setProperty('--scrollbar-hover-color', '#FCD34D');
-  }, []);
+  // Check if we should show the empty state
+  const shouldShowEmptyState = !hasStartedChat && (!messages || messages.length === 0) && !pendingMessage;
 
-  if (!mounted) {
-    return null;
+  // Show loading state when switching chats or initializing
+  if ((isInitializing && (!messages || messages.length === 0)) || isSwitchingChat) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+            className="relative"
+          >
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
+            <Loader className="relative size-8 text-blue-500" />
+          </motion.div>
+          <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-lg font-medium text-transparent">
+            در حال بارگذاری...
+          </span>
+        </motion.div>
+      </div>
+    );
   }
 
   return (
-    <div className="custom-scrollbar flex min-h-screen flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
-      <AnimatedBackground />
-      <Navigation
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-        setIsLanguageModalOpen={setIsLanguageModalOpen}
-      />
-      <main className="mainbg relative grow px-4 dark:bg-gray-900 md:px-36 md:pt-16">
-        {/* Main content components */}
-        <div className="inset-0 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
-            {/* Images - Shown first on mobile, second on desktop */}
-            <div className="order-1 lg:order-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <img
-                    src="https://cdn.coingraam.com/images/ai-assistant-pic.png"
-                    alt="AI Art Example 1"
-                    className="mx-auto w-4/5 rounded-2xl transition-transform hover:scale-[1.02] dark:opacity-90"
-                  />
-                </div>
+    <div className="relative flex flex-col h-full min-h-screen max-h-screen p-0 font-sans">
+      {/* Messages container */}
+      <div
+        className={
+          shouldShowEmptyState
+            ? 'flex flex-col items-center justify-center h-full w-full flex-grow-0 overflow-hidden'
+            : 'flex-1 flex flex-col overflow-y-auto pb-2 px-0 mx-0 md:mx-10 min-h-0'
+        }
+        style={!shouldShowEmptyState ? { maxHeight: 'calc(100vh - 120px)' } : {}}
+      >
+        {shouldShowEmptyState ? (
+          <div className="flex flex-col items-center justify-center h-full w-full">
+            <div className="flex flex-col items-center gap-2 md:mb-4">
+              <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-gradient-to-tr from-blue-300 to-blue-100 shadow-lg relative overflow-visible">
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="block w-full h-full rounded-full animate-wave-ring bg-gradient-to-tr from-blue-400/40 to-blue-200/10 dark:from-blue-500/40 dark:to-blue-900/10"></span>
+                </span>
+                <img src="/kalame-logo.png" alt="Logo" className="size-12 rounded-full object-contain relative z-10" />
               </div>
-            </div>
-
-            {/* Text Content - Shown second on mobile, first on desktop */}
-            <div className="order-2 lg:order-1">
-              <h1 className="py-4 text-3xl font-bold text-blue-700 dark:text-blue-400 md:text-5xl">
-                {t('hero.title')}
-              </h1>
-              <div className="mt-2">
-                <TypingAnimation texts={t.raw('hero.typing')} />
-              </div>
-              <p className="mt-4 text-lg text-gray-700 dark:text-gray-200 md:text-xl">
-                {t('hero.subtitle')}
-              </p>
-              <button
-                onClick={handleNavigation}
-                className="mt-8 flex items-center justify-center space-x-2 rounded-full bg-blue-600 px-8 py-3 text-white transition-all hover:scale-105 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 shadow-md"
-              >
-                {t('hero.tryForFree')}
-              </button>
-              {/* <div className={`mt-8 flex flex-col space-y-4 sm:flex-row ${isRTL ? 'sm:space-x-reverse' : 'sm:space-x-4'} sm:space-y-0`}>
-                <button className={`flex items-center justify-center ${isRTL ? 'space-x-reverse' : 'space-x-2'} rounded-lg bg-gray-100 px-6 py-2 text-blue-700 border border-blue-200 transition-all hover:scale-105 hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-300 dark:hover:bg-gray-700`}>
-                  <Download size={20} />
-                  <span>{t('hero.downloadBazaar')}</span>
-                </button>
-                <button className={`flex items-center justify-center ${isRTL ? 'space-x-reverse' : 'space-x-2'} rounded-lg bg-gray-100 px-6 py-2 text-blue-700 border border-blue-200 transition-all hover:scale-105 hover:bg-blue-50 dark:bg-gray-800 dark:text-blue-300 dark:hover:bg-gray-700`}>
-                  <Download size={20} />
-                  <span>{t('hero.downloadGooglePlay')}</span>
-                </button>
-              </div> */}
+              <h2 className="text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">چطور می تونم کمکت کنم؟</h2>
+              <p className="text-center text-base text-gray-500 dark:text-gray-400">هر سوالی که داری سوال داری بپرس</p>
             </div>
           </div>
-        </div>
-        {/* <StatsSection />
-        <FAQSection /> */}
-      </main>
-      <LanguageSwitcherModal
-        isOpen={isLanguageModalOpen}
-        onClose={() => setIsLanguageModalOpen(false)}
-        isCollapsed={false}
-      />
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col min-h-full"
+          >
+            <div className="flex-1 flex flex-col ">
+              <ChatMessageContainer
+                messages={messages}
+                copyToClipboard={copyToClipboard}
+                onSelectAnswer={handleSelectAnswer}
+              >
+                {(isLoading || isPendingMessageLoading) && (
+                  <div className="flex items-center justify-center py-4">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                      className="relative"
+                    >
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
+                      <Loader className="relative size-6 text-blue-500" />
+                    </motion.div>
+                  </div>
+                )}
+              </ChatMessageContainer>
+              <div ref={chatEndRef} />
+            </div>
+          </motion.div>
+        )}
+      </div>
+      {/* ChatInput always at the bottom */}
+      <div className="w-full max-w-2xl md:max-w-[84%] mx-auto px-2 pt-0 mb-2 bg-transparent z-10 fixed bottom-0 left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto">
+        <ChatInput
+          inputText={inputText}
+          setInputText={setInputText}
+          handleSend={handleSend}
+          isLoading={isLoading || isCreatingChat || isPendingMessageLoading}
+          onChartRequest={handleChartRequest}
+          onCryptoTradeRequest={handleCryptoTradeRequest}
+          onCryptoPortfolioRequest={handleCryptoPortfolioRequest}
+        />
+      </div>
     </div>
   );
 };
 
-export default LandingPage;
+export default MainPage;

@@ -155,10 +155,6 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     initializeChat();
   }, [chatId, initialMessage, pendingMessageSent]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
   const handleStartChat = useCallback(() => {
     setHasStartedChat(true);
   }, []);

@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { AppConfig } from '@/utils/AppConfig';
 
 export async function POST(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    const response = await fetch('https://api.talaat.ir/v1/auth/registerUser', {
+    const response = await fetch(`${AppConfig.authApiUrl}/registerUser`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

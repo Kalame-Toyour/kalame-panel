@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
+    "@headlessui/react": "^2.2.4",
     "@hookform/resolvers": "^3.9.1",
     "@langchain/community": "^0.3.32",
     "@langchain/core": "^0.3.40",

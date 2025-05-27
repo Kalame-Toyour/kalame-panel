@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const response = await fetch(`${AppConfig.baseApiUrl}/getMedia`, {
+    const response = await fetch(`${AppConfig.baseApiUrl}/getSampleVoice`, {
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`
       }

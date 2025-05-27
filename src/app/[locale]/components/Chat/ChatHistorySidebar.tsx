@@ -38,7 +38,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
     } else if (diffDays === 1) {
       groupKey = 'دیروز';
     } else if (diffDays <= 7) {
-      groupKey = 'هفته گذشته';
+      groupKey = 'هفت روز گذشته';
     } else if (diffDays <= 30) {
       groupKey = 'ماه گذشته';
     } else {
@@ -50,7 +50,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
   });
 
   // ترتیب نمایش: امروز، دیروز، هفته گذشته، ماه گذشته، سپس ماه‌های شمسی به ترتیب نزولی
-  const staticOrder = ['امروز', 'دیروز', 'هفته گذشته', 'ماه گذشته'];
+  const staticOrder = ['امروز', 'دیروز', 'هفت روز گذشته', 'ماه گذشته'];
   const monthKeys = Object.keys(grouped)
     .filter(k => !staticOrder.includes(k))
     .sort((a, b) => {
@@ -65,7 +65,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
     if (onChatChange) {
       onChatChange();
     }
-    router.push(`/app?chat=${chatId}`);
+    router.push(`/?chat=${chatId}`);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('chat-history-select', { detail: { chatId } }));
     }
@@ -76,7 +76,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
     // Skeleton loading UI
     return (
       <div>
-        <h2 className="z-1 border-b border-gray-200 p-2 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت و گوهای اخیر</h2>
+        <h2 className="z-1 border-b border-gray-200 p-1 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت و گوهای اخیر</h2>
         {[...Array(3)].map((_, idx) => (
           <div key={idx} className="mt-1 mb-4 animate-pulse">
             <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
