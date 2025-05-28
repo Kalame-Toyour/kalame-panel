@@ -279,7 +279,7 @@ const MainPage: React.FC = () => {
           </motion.div>
         )}
       </div>
-      {/* ChatInput always at the bottom س */}
+      {/* ChatInput always at the bottom again*/}
       <div className="w-full max-w-2xl md:max-w-[84%] mx-auto px-2 pt-0 mb-1 md:mb-0 bg-transparent z-10 fixed bottom-0 left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto">
         <ChatInput
           inputText={inputText}
