@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const outgoingBody = {
       prompt: text,
       chatId,
-      modelType: 'gpt-4',
+      modelType: body.modelType || 'gpt-4',
       subModel: 'gpt4_standard',
     };
     console.log('Outgoing request to external API:', outgoingBody);

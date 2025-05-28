@@ -126,7 +126,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const featureNavigationItems: NavigationItem[] = [
     { icon: <ImageIcon />, text: 'ساخت تصویر', path: 'image' },
     { icon: <Mic />, text: 'تبدیل متن به گفتار', path: 'text-to-voice' },
-    { icon: <BookText />, text: 'تبدیل گفتار به متن', path: 'voice-to-text' }, // Assuming this should also be without leading slash for consistency
+    // { icon: <BookText />, text: 'تبدیل گفتار به متن', path: 'voice-to-text' }, // Assuming this should also be without leading slash for consistency
   ];
 
   if (!isOpen && typeof window === 'undefined') return null; // Keep this for SSR, AnimatePresence handles client-side

@@ -1,32 +1,54 @@
 import type { ChatInputProps } from '@/types';
 import { checkTextDirection } from '@/libs/textUtils';
-import { Send, Sparkles, Bot, ChevronDown, Brain, Zap } from 'lucide-react';
+import { Send, ChevronDown, Bot } from 'lucide-react';
 import { useLocale } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import DynamicTextarea from './DynamicTextarea';
 import { motion } from 'framer-motion';
 
-const MODELS = [
-  { label: 'GPT-4', value: 'gpt-4', icon: <Sparkles size={18} /> },
-  { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo', icon: <Bot size={18} /> },
-  { label: 'Claude', value: 'claude', icon: <Brain size={18} /> },
-  { label: 'Gemini', value: 'gemini', icon: <Zap size={18} /> },
-];
+const DEFAULT_ICON = <Bot size={18} />;
+
+type LanguageModel = {
+  name: string;
+  icon?: string;
+  tokenCost?: number;
+};
 
 const ChatInput: React.FC<ChatInputProps> = ({
   inputText,
   setInputText,
   handleSend,
   isLoading,
+  selectedModel,
+  setSelectedModel,
 }) => {
   const locale = useLocale();
   const [isRTL, setIsRTL] = useState(locale === 'fa');
-  const [selectedModel, setSelectedModel] = useState(MODELS[0]?.value || 'gpt-4');
+  const [models, setModels] = useState<LanguageModel[]>([]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(false);
 
   useEffect(() => {
     setIsRTL(checkTextDirection(inputText, isRTL));
   }, [inputText, isRTL]);
+
+  // Fetch models from API when dropdown is opened and not already loaded
+  useEffect(() => {
+    if (showModelDropdown && models.length === 0 && !modelsLoading) {
+      setModelsLoading(true);
+      fetch('/api/language-models')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data.models) && data.models.length > 0) {
+            setModels(data.models);
+            if (!selectedModel) {
+              setSelectedModel(data.models[0].name);
+            }
+          }
+        })
+        .finally(() => setModelsLoading(false));
+    }
+  }, [showModelDropdown, models.length, modelsLoading, selectedModel, setSelectedModel]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
@@ -69,7 +91,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               style={{ lineHeight: 0 }}
             >
               <span className="flex items-center justify-center w-5 h-5">
-                {MODELS.find(m => m.value === selectedModel)?.icon}
+                {models.find((m: LanguageModel) => m.name === selectedModel)?.icon ? (
+                  <img src={models.find((m: LanguageModel) => m.name === selectedModel)?.icon} alt="icon" className="w-5 h-5 object-contain" />
+                ) :  <img src="https://img.icons8.com/color/512/chatgpt.png" alt="icon" className="w-5 h-5 object-contain" />}
               </span>
               <ChevronDown size={15} className="ml-0.5 rtl:mr-0.5 text-gray-400 dark:text-gray-500" />
             </button>
@@ -79,20 +103,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">مدل پاسخگویی را انتخاب کنید</h3>
                 </div>
                 <div className="py-1">
-                  {MODELS.map(model => (
-                    <button
-                      key={model.value}
-                      className={`flex items-center w-full px-3 py-2 gap-2 text-sm rounded-lg transition-all text-right hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.value ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
-                      onClick={() => {
-                        setSelectedModel(model.value);
-                        setShowModelDropdown(false);
-                      }}
-                      type="button"
-                    >
-                      {model.icon}
-                      <span>{model.label}</span>
-                    </button>
-                  ))}
+                  {modelsLoading ? (
+                    <div className="px-3 py-2 text-gray-400">در حال بارگذاری...</div>
+                  ) : models.length === 0 ? (
+                    <div className="px-3 py-2 text-gray-400">مدلی یافت نشد</div>
+                  ) : (
+                    models.map((model: LanguageModel) => (
+                      <button
+                        key={model.name}
+                        className={`flex items-center w-full px-3 py-2 gap-2 text-sm rounded-lg transition-all text-right text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.name ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
+                        onClick={() => {
+                          setSelectedModel(model.name);
+                          setShowModelDropdown(false);
+                        }}
+                        type="button"
+                      >
+                        {model.icon ? (
+                          <img src={model.icon} alt="icon" className="w-5 h-5 object-contain" />
+                        ) : DEFAULT_ICON}
+                        <span className='rtl:ml-2 text-gray-700 dark:text-gray-300'>{model.name}</span>
+                        {/* {model.tokenCost && (
+                          <span className="text-xs text-gray-400 ml-2">{model.tokenCost} $/1K</span>
+                        )} */}
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -117,7 +152,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               style={{ lineHeight: 0 }}
             >
               <span className="flex items-center justify-center w-5 h-5">
-                {MODELS.find(m => m.value === selectedModel)?.icon}
+                {models.find((m: LanguageModel) => m.name === selectedModel)?.icon ? (
+                  <img src={models.find((m: LanguageModel) => m.name === selectedModel)?.icon} alt="icon" className="w-5 h-5 object-contain" />
+                ) : DEFAULT_ICON}
               </span>
               <ChevronDown size={15} className="mr-1 rtl:ml-1 text-gray-400 dark:text-gray-500" />
             </button>
@@ -127,20 +164,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Response Model</h3>
                 </div>
                 <div className="py-1">
-                  {MODELS.map(model => (
-                    <button
-                      key={model.value}
-                      className={`flex items-center w-full px-3 py-2 gap-2 text-sm rounded-lg transition-all text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.value ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
-                      onClick={() => {
-                        setSelectedModel(model.value);
-                        setShowModelDropdown(false);
-                      }}
-                      type="button"
-                    >
-                      {model.icon}
-                      <span>{model.label}</span>
-                    </button>
-                  ))}
+                  {modelsLoading ? (
+                    <div className="px-3 py-2 text-gray-400">Loading...</div>
+                  ) : models.length === 0 ? (
+                    <div className="px-3 py-2 text-gray-400">No models found</div>
+                  ) : (
+                    models.map((model: LanguageModel) => (
+                      <button
+                        key={model.name}
+                        className={`flex items-center w-full px-3 py-2 gap-2 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-all text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.name ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
+                        onClick={() => {
+                          setSelectedModel(model.name);
+                          setShowModelDropdown(false);
+                        }}
+                        type="button"
+                      >
+                        {model.icon ? (
+                          <img src={model.icon} alt="icon" className="w-5 h-5 object-contain" />
+                        ) : DEFAULT_ICON}
+                        <span className='rtl:ml-2 text-gray-700 dark:text-gray-300'>{model.name}</span>
+                        {model.tokenCost && (
+                          <span className="text-xs text-gray-400 ml-2">{model.tokenCost} $/1K</span>
+                        )}
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             )}

@@ -157,7 +157,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const featureNavigationItems: NavigationItem[] = [
     { icon: <ImageIcon />, text: 'ساخت تصویر', path: '/image' },
     { icon: <Mic />, text: 'تبدیل متن به گفتار', path: '/text-to-voice' },
-    { icon: <BookText />, text: 'تبدیل گفتار به متن', path: '/voice-to-text' },
+    // { icon: <BookText />, text: 'تبدیل گفتار به متن', path: '/voice-to-text' },
   ];
 
   // Add CSS for waving hand animation

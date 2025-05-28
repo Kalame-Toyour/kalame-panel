@@ -22,6 +22,8 @@ const VoiceListPage = () => {
   const [ttsLoading, setTtsLoading] = useState(false);
   const [ttsError, setTtsError] = useState<string | null>(null);
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetchVoices();
@@ -29,6 +31,16 @@ const VoiceListPage = () => {
       if (audio) audio.pause();
     };
   }, []);
+
+  useEffect(() => {
+    if (!ttsAudioUrl) {
+      setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
+  }, [ttsAudioUrl]);
 
   const fetchVoices = async () => {
     setLoading(true);
@@ -101,6 +113,24 @@ const VoiceListPage = () => {
       setTtsError(message);
     } finally {
       setTtsLoading(false);
+    }
+  };
+
+  const handleVoicePlayPause = () => {
+    if (!audioRef.current) return;
+    if (audioRef.current.paused) {
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleVoiceEnded = () => {
+    setIsPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
     }
   };
 
@@ -206,21 +236,72 @@ const VoiceListPage = () => {
           </>
         )}
         {step === 'result' && ttsAudioUrl && (
-          <div className="flex flex-col items-center gap-6 mt-8">
-            <audio controls className="w-full max-w-xl rounded-lg shadow-lg">
-              <source src={ttsAudioUrl} type="audio/mpeg" />
-              مرورگر شما از پخش صوت پشتیبانی نمی‌کند.
-            </audio>
-            <div className="flex gap-4">
+          <div className="flex flex-col items-center gap-6 mt-8 w-full">
+            <div className="w-full max-w-xl flex flex-col items-center bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-xl p-6">
+              <div className="flex flex-col items-center w-full">
+                <div className="flex items-center gap-4 w-full justify-center mb-4">
+                  <button
+                    className={`rounded-full bg-blue-600 hover:bg-blue-700 text-white p-4 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 ${isPlaying ? 'scale-110' : ''}`}
+                    onClick={handleVoicePlayPause}
+                    aria-label={isPlaying ? 'توقف' : 'پخش'}
+                  >
+                    {isPlaying ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                        <rect x="6" y="5" width="4" height="14" rx="1.5" />
+                        <rect x="14" y="5" width="4" height="14" rx="1.5" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
+                        <path d="M5 3.878v16.244c0 1.518 1.64 2.47 2.98 1.71l12.04-8.122c1.32-.89 1.32-2.93 0-3.82L7.98 1.768C6.64 1.008 5 1.96 5 3.478z" />
+                      </svg>
+                    )}
+                  </button>
+                  {/* Waveform animation */}
+                  <div className="flex items-end gap-1 h-8">
+                    {[1,2,3,4,5,6,7,8].map(i => (
+                      <div
+                        key={i}
+                        className={`w-1.5 rounded bg-blue-400 dark:bg-blue-300 transition-all duration-300 ${isPlaying ? 'animate-wave' : 'h-2'}`}
+                        style={{ height: isPlaying ? `${Math.random() * 24 + 8}px` : '8px' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <audio
+                  ref={audioRef}
+                  src={ttsAudioUrl}
+                  onEnded={handleVoiceEnded}
+                  onPause={() => setIsPlaying(false)}
+                  onPlay={() => setIsPlaying(true)}
+                  className="hidden"
+                />
+                <div className="text-center text-gray-700 dark:text-gray-200 text-base mt-2">برای پخش یا توقف، روی دکمه کلیک کنید</div>
+              </div>
+            </div>
+            <div className="flex gap-2 w-full max-w-4xl mt-2 justify-center">
               <button
-                className="flex-1 rounded-lg py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg transition-colors"
+                className="min-w-[90px] rounded-md py-3 px-3 bg-blue-600 hover:bg-blue-700 text-white font-normal text-sm transition-colors"
                 onClick={() => setStep('input')}
               >تبدیل مجدد</button>
               <button
-                className="flex-1 rounded-lg py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold text-lg transition-colors"
+                className="min-w-[90px] rounded-md py-3 px-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-normal text-sm transition-colors"
                 onClick={() => setStep('select')}
               >انتخاب صدای دیگر</button>
             </div>
+            {/* Waveform animation CSS */}
+            <style>{`
+              @keyframes wave {
+                0% { height: 8px; }
+                20% { height: 32px; }
+                40% { height: 16px; }
+                60% { height: 28px; }
+                80% { height: 12px; }
+                100% { height: 8px; }
+              }
+              .animate-wave {
+                animation: wave 1s infinite linear;
+              }
+            `}</style>
           </div>
         )}
       </div>

@@ -11,6 +11,7 @@ import ChatMessageContainer from './components/Chat/ChatMessage/ChatMessageConta
 import { useChat } from './hooks/useChat';
 import fetchWithAuth from './components/utils/fetchWithAuth';
 import type { Message } from '@/types';
+import toast, { Toaster } from 'react-hot-toast';
 
 const MainPage: React.FC = () => {
   const { startLoading, stopLoading } = useLoading();
@@ -22,7 +23,7 @@ const MainPage: React.FC = () => {
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [isPendingMessageLoading, setIsPendingMessageLoading] = useState(false);
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
-
+  const [selectedModel, setSelectedModel] = useState<string>('');
   useEffect(() => {
     window.addEventListener('beforeunload', startLoading);
     document.addEventListener('visibilitychange', () => {
@@ -145,8 +146,10 @@ const MainPage: React.FC = () => {
   // Custom handleSend to support chat creation and navigation
   const handleSend = async (text?: string) => {
     if (!user) {
-      window.alert('برای ارسال پیام باید وارد حساب کاربری خود شوید.');
-      router.push('/auth');
+      toast.success('برای گفت وگو با کلمه باید وارد حساب کاربری خود بشوید');
+      setTimeout(() => {
+        router.push('/auth');
+      }, 1200);
       return;
     }
     const sendText = typeof text === 'string' ? text : inputText;
@@ -222,14 +225,15 @@ const MainPage: React.FC = () => {
 
   return (
     <div className="relative flex flex-col h-full min-h-screen max-h-screen p-0 font-sans">
+      <Toaster position="top-center" reverseOrder={false} />
       {/* Messages container */}
       <div
         className={
           shouldShowEmptyState
             ? 'flex flex-col items-center justify-center h-full w-full flex-grow-0 overflow-hidden'
-            : 'flex-1 flex flex-col overflow-y-auto pb-2 px-0 mx-0 md:mx-10 min-h-0'
+            : 'flex-1 flex flex-col overflow-y-auto px-0 mx-0 md:mx-10 min-h-0'
         }
-        style={!shouldShowEmptyState ? { maxHeight: 'calc(100vh - 120px)' } : {}}
+        style={!shouldShowEmptyState ? { maxHeight: 'calc(100vh - 160px)' } : {}}
       >
         {shouldShowEmptyState ? (
           <div className="flex flex-col items-center justify-center h-full w-full">
@@ -276,7 +280,7 @@ const MainPage: React.FC = () => {
         )}
       </div>
       {/* ChatInput always at the bottom */}
-      <div className="w-full max-w-2xl md:max-w-[84%] mx-auto px-2 pt-0 mb-2 bg-transparent z-10 fixed bottom-0 left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto">
+      <div className="w-full max-w-2xl md:max-w-[84%] mx-auto px-2 pt-0 mb-1 md:mb-0 bg-transparent z-10 fixed bottom-0 left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto">
         <ChatInput
           inputText={inputText}
           setInputText={setInputText}
@@ -285,6 +289,8 @@ const MainPage: React.FC = () => {
           onChartRequest={handleChartRequest}
           onCryptoTradeRequest={handleCryptoTradeRequest}
           onCryptoPortfolioRequest={handleCryptoPortfolioRequest}
+          selectedModel={selectedModel}
+          setSelectedModel={setSelectedModel}
         />
       </div>
     </div>

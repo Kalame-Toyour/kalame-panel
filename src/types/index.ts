@@ -264,6 +264,8 @@ export type ChatInputProps = {
   onChartRequest: (symbol: string) => void;
   onCryptoTradeRequest: () => void;
   onCryptoPortfolioRequest: () => void;
+  selectedModel: string;
+  setSelectedModel: (model: string) => void;
 };
 
 export type ChatMessageContainerProps = {

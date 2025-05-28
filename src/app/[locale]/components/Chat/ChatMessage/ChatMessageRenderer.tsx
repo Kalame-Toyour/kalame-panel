@@ -14,7 +14,7 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
   const renderMediaContent = () => {
     if (message.videoUrl) {
       return (
-        <div className="relative mb-4 w-full overflow-hidden rounded-lg pt-[56.25%]">
+        <div className="relative mb-2 w-full overflow-hidden rounded-lg pt-[56.25%]">
           <video
             className="absolute left-0 top-0 size-full rounded-lg object-cover"
             controls
@@ -60,7 +60,7 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
         {mediaContent}
         <div className="relative" dir={isRTL(message.text) ? 'rtl' : 'ltr'}>
           {/* First render the markdown text */}
-          <div className="overflow-hidden whitespace-pre-wrap px-1 py-3">
+          <div className="overflow-hidden whitespace-pre-wrap px-1 py-2">
             <ReactMarkdown
               components={{
                 p: ({ node, ...props }) => <span {...props} />,

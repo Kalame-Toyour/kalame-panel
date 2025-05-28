@@ -85,23 +85,44 @@ const PhoneAuthFlow = () => {
     setValidationError('');
     setIsLoading(true);
     try {
-      const signInResult = await signIn('credentials', {
-        phone: formData.phone,
-        password: formData.password,
-        redirect: false,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone, password: formData.password }),
       });
-      if (signInResult && signInResult.ok) {
-        toast.success('ورود با موفقیت انجام شد');
-        setTimeout(() => {
-          if (typeof window !== 'undefined') {
-            window.location.replace('/');
-          }
-        }, 700);
+      const data = await response.json();
+      console.log(data);
+      if (response.ok && data.accessToken) {
+        // ورود موفق: ذخیره توکن با next-auth
+        const signInResult = await signIn('credentials', {
+          phone: formData.phone,
+          password: formData.password,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          userId: data.needUserData?.ID,
+          username: data.needUserData?.username,
+          redirect: false,
+        });
+        if (signInResult && signInResult.ok) {
+          toast.success('ورود با موفقیت انجام شد');
+          setTimeout(() => {
+            if (typeof window !== 'undefined') {
+              window.location.replace('/');
+            }
+          }, 700);
+        } else {
+          setValidationError('ورود با خطا مواجه شد. لطفا مجددا تلاش کنید.');
+        }
+      } else if (data.message) {
+        toast.error(data.message);
+        setValidationError(data.message);
       } else {
-        setValidationError('ورود با خطا مواجه شد.');
+        setValidationError('نام کاربری یا رمز عبور اشتباه است.');
+        toast.error('نام کاربری یا رمز عبور اشتباه است.');
       }
     } catch (_error) {
       setValidationError('خطای سرور');
+      toast.error('خطای سرور');
       console.error('Login error:', _error);
     } finally {
       setIsLoading(false);
@@ -290,12 +311,12 @@ const PhoneAuthFlow = () => {
             <div className="relative z-10 flex flex-col h-full items-center justify-center px-10 py-16 text-white">
               <img src="/kalame-logo.png" alt="Logo" className="h-20 mb-8 mt-4 animate-fade-in drop-shadow-lg" />
               <h2 className="text-3xl font-extrabold mb-4 drop-shadow-lg">کلمه، دستیار هوشمند شما</h2>
-              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","پشتیبانی ۲۴ ساعته","امنیت و سرعت بالا","تحلیل لحظه‌ای بازار"]} />
+              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","امنیت و سرعت بالا"]} />
               <p className="mt-8 text-center text-base font-light leading-relaxed drop-shadow-lg">با کلمه می‌توانید به ابزارهای هوش مصنوعی متصل شوید، محتوای تاثیرگذار تولید کنید و از پشتیبانی ۲۴ ساعته بهره‌مند شوید.</p>
               <div className="mt-12 text-xs opacity-80 text-center">
                 <div>ارائه شده توسط تیم کلمه</div>
-                <div className="mt-1">برای سوالات: <a href="mailto:support@kalame.ai" className="underline">support@kalame.ai</a></div>
-              </div>
+                <div className="mt-1">برای سوالات: <a href="mailto:support@kalame.chat" className="underline">support@kalame.chat</a></div>
+              </div>  
             </div>
           </div>
           {/* Right: Main Card View (no nested cards) */}
@@ -303,7 +324,7 @@ const PhoneAuthFlow = () => {
             {/* On mobile, show TypingAnimation above card */}
             <div className="md:hidden w-full flex flex-col items-center animate-fade-in-up">
               <img src="/kalame-logo.png" alt="Logo" className="h-16 mb-2 animate-fade-in drop-shadow-lg" />
-              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","پشتیبانی ۲۴ ساعته","امنیت و سرعت بالا","تحلیل لحظه‌ای بازار"]} />
+              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","امنیت و سرعت بالا"]} />
             </div>
             {/* Main card: only one card, with correct border radius */}
             <div className="w-full max-w-md rounded-none md:rounded-l-none md:rounded-r-3x border-gray-200 dark:border-gray-800 p-8 animate-fade-in-up transition-all duration-500">

@@ -9,24 +9,13 @@ import ClientLayout from './ClientLayout';
 export const metadata: Metadata = {
   icons: [
     {
+      rel: 'icon',
+      type: 'image/png',
+      url: '/kalame-logo.png',
+    },
+    {
       rel: 'apple-touch-icon',
-      url: '/apple-touch-icon.png',
-    },
-    {
-      rel: 'icon',
-      type: 'image/png',
-      sizes: '32x32',
-      url: '/favicon-32x32.png',
-    },
-    {
-      rel: 'icon',
-      type: 'image/png',
-      sizes: '16x16',
-      url: '/favicon-16x16.png',
-    },
-    {
-      rel: 'icon',
-      url: '/favicon.ico',
+      url: '/kalame-logo.png',
     },
   ],
 };
@@ -50,10 +39,6 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <head>
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      </head>
       <body className='font-sans'>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ClientLayout>{children}</ClientLayout>

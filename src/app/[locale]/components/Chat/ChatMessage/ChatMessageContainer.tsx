@@ -26,7 +26,7 @@ const ChatMessageContainer: React.FC<ChatMessageContainerProps & { children?: Re
   }, [messages]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col mb-14 md:mb-0 p-2 md:mr-10 font-sans">
+    <div className="flex-1 min-h-0 flex flex-col md:mb-0 p-2 md:mr-10 font-sans">
       {messages.map((message: Message) => {
         const messageKey = `message-${message.id}`;
         return (
