@@ -17,17 +17,33 @@ const isApiRoute = createRoutesMatcher([
 
 const isProtectedRoute = (request: NextRequest) => {
   const path = request.nextUrl.pathname;
-  // Do NOT protect the root ("/" or "/fa" etc.)
-  // Protect all other subpages
-  // Example: /app, /image, /voice, /voice-to-text, etc.
-  const localeMatch = path.match(/^\/(\w{2})(?:\/(.*))?$/);
-  if (path === '/' || (localeMatch && (!localeMatch[2] || localeMatch[2] === ''))) {
+  
+  // Define protected paths explicitly - add all your protected routes here
+  const protectedPaths = [
+    '/image',
+    '/text-to-voice',
+    '/voice',
+    '/voice-to-text',
+    '/app'
+  ];
+  
+  // Check if the path (without locale) matches any protected path
+  const isProtected = protectedPaths.some(protectedPath => {
+    // Check both with and without locale prefix
+    return path.endsWith(protectedPath) || 
+           path.match(new RegExp(`^\\/\\w{2}${protectedPath}(?:\\/|$)`));
+  });
+  
+  if (!isProtected) {
     return false;
   }
+  
   // Exclude auth pages
   if (isAuthPage(request)) return false;
+  
   // Exclude API routes
   if (isApiRoute(request) || isAuthEndpoint(request)) return false;
+  
   return true;
 };
 
@@ -56,35 +72,46 @@ export default async function middleware(
 
   // Handle protected routes
   if (isProtectedRoute(request)) {
-    if (!token) {
+    // Check if token exists and is valid
+    if (!token || !token.accessToken) {
       // Extract locale from path - matches patterns like /fa/image, /en/text-to-voice, etc.
       const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
       const locale = localeMatch ? `/${localeMatch[1]}` : '';
       
-      // Get the base URL from environment or use a fallback from headers
+      // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
       const baseUrl = process.env.NEXTAUTH_URL || 
-                     `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host')}`;
+                     `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
       
-      // Create the sign-in URL with the correct domain
+      // Create the sign-in URL with the correct domain and protocol
       const signInUrl = new URL(`${locale}/auth`, baseUrl);
       signInUrl.searchParams.set('callbackUrl', request.url);
+      
+      // Ensure we're using HTTPS in production
+      if (process.env.NODE_ENV === 'production') {
+        signInUrl.protocol = 'https:';
+      }
       
       return NextResponse.redirect(signInUrl);
     }
   }
 
   // Handle auth pages
-  if (isAuthPage(request) && token) {
+  if (isAuthPage(request) && token && token.accessToken) {
     // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
     const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
     const locale = localeMatch ? `/${localeMatch[1]}` : '';
     
-    // Get the base URL from environment or use a fallback from headers
+    // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
     const baseUrl = process.env.NEXTAUTH_URL || 
-                   `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host')}`;
+                   `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
     
-    // Create the app URL with the correct domain
+    // Create the app URL with the correct domain and protocol
     const appUrl = new URL(`${locale}/`, baseUrl);
+    
+    // Ensure we're using HTTPS in production
+    if (process.env.NODE_ENV === 'production') {
+      appUrl.protocol = 'https:';
+    }
     
     return NextResponse.redirect(appUrl);
   }
