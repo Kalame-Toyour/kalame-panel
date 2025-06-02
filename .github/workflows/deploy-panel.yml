@@ -1,4 +1,4 @@
-name: Validate and Deploy Frontend to Servers 
+name: Validate and Deploy Frontend to Servers
 
 on:
   push:
@@ -31,14 +31,11 @@ jobs:
         run: npm run build
 
   deploy:
-    name: Deploy to Servers
+    name: Deploy to Servers via Git Pull
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
       - name: Set up SSH Key and Known Hosts
         run: |
           mkdir -p ~/.ssh
@@ -47,24 +44,70 @@ jobs:
           ssh-keyscan -H 91.99.111.83 >> ~/.ssh/known_hosts
           ssh-keyscan -H 49.12.75.136 >> ~/.ssh/known_hosts
 
-      - name: Sync Project to Server 1
+      - name: Deploy to Server 1
         run: |
-          rsync -avz --exclude=".git" -e "ssh -i ~/.ssh/id_ed25519" ./ root@91.99.111.83:/home/kalame/kalame-panel
-
           ssh -i ~/.ssh/id_ed25519 root@91.99.111.83 << 'EOF'
             cd /home/kalame/kalame-panel
+
+            if [ ! -d ".git" ]; then
+              git clone git@github.com:Kalame-Toyour/kalame-panel.git . 
+            fi
+
+            git reset --hard
+            git clean -fd
+            git pull origin main
+
+            echo "DB_PASSWORD=${DB_PASSWORD}" > .env.production
+            echo "DB_NAME=${DB_NAME}" >> .env.production
+            echo "DB_USER=${DB_USER}" >> .env.production
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env.production
+            echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env.production
+            echo "TIME_ZONE=${TIME_ZONE}" >> .env.production
+            echo "COINGECKO_API_KEYS=${COINGECKO_API_KEYS}" >> .env.production
+
             npm install
             npm run build
             pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
           EOF
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          TIME_ZONE: ${{ secrets.TIME_ZONE }}
+          COINGECKO_API_KEYS: ${{ secrets.COINGECKO_API_KEYS }}
 
-      - name: Sync Project to Server 2
+      - name: Deploy to Server 2
         run: |
-          rsync -avz --exclude=".git" -e "ssh -i ~/.ssh/id_ed25519" ./ root@49.12.75.136:/home/kalame/kalame-panel
-
           ssh -i ~/.ssh/id_ed25519 root@49.12.75.136 << 'EOF'
             cd /home/kalame/kalame-panel
+
+            if [ ! -d ".git" ]; then
+              git clone git@github.com:Kalame-Toyour/kalame-panel.git . 
+            fi
+
+            git reset --hard
+            git clean -fd
+            git pull origin main
+
+            echo "DB_PASSWORD=${DB_PASSWORD}" > .env.production
+            echo "DB_NAME=${DB_NAME}" >> .env.production
+            echo "DB_USER=${DB_USER}" >> .env.production
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" >> .env.production
+            echo "NEXTAUTH_URL=${NEXTAUTH_URL}" >> .env.production
+            echo "TIME_ZONE=${TIME_ZONE}" >> .env.production
+            echo "COINGECKO_API_KEYS=${COINGECKO_API_KEYS}" >> .env.production
+
             npm install
             npm run build
             pm2 restart kalame-panel || pm2 start npm --name kalame-panel -- start
           EOF
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          TIME_ZONE: ${{ secrets.TIME_ZONE }}
+          COINGECKO_API_KEYS: ${{ secrets.COINGECKO_API_KEYS }}
