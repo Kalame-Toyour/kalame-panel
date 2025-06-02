@@ -100,7 +100,7 @@ ${lesson.lesson_plan ? `طرح درس: ${lesson.lesson_plan}` : ''}
 `;
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash-preview-04-17',
+    model: 'gemini-2.5-flash-preview-05-20',
     generationConfig: {
       temperature: 0.6,
       maxOutputTokens: 8192,

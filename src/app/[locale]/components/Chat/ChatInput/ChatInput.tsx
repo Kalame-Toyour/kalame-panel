@@ -72,7 +72,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div
-      className="flex w-full flex-col items-center justify-center bg-transparent px-2 py-4 md:max-w-[100%] mx-auto"
+      className="flex w-full flex-col items-center justify-center bg-transparent  py-4 md:max-w-[100%] mx-auto"
       dir={locale === 'fa' ? 'rtl' : 'ltr'}
     >
       {/* Chat Input Bar */}

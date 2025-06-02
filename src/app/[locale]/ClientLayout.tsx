@@ -2,6 +2,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { LoadingProvider } from '@/contexts/LoadingContext';
+import { SidebarProvider } from '@/contexts/SidebarContext';
 import { ThemeProvider } from './components/ThemeProvider';
 import DynamicBackground from './components/DynamicBackground';
 import LayoutWrapper from './components/LayoutWrapper';
@@ -15,13 +16,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <LoadingProvider>
       <ThemeProvider defaultTheme="light" storageKey="theme">
-        <Providers>
-          <DynamicBackground>
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
-          </DynamicBackground>
-        </Providers>
+        <SidebarProvider>
+          <Providers>
+            <DynamicBackground>
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+            </DynamicBackground>
+          </Providers>
+        </SidebarProvider>
       </ThemeProvider>
     </LoadingProvider>
   );

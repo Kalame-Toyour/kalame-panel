@@ -1,5 +1,6 @@
 import type { Message } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 type ChatState = {
   messages: Message[];
@@ -41,8 +42,25 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
 
   const chatEndRef = useRef<null | HTMLDivElement>(null);
 
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const chatId = searchParams ? searchParams.get('chat') : null;
+  // Initialize with null and update in useEffect to avoid hydration mismatch
+  const [chatId, setChatId] = useState<string | null>(null);
+  
+  // Use Next.js hooks to detect URL changes
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
+  // Update chatId when URL changes
+  useEffect(() => {
+    const newChatId = searchParams.get('chat');
+    console.log('URL changed, new chatId:', newChatId);
+    setChatId(newChatId);
+    
+    // Reset state when chatId changes
+    if (newChatId) {
+      setIsInitializing(true);
+      setMessages([]);
+    }
+  }, [searchParams, pathname]);
 
   // Store initial message when routing
   useEffect(() => {
@@ -115,7 +133,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
           }
         } else {
           // Fetch existing chat history
-          const res = await fetch(`/api/chat/messages?chatCode=${encodeURIComponent(chatId)}&limit=20&order=asc`);
+          const res = await fetch(`/api/chat/messages?chatCode=${encodeURIComponent(chatId)}&limit=100&order=asc`);
           if (res.ok) {
             const data = await res.json();
             const history = data.chatHistory || [];

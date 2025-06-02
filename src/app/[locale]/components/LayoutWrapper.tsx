@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
+import { useSidebar } from '@/contexts/SidebarContext';
 import { useAuthToken } from '../hooks/useAuthToken';
 import { useProfileModal } from '../hooks/useProfileModal';
 import MobileHeader from './Layout/MobileHeader';
@@ -15,7 +16,7 @@ type LayoutWrapperProps = {
 
 const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebar();
   const [isClient, setIsClient] = useState(false);
   const locale = useLocale();
   const { showProfile, toggleProfile } = useProfileModal();

@@ -3,15 +3,17 @@
 import { useLoading } from '@/contexts/LoadingContext';
 import { motion } from 'framer-motion';
 import { Loader } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from './hooks/useAuth';
-import ChatInput from './components/Chat/ChatInput/ChatInput';
-import ChatMessageContainer from './components/Chat/ChatMessage/ChatMessageContainer';
-import { useChat } from './hooks/useChat';
-import fetchWithAuth from './components/utils/fetchWithAuth';
-import type { Message } from '@/types';
+import Image from 'next/image';
 import toast, { Toaster } from 'react-hot-toast';
+
+import ChatMessageContainer from './components/Chat/ChatMessage/ChatMessageContainer';
+import ChatInput from './components/Chat/ChatInput/ChatInput';
+import fetchWithAuth from './components/utils/fetchWithAuth';
+import { useSidebar } from '@/contexts/SidebarContext';
+import { useAuth } from './hooks/useAuth';
+import { useChat } from './hooks/useChat';
 
 const MainPage: React.FC = () => {
   const { startLoading, stopLoading } = useLoading();
@@ -19,11 +21,14 @@ const MainPage: React.FC = () => {
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chat');
   const { user } = useAuth();
+  const { isSidebarCollapsed } = useSidebar();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [isPendingMessageLoading, setIsPendingMessageLoading] = useState(false);
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     window.addEventListener('beforeunload', startLoading);
     document.addEventListener('visibilitychange', () => {
@@ -48,7 +53,6 @@ const MainPage: React.FC = () => {
     isInitializing,
     hasStartedChat,
     setHasStartedChat,
-    chatEndRef,
     handleChartRequest,
     handleCryptoTradeRequest,
     handleCryptoPortfolioRequest,
@@ -65,86 +69,57 @@ const MainPage: React.FC = () => {
     return () => {
       window.removeEventListener('clear-chat-messages', clearHandler);
     };
-  }, [setMessages, setHasStartedChat]);
+  }, [setMessages, setHasStartedChat, setInputText]);
 
   // Handle chat switching
   useEffect(() => {
-    const handleChatSelect = () => {
+    const handleChatSelect = (event: CustomEvent) => {
+      // Clear current state
       setIsSwitchingChat(true);
       setMessages([]);
+      
+      // Log the event for debugging
+      console.log('Chat history select event received:', event.detail);
     };
 
-    window.addEventListener('chat-history-select', handleChatSelect);
+    window.addEventListener('chat-history-select', handleChatSelect as EventListener);
     return () => {
-      window.removeEventListener('chat-history-select', handleChatSelect);
+      window.removeEventListener('chat-history-select', handleChatSelect as EventListener);
     };
   }, [setMessages]);
+
+  // Function to scroll to the bottom of the chat
+  const scrollToBottom = useCallback((delay = 100) => {
+    setTimeout(() => {
+      if (chatEndRef.current) {
+        // Force scroll to the very bottom
+        chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        
+        // Additional scroll to ensure we reach the bottom
+        setTimeout(() => {
+          window.scrollTo(0, document.body.scrollHeight);
+        }, 50);
+      }
+    }, delay);
+  }, [chatEndRef]);
 
   // Reset switching state when messages are loaded
   useEffect(() => {
     if (isSwitchingChat && messages.length > 0) {
       setIsSwitchingChat(false);
-      // Add a small delay to ensure the messages are rendered
-      setTimeout(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      scrollToBottom(150);
     }
-  }, [messages, isSwitchingChat, chatEndRef]);
-
-  // Handle pending message after chat creation
+  }, [messages, isSwitchingChat, scrollToBottom]);
+  
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    async function sendPendingMessage() {
-      if (pendingMessage && chatId) {
-        const userMessage: Message = {
-          id: Date.now().toString(),
-          text: pendingMessage,
-          sender: 'user',
-          type: 'text',
-        };
-        setMessages(prev => [...prev, userMessage]);
-        setHasStartedChat(true);
-        setIsPendingMessageLoading(true);
-        
-        try {
-          const response = await fetch('/api/chat/messages', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              chatId,
-              text: pendingMessage,
-              modelType: 'gpt-4',
-              subModel: 'gpt4_standard',
-            }),
-          });
-          
-          const data = await response.json();
-          if (response.ok && data.success) {
-            const aiMessage: Message = {
-              id: (Date.now() + 1).toString(),
-              text: data.response,
-              sender: 'ai',
-              type: 'text',
-            };
-            setMessages(prev => [...prev, aiMessage]);
-          }
-        } catch (error) {
-          console.error('Error sending pending message:', error);
-        } finally {
-          setIsPendingMessageLoading(false);
-          setPendingMessage(null);
-        }
-      }
+    if (messages.length > 0 && !isSwitchingChat) {
+      scrollToBottom(100);
     }
+  }, [messages, isSwitchingChat, scrollToBottom]);
 
-    sendPendingMessage();
-  }, [pendingMessage, chatId, setMessages, setHasStartedChat]);
-
-  // Custom handleSend to support chat creation and navigation
-  const handleSend = async (text?: string) => {
+   // Custom handleSend to support chat creation and navigation
+   const handleSend = useCallback(async (text?: string) => {
     if (!user) {
       toast.success('برای گفت وگو با کلمه باید وارد حساب کاربری خود بشوید');
       setTimeout(() => {
@@ -168,9 +143,10 @@ const MainPage: React.FC = () => {
             setPendingMessage(sendText);
             setInputText('');
             await router.replace(`?chat=${data.chat}`);
-            if (typeof window !== 'undefined') {
+            // Use useEffect for window operations instead of conditional checks
+            setTimeout(() => {
               window.dispatchEvent(new CustomEvent('chat-history-refresh', { detail: { chatId: data.chat } }));
-            }
+            }, 0);
           }
         } else {
           console.error('createChat API failed', res.status, await res.text());
@@ -183,8 +159,29 @@ const MainPage: React.FC = () => {
     } else {
       baseHandleSend(sendText);
       setInputText('');
+      // Scroll to bottom after sending a message
+      scrollToBottom(200);
     }
-  };
+  }, [user, inputText, chatId, router, setIsCreatingChat, setPendingMessage, setInputText, baseHandleSend, scrollToBottom]);
+
+  // Handle pending message after chat creation
+  useEffect(() => {
+    if (pendingMessage && chatId && !isCreatingChat && !isLoading) {
+      setIsPendingMessageLoading(true);
+      handleSend(pendingMessage)
+        .catch((error) => {
+          console.error('Error sending pending message:', error);
+          // Authentication errors will be handled by fetchWithAuth
+          // which will redirect to auth page if needed
+        })
+        .finally(() => {
+          setPendingMessage(null);
+          setIsPendingMessageLoading(false);
+        });
+    }
+  }, [pendingMessage, chatId, isCreatingChat, isLoading, handleSend]);
+
+ 
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -223,75 +220,74 @@ const MainPage: React.FC = () => {
     );
   }
 
+  
   return (
-    <div className="relative flex flex-col h-full min-h-screen max-h-screen p-0 font-sans">
+    <div className="flex flex-col h-screen w-full font-sans bg-white dark:bg-gray-900 overflow-hidden">
       <Toaster position="top-center" reverseOrder={false} />
-      {/* Messages container */}
-      <div
-        className={
-          shouldShowEmptyState
-            ? 'flex flex-col items-center justify-center h-full w-full flex-grow-0 overflow-hidden'
-            : 'flex-1 flex flex-col overflow-y-auto px-0 mx-0 md:mx-10 min-h-0'
-        }
-        style={!shouldShowEmptyState ? { maxHeight: 'calc(100vh - 160px)' } : {}}
-      >
-        {shouldShowEmptyState ? (
-          <div className="flex flex-col items-center justify-center h-full w-full">
-            <div className="flex flex-col items-center gap-2 md:mb-4">
-              <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-gradient-to-tr from-blue-300 to-blue-100 shadow-lg relative overflow-visible">
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="block w-full h-full rounded-full animate-wave-ring bg-gradient-to-tr from-blue-400/40 to-blue-200/10 dark:from-blue-500/40 dark:to-blue-900/10"></span>
-                </span>
-                <img src="/kalame-logo.png" alt="Logo" className="size-12 rounded-full object-contain relative z-10" />
+      {/* Main content area with proper overflow handling */}
+      <div className="flex-1 flex flex-col relative overflow-hidden">
+        {/* Scrollable message container */}
+        <div className="absolute inset-0 overflow-y-auto  px-0 mx-0 md:mx-10">
+          {shouldShowEmptyState ? (
+            <div className="flex flex-col items-center justify-center h-full w-full">
+              <div className="flex flex-col items-center gap-2 md:mb-4">
+                <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-gradient-to-tr from-blue-300 to-blue-100 shadow-lg relative overflow-visible">
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="block w-full h-full rounded-full animate-wave-ring bg-gradient-to-tr from-blue-400/40 to-blue-200/10 dark:from-blue-500/40 dark:to-blue-900/10"></span>
+                  </span>
+                  <Image src="/kalame-logo.png" alt="Logo" width={48} height={48} className="size-12 rounded-full object-contain relative z-10" />
+                </div>
+                <h2 className="text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">چطور می تونم کمکت کنم؟</h2>
+                <p className="text-center text-base text-gray-500 dark:text-gray-400">هر سوالی که داری سوال داری بپرس</p>
               </div>
-              <h2 className="text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">چطور می تونم کمکت کنم؟</h2>
-              <p className="text-center text-base text-gray-500 dark:text-gray-400">هر سوالی که داری سوال داری بپرس</p>
             </div>
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col min-h-full"
-          >
-            <div className="flex-1 flex flex-col ">
-              <ChatMessageContainer
-                messages={messages}
-                copyToClipboard={copyToClipboard}
-                onSelectAnswer={handleSelectAnswer}
-              >
-                {(isLoading || isPendingMessageLoading) && (
-                  <div className="flex items-center justify-center py-4">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                      className="relative"
-                    >
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
-                      <Loader className="relative size-6 text-blue-500" />
-                    </motion.div>
-                  </div>
-                )}
-              </ChatMessageContainer>
-              <div ref={chatEndRef} />
-            </div>
-          </motion.div>
-        )}
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col min-h-full"
+            >
+              <div className="flex-1 flex flex-col mt-14 md:mt-2">
+                <ChatMessageContainer
+                  messages={messages}
+                  copyToClipboard={copyToClipboard}
+                  onSelectAnswer={handleSelectAnswer}
+                >
+                  {(isLoading || isPendingMessageLoading) && (
+                    <div className="flex items-center justify-center py-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                        className="relative"
+                      >
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
+                        <Loader className="relative size-6 text-blue-500" />
+                      </motion.div>
+                    </div>
+                  )}
+                </ChatMessageContainer>
+                <div ref={chatEndRef} className="h-[120px] md:h-[140px]" id="chat-end-anchor" />
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
-      {/* ChatInput always at the bottom again*/}
-      <div className="w-full max-w-2xl md:max-w-[84%] mx-auto px-2 pt-0 mb-1 md:mb-0 bg-transparent z-10 fixed bottom-0 left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto">
-        <ChatInput
-          inputText={inputText}
-          setInputText={setInputText}
-          handleSend={handleSend}
-          isLoading={isLoading || isCreatingChat || isPendingMessageLoading}
-          onChartRequest={handleChartRequest}
-          onCryptoTradeRequest={handleCryptoTradeRequest}
-          onCryptoPortfolioRequest={handleCryptoPortfolioRequest}
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
-        />
+      {/* Fixed ChatInput at the bottom */}
+      <div className="fixed bottom-0 left-0 right-0 w-full px-2  z-20 pt-2 pb-2">
+        <div className={`max-w-2xl md:max-w-[84%] mx-auto ${isSidebarCollapsed ? 'md:mr-[150px]' : 'md:mr-[400px] md:ml-[120px]'}`}>
+          <ChatInput
+            inputText={inputText}
+            setInputText={setInputText}
+            handleSend={handleSend}
+            isLoading={isLoading || isCreatingChat || isPendingMessageLoading}
+            onChartRequest={handleChartRequest}
+            onCryptoTradeRequest={handleCryptoTradeRequest}
+            onCryptoPortfolioRequest={handleCryptoPortfolioRequest}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+          />
+        </div>
       </div>
     </div>
   );

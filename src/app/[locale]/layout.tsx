@@ -47,29 +47,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-// --- SERVER LAYOUT (in a separate file, e.g. layout.server.tsx) ---
-// import type { Metadata } from 'next';
-// import { routing } from '@/libs/i18nNavigation';
-// import { notFound } from 'next/navigation';
-// import { NextIntlClientProvider } from 'next-intl';
-// import { getMessages, setRequestLocale } from 'next-intl/server';
-// import '../globals.css';
-//
-// export const metadata: Metadata = { ... };
-//
-// export function generateStaticParams() { ... }
-//
-// export default async function RootLayout({ children, params }) {
-//   ...
-//   return (
-//     <html ...>
-//       <head>...</head>
-//       <body>
-//         <NextIntlClientProvider ...>
-//           <ClientLayout>{children}</ClientLayout>
-//         </NextIntlClientProvider>
-//       </body>
-//     </html>
-//   );
-// }

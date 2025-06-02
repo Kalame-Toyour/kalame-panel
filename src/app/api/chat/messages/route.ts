@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       modelType: body.modelType || 'gpt-4',
       subModel: 'gpt4_standard',
     };
-    console.log('Outgoing request to external API:', outgoingBody);
     
     const response = await fetch(`${AppConfig.baseApiUrl}/process-text`, {
       method: 'POST',
@@ -68,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     const chatCode = req.nextUrl.searchParams.get('chatCode');
     const limit = req.nextUrl.searchParams.get('limit') || '20';
-    const order = req.nextUrl.searchParams.get('order') || 'asc';
+    const order = req.nextUrl.searchParams.get('order') || 'desc';
 
     if (!chatCode) {
       return NextResponse.json({ error: 'Missing chatCode parameter' }, { status: 400 });

@@ -58,8 +58,15 @@ export default async function middleware(
   if (isProtectedRoute(request)) {
     if (!token) {
       const locale = request.nextUrl.pathname.match(/(\/.*)\/app/)?.at(1) ?? '';
-      const signInUrl = new URL(`${locale}/auth`, request.url);
+      
+      // Get the base URL from environment or use a fallback from headers
+      const baseUrl = process.env.NEXTAUTH_URL || 
+                     `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host')}`;
+      
+      // Create the sign-in URL with the correct domain
+      const signInUrl = new URL(`${locale}/auth`, baseUrl);
       signInUrl.searchParams.set('callbackUrl', request.url);
+      
       return NextResponse.redirect(signInUrl);
     }
   }
@@ -67,7 +74,14 @@ export default async function middleware(
   // Handle auth pages
   if (isAuthPage(request) && token) {
     const locale = request.nextUrl.pathname.match(/(\/.*)\/auth/)?.at(1) ?? '';
-    const appUrl = new URL(`${locale}/`, request.url);
+    
+    // Get the base URL from environment or use a fallback from headers
+    const baseUrl = process.env.NEXTAUTH_URL || 
+                   `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host')}`;
+    
+    // Create the app URL with the correct domain
+    const appUrl = new URL(`${locale}/`, baseUrl);
+    
     return NextResponse.redirect(appUrl);
   }
 

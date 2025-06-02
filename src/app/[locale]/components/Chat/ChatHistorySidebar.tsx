@@ -1,5 +1,6 @@
 import React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import ClientOnly from '../ClientOnly';
 import dayjs from 'dayjs'
 import jalaliday from 'jalali-plugin-dayjs'
 import 'dayjs/locale/fa'
@@ -65,10 +66,16 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
     if (onChatChange) {
       onChatChange();
     }
-    router.push(`/?chat=${chatId}`);
-    if (typeof window !== 'undefined') {
+    // First dispatch the event to clear the current chat state
+    setTimeout(() => {
       window.dispatchEvent(new CustomEvent('chat-history-select', { detail: { chatId } }));
-    }
+    }, 0);
+    
+    // Then navigate to the new chat after a small delay to allow state reset
+    setTimeout(() => {
+      router.push(`/?chat=${chatId}`);
+    }, 50);
+    
     if (onChatSelect) onChatSelect(chatId);
   };
 
@@ -121,9 +128,9 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
                       {chat.title || chat.text?.slice(0, 30) || 'بدون عنوان'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-right">
-                      {typeof window !== 'undefined'
-                        ? dayjs(chat.date).locale('fa').format('HH:mm')
-                        : ''}
+                      <ClientOnly>
+                        {dayjs(chat.date).locale('fa').format('HH:mm')}
+                      </ClientOnly>
                     </p>
                   </button>
                 </li>
