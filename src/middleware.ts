@@ -57,7 +57,9 @@ export default async function middleware(
   // Handle protected routes
   if (isProtectedRoute(request)) {
     if (!token) {
-      const locale = request.nextUrl.pathname.match(/(\/.*)\/app/)?.at(1) ?? '';
+      // Extract locale from path - matches patterns like /fa/image, /en/text-to-voice, etc.
+      const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
+      const locale = localeMatch ? `/${localeMatch[1]}` : '';
       
       // Get the base URL from environment or use a fallback from headers
       const baseUrl = process.env.NEXTAUTH_URL || 
@@ -73,7 +75,9 @@ export default async function middleware(
 
   // Handle auth pages
   if (isAuthPage(request) && token) {
-    const locale = request.nextUrl.pathname.match(/(\/.*)\/auth/)?.at(1) ?? '';
+    // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
+    const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
+    const locale = localeMatch ? `/${localeMatch[1]}` : '';
     
     // Get the base URL from environment or use a fallback from headers
     const baseUrl = process.env.NEXTAUTH_URL || 
