@@ -73,30 +73,26 @@ export default async function middleware(
   // Handle protected routes
   if (isProtectedRoute(request)) {
     // Check if token exists and is valid
-    if (!token || !token.accessToken) {
-      // Extract locale from path - matches patterns like /fa/image, /en/text-to-voice, etc.
-      const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
-      const locale = localeMatch ? `/${localeMatch[1]}` : '';
-      
+    if (!token || !token.accessToken || (token.expiresAt && Date.now() > token.expiresAt)) {
       // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
       const baseUrl = process.env.NEXTAUTH_URL || 
                      `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
       
       // Create the sign-in URL with the correct domain and protocol
-      const signInUrl = new URL(`${baseUrl}${locale}/auth`);
-      signInUrl.searchParams.set('callbackUrl', request.url);
+      const signInUrl = new URL(`${baseUrl}/auth`);
       
-      // Ensure we're using HTTPS in production
-      if (process.env.NODE_ENV === 'production') {
-        signInUrl.protocol = 'https:';
-      }
+      // Set callbackUrl to the current URL but with the correct domain
+      const callbackUrl = new URL(request.url);
+      callbackUrl.host = new URL(baseUrl).host;
+      callbackUrl.protocol = new URL(baseUrl).protocol;
+      signInUrl.searchParams.set('callbackUrl', callbackUrl.toString());
       
       return NextResponse.redirect(signInUrl);
     }
   }
 
   // Handle auth pages
-  if (isAuthPage(request) && token && token.accessToken) {
+  if (isAuthPage(request) && token && token.accessToken && (!token.expiresAt || Date.now() < token.expiresAt)) {
     // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
     const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
     const locale = localeMatch ? `/${localeMatch[1]}` : '';
@@ -107,11 +103,6 @@ export default async function middleware(
     
     // Create the app URL with the correct domain and protocol
     const appUrl = new URL(`${baseUrl}${locale}/`);
-    
-    // Ensure we're using HTTPS in production
-    if (process.env.NODE_ENV === 'production') {
-      appUrl.protocol = 'https:';
-    }
     
     return NextResponse.redirect(appUrl);
   }
