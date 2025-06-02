@@ -58,7 +58,7 @@ const isAuthEndpoint = createRoutesMatcher([
 ]);
 
 // Helper function to validate token
-const isValidToken = (token: any) => {
+const isValidToken = (token: { accessToken?: string; expiresAt?: number } | null) => {
   if (!token) return false;
   if (!token.accessToken) return false;
   if (token.expiresAt && Date.now() > token.expiresAt) return false;
@@ -73,50 +73,57 @@ export default async function middleware(
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === 'production',
+    });
 
-  // Handle protected routes
-  if (isProtectedRoute(request)) {
-    // Check if token is valid
-    if (!isValidToken(token)) {
+    // Handle protected routes
+    if (isProtectedRoute(request)) {
+      // Check if token is valid
+      if (!isValidToken(token)) {
+        // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
+        const baseUrl = process.env.NEXTAUTH_URL || 
+                       `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
+        
+        // Create the sign-in URL with the correct domain and protocol
+        const signInUrl = new URL(`${baseUrl}/auth`);
+        
+        // Set callbackUrl to the current URL but with the correct domain
+        const callbackUrl = new URL(request.url);
+        callbackUrl.host = new URL(baseUrl).host;
+        callbackUrl.protocol = new URL(baseUrl).protocol;
+        signInUrl.searchParams.set('callbackUrl', callbackUrl.toString());
+        
+        return NextResponse.redirect(signInUrl);
+      }
+    }
+
+    // Handle auth pages
+    if (isAuthPage(request) && isValidToken(token)) {
+      // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
+      const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
+      const locale = localeMatch ? `/${localeMatch[1]}` : '';
+      
       // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
       const baseUrl = process.env.NEXTAUTH_URL || 
                      `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
       
-      // Create the sign-in URL with the correct domain and protocol
-      const signInUrl = new URL(`${baseUrl}/auth`);
+      // Create the app URL with the correct domain and protocol
+      const appUrl = new URL(`${baseUrl}${locale}/`);
       
-      // Set callbackUrl to the current URL but with the correct domain
-      const callbackUrl = new URL(request.url);
-      callbackUrl.host = new URL(baseUrl).host;
-      callbackUrl.protocol = new URL(baseUrl).protocol;
-      signInUrl.searchParams.set('callbackUrl', callbackUrl.toString());
-      
-      return NextResponse.redirect(signInUrl);
+      return NextResponse.redirect(appUrl);
     }
-  }
 
-  // Handle auth pages
-  if (isAuthPage(request) && isValidToken(token)) {
-    // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
-    const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
-    const locale = localeMatch ? `/${localeMatch[1]}` : '';
-    
-    // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
-    const baseUrl = process.env.NEXTAUTH_URL || 
-                   `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
-    
-    // Create the app URL with the correct domain and protocol
-    const appUrl = new URL(`${baseUrl}${locale}/`);
-    
-    return NextResponse.redirect(appUrl);
+    // Apply internationalization middleware
+    return intlMiddleware(request);
+  } catch (error) {
+    console.error('Middleware error:', error);
+    // In case of error, allow the request to proceed
+    return intlMiddleware(request);
   }
-
-  // Apply internationalization middleware
-  return intlMiddleware(request);
 }
 
 export const config = {
