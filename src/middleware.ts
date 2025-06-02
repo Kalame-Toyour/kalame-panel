@@ -83,7 +83,7 @@ export default async function middleware(
                      `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
       
       // Create the sign-in URL with the correct domain and protocol
-      const signInUrl = new URL(`${locale}/auth`, baseUrl);
+      const signInUrl = new URL(`${baseUrl}${locale}/auth`);
       signInUrl.searchParams.set('callbackUrl', request.url);
       
       // Ensure we're using HTTPS in production
@@ -106,7 +106,7 @@ export default async function middleware(
                    `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
     
     // Create the app URL with the correct domain and protocol
-    const appUrl = new URL(`${locale}/`, baseUrl);
+    const appUrl = new URL(`${baseUrl}${locale}/`);
     
     // Ensure we're using HTTPS in production
     if (process.env.NODE_ENV === 'production') {
