@@ -57,6 +57,14 @@ const isAuthEndpoint = createRoutesMatcher([
   '/api/auth(.*)',
 ]);
 
+// Helper function to validate token
+const isValidToken = (token: any) => {
+  if (!token) return false;
+  if (!token.accessToken) return false;
+  if (token.expiresAt && Date.now() > token.expiresAt) return false;
+  return true;
+};
+
 export default async function middleware(
   request: NextRequest,
 ) {
@@ -72,8 +80,8 @@ export default async function middleware(
 
   // Handle protected routes
   if (isProtectedRoute(request)) {
-    // Check if token exists and is valid
-    if (!token || !token.accessToken || (token.expiresAt && Date.now() > token.expiresAt)) {
+    // Check if token is valid
+    if (!isValidToken(token)) {
       // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
       const baseUrl = process.env.NEXTAUTH_URL || 
                      `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
@@ -92,7 +100,7 @@ export default async function middleware(
   }
 
   // Handle auth pages
-  if (isAuthPage(request) && token && token.accessToken && (!token.expiresAt || Date.now() < token.expiresAt)) {
+  if (isAuthPage(request) && isValidToken(token)) {
     // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
     const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
     const locale = localeMatch ? `/${localeMatch[1]}` : '';
