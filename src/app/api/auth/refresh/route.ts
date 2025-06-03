@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the backend API to refresh the token
-    const response = await fetch(`${AppConfig.authApiUrl}/refresh-token`, {
+    const response = await fetch(`${AppConfig.authApiUrl}/refreshToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),

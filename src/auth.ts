@@ -122,7 +122,7 @@ export const { auth, handlers: { GET, POST }, signIn, signOut } = NextAuth(confi
 // Helper to refresh access token
 async function refreshAccessToken(token: any) {
   try {
-    const response = await fetch(`${AppConfig.authApiUrl}/refresh-token`, {
+    const response = await fetch(`${AppConfig.authApiUrl}/refreshToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: token.refreshToken }),

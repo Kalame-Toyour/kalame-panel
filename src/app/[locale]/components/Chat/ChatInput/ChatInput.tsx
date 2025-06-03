@@ -10,6 +10,7 @@ const DEFAULT_ICON = <Bot size={18} />;
 
 type LanguageModel = {
   name: string;
+  shortName: string;
   icon?: string;
   tokenCost?: number;
 };
@@ -32,7 +33,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setIsRTL(checkTextDirection(inputText, isRTL));
   }, [inputText, isRTL]);
 
-  // Fetch models from API when dropdown is opened and not already loaded
+  // Fetch models from API on mount (so icon and model are available before dropdown)
+  // useEffect(() => {
+  //   if (models.length === 0 && !modelsLoading) {
+  //     setModelsLoading(true);
+  //     fetch('/api/language-models')
+  //       .then(res => res.json())
+  //       .then(data => {
+  //         if (Array.isArray(data.models) && data.models.length > 0) {
+  //           setModels(data.models);
+  //           // If selectedModel is not set or not in the new list, set to first model
+  //           if (!selectedModel || !data.models.some((m: LanguageModel) => m.shortName === selectedModel)) {
+  //             setSelectedModel(data.models[0].shortName);
+  //           }
+  //         }
+  //       })
+  //       .finally(() => setModelsLoading(false));
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
+
+  // Fetch models again if dropdown is opened and not already loaded (for robustness)
   useEffect(() => {
     if (showModelDropdown && models.length === 0 && !modelsLoading) {
       setModelsLoading(true);
@@ -41,8 +62,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         .then(data => {
           if (Array.isArray(data.models) && data.models.length > 0) {
             setModels(data.models);
-            if (!selectedModel) {
-              setSelectedModel(data.models[0].name);
+            if (!selectedModel || !data.models.some((m: LanguageModel) => m.shortName === selectedModel)) {
+              setSelectedModel(data.models[0].shortName);
             }
           }
         })
@@ -70,6 +91,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Helper to get the selected model object
+  const selectedModelObj = models.find((m: LanguageModel) => m.shortName === selectedModel);
+
   return (
     <div
       className="flex w-full flex-col items-center justify-center bg-transparent  py-4 md:max-w-[100%] mx-auto"
@@ -82,7 +106,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         {/* Model Select Dropdown - inside input bar, left in RTL, right in LTR */}
         {locale === 'fa' && (
           <div className="relative model-dropdown-container">
-            <button
+            {/* <button
               className="flex items-center justify-center w-12 h-8 rounded-full border border-gray-400 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all focus:outline-none p-0"
               onClick={() => setShowModelDropdown(v => !v)}
               tabIndex={0}
@@ -91,12 +115,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
               style={{ lineHeight: 0 }}
             >
               <span className="flex items-center justify-center w-5 h-5">
-                {models.find((m: LanguageModel) => m.name === selectedModel)?.icon ? (
-                  <img src={models.find((m: LanguageModel) => m.name === selectedModel)?.icon} alt="icon" className="w-5 h-5 object-contain" />
-                ) :  <img src="https://img.icons8.com/color/512/chatgpt.png" alt="icon" className="w-5 h-5 object-contain" />}
+                {selectedModelObj?.icon ? (
+                  <img src={selectedModelObj.icon} alt="icon" className="w-5 h-5 object-contain" />
+                ) : <img src="https://img.icons8.com/color/512/chatgpt.png" alt="icon" className="w-5 h-5 object-contain" />}
               </span>
               <ChevronDown size={15} className="ml-0.5 rtl:mr-0.5 text-gray-400 dark:text-gray-500" />
-            </button>
+            </button> */}
             {showModelDropdown && (
               <div className="absolute z-50 mt-2 w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg right-0 bottom-full mb-2">
                 <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
@@ -110,10 +134,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   ) : (
                     models.map((model: LanguageModel) => (
                       <button
-                        key={model.name}
-                        className={`flex items-center w-full px-3 py-2 gap-2 text-sm rounded-lg transition-all text-right text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.name ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
+                        key={model.shortName}
+                        className={`flex items-center w-full px-3 py-2 gap-2 text-sm rounded-lg transition-all text-right text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.shortName ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
                         onClick={() => {
-                          setSelectedModel(model.name);
+                          setSelectedModel(model.shortName);
                           setShowModelDropdown(false);
                         }}
                         type="button"
@@ -152,8 +176,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
               style={{ lineHeight: 0 }}
             >
               <span className="flex items-center justify-center w-5 h-5">
-                {models.find((m: LanguageModel) => m.name === selectedModel)?.icon ? (
-                  <img src={models.find((m: LanguageModel) => m.name === selectedModel)?.icon} alt="icon" className="w-5 h-5 object-contain" />
+                {selectedModelObj?.icon ? (
+                  <img src={selectedModelObj.icon} alt="icon" className="w-5 h-5 object-contain" />
                 ) : DEFAULT_ICON}
               </span>
               <ChevronDown size={15} className="mr-1 rtl:ml-1 text-gray-400 dark:text-gray-500" />
@@ -171,10 +195,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                   ) : (
                     models.map((model: LanguageModel) => (
                       <button
-                        key={model.name}
-                        className={`flex items-center w-full px-3 py-2 gap-2 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-all text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.name ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
+                        key={model.shortName}
+                        className={`flex items-center w-full px-3 py-2 gap-2 text-gray-700 dark:text-gray-300 text-sm rounded-lg transition-all text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${selectedModel === model.shortName ? 'bg-blue-50 dark:bg-blue-900 font-bold' : ''}`}
                         onClick={() => {
-                          setSelectedModel(model.name);
+                          setSelectedModel(model.shortName);
                           setShowModelDropdown(false);
                         }}
                         type="button"

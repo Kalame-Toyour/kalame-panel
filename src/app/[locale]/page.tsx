@@ -56,7 +56,7 @@ const MainPage: React.FC = () => {
     handleChartRequest,
     handleCryptoTradeRequest,
     handleCryptoPortfolioRequest,
-  } = useChat();
+  } = useChat({ modelType: selectedModel });
 
   // Listen for clear-chat-messages event
   useEffect(() => {
@@ -157,12 +157,12 @@ const MainPage: React.FC = () => {
         setIsCreatingChat(false);
       }
     } else {
-      baseHandleSend(sendText);
+      baseHandleSend(sendText, selectedModel);
       setInputText('');
       // Scroll to bottom after sending a message
       scrollToBottom(200);
     }
-  }, [user, inputText, chatId, router, setIsCreatingChat, setPendingMessage, setInputText, baseHandleSend, scrollToBottom]);
+  }, [user, inputText, chatId, router, setIsCreatingChat, setPendingMessage, setInputText, baseHandleSend, scrollToBottom, selectedModel]);
 
   // Handle pending message after chat creation
   useEffect(() => {

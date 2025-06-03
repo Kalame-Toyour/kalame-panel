@@ -17,7 +17,7 @@ type ChatState = {
   showCompactInsights: boolean;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
-  handleSend: (text?: string) => Promise<void>;
+  handleSend: (text?: string, modelTypeOverride?: string) => Promise<void>;
   handleSelectAnswer: (selectedAnswer: string) => void;
   handleStartChat: () => void;
   handleChartRequest: (symbol: string) => void;
@@ -26,7 +26,7 @@ type ChatState = {
   chatEndRef: React.RefObject<HTMLDivElement>;
 };
 
-export const useChat = (options?: { pendingMessage?: string, clearPendingMessage?: () => void }): ChatState => {
+export const useChat = (options?: { pendingMessage?: string, clearPendingMessage?: () => void, modelType?: string }): ChatState => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -242,7 +242,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     );
   }, [hasStartedChat, handleStartChat]);
 
-  const handleSend = useCallback(async (text: string = inputText) => {
+  const handleSend = useCallback(async (text: string = inputText, modelTypeOverride?: string) => {
     if (text.trim() === '' || !chatId) {
       return;
     }
@@ -265,11 +265,11 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include', // This ensures cookies are sent with the request
+        credentials: 'include',
         body: JSON.stringify({
           chatId,
           text,
-          modelType: 'gpt-4',
+          modelType: modelTypeOverride || options?.modelType || 'gpt-4',
           subModel: 'gpt4_standard',
         }),
       });
@@ -297,7 +297,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, chatId, handleStartChat]);
+  }, [inputText, chatId, handleStartChat, options?.modelType]);
 
   const handleSelectAnswer = useCallback((selectedAnswer: string) => {
     setMessages(prev => prev.map(msg =>
