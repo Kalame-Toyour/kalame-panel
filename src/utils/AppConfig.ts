@@ -8,8 +8,8 @@ export const AppConfig = {
   locales: ['fa', 'en', 'fr'],
   defaultLocale: 'fa',
   localePrefix,
-  baseApiUrl: 'https://kalameapi.techxpro.online/kariz',
-  authApiUrl: 'https://kalameapi.techxpro.online/auth',
-  authApiUrl2: 'https://kalameapi.techxpro.online/auth',
+  baseApiUrl: 'https://api.kalame.chat/kariz',
+  authApiUrl: 'https://api.kalame.chat/auth',
+  authApiUrl2: 'https://api.kalame.chat/auth',
   mediaBaseUrl: 'https://media.kalame.chat',
 };

@@ -69,6 +69,7 @@ const PhoneAuthFlow = () => {
         setUsePassword(false);
       } else if (data.message === 'IsExistUser') {
         setUsePassword(true);
+        if (loginWithCode) handleSendLoginCode()
       } else {
         toast.error('پاسخ نامعتبر از سرور');
         return;
