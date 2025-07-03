@@ -11,6 +11,15 @@ type ChatMessageRendererProps = {
   copyToClipboard: (text: string) => void;
 };
 
+// Helper to trim all leading and excessive blank lines (2 or more) anywhere in the markdown
+function trimAllExcessiveBlankLines(text: string): string {
+  // Remove all leading blank lines (newlines and spaces)
+  let cleaned = text.replace(/^[\s\r\n]+/, '');
+  // Replace 2+ consecutive newlines (with optional spaces) with a single newline
+  cleaned = cleaned.replace(/([\n\r][ \t]*){2,}/g, '\n');
+  return cleaned;
+}
+
 const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => {
   // Improved typewriter effect for AI streaming messages
   const [visibleText, setVisibleText] = useState(message.text)
@@ -97,6 +106,10 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
 
   const renderContent = () => {
     const mediaContent = renderMediaContent();
+    // Clean up all excessive blank lines for AI messages
+    const cleanedText = message.sender === 'ai'
+      ? trimAllExcessiveBlankLines(message.isStreaming ? visibleText : message.text)
+      : message.text
 
     return (
       <div className="space-y-4">
@@ -106,7 +119,19 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
           <div className="overflow-hidden whitespace-pre-wrap px-1 py-2">
             <ReactMarkdown
               components={{
-                p: (props) => <span {...props} />,
+                p: (props) => {
+                  // If the paragraph only contains a table, don't wrap it in a span
+                  const isOnlyTable = React.Children.toArray(props.children).some(
+                    (child) => {
+                      if (React.isValidElement(child)) {
+                        return child.type === 'table'
+                      }
+                      return false
+                    }
+                  )
+                  if (isOnlyTable) return <>{props.children}</>
+                  return <span {...props} />
+                },
                 br: () => <br />,
                 strong: (props) => (
                   <strong className="font-bold" {...props} />
@@ -128,11 +153,43 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
                     {children}
                   </a>
                 ),
+                table: ({ children, ...props }) => (
+                  <div className="overflow-x-auto my-2">
+                    <table className="min-w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100" {...props}>
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-blue-100 dark:bg-blue-900">
+                    {children}
+                  </thead>
+                ),
+                tbody: ({ children }) => (
+                  <tbody>
+                    {children}
+                  </tbody>
+                ),
+                tr: ({ children }) => (
+                  <tr className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                    {children}
+                  </tr>
+                ),
+                th: ({ children }) => (
+                  <th className="px-3 py-2 font-bold text-center border border-gray-300 dark:border-gray-700 bg-blue-50 dark:bg-blue-800 text-gray-900 dark:text-gray-100">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-2 text-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                    {children}
+                  </td>
+                ),
               }}
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
             >
-              {message.sender === 'ai' && message.isStreaming ? visibleText : message.text}
+              {cleanedText}
             </ReactMarkdown>
             {/* Streaming indicator */}
             {message.isStreaming && (

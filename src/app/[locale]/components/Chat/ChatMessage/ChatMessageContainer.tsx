@@ -17,6 +17,20 @@ const ChatMessageContainer: React.FC<ChatMessageContainerProps & { children?: Re
   const [lastStreaming, setLastStreaming] = useState(false);
 
   useEffect(() => {
+    // Always scroll to bottom if the last message is streaming (AI response growing)
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.isStreaming) {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+          inline: 'nearest',
+        });
+      }, 30);
+    }
+  }, [messages]);
+
+  useEffect(() => {
     // Find if the last message is streaming
     const lastMsg = messages[messages.length - 1];
     const isLastStreaming = !!lastMsg?.isStreaming;
