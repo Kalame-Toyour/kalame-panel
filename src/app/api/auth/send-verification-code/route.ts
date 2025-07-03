@@ -13,8 +13,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log(`Making request to: ${AppConfig.authApiUrl2}/sendVerificationCode`);
 
-    const response = await fetch(`${AppConfig.authApiUrl}/sendVerificationCode`, {
+    const response = await fetch(`${AppConfig.authApiUrl2}/sendVerificationCode`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

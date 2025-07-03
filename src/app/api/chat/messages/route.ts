@@ -87,6 +87,7 @@ export async function GET(req: NextRequest) {
     }
     
     const data = await apiRes.json();
+    console.log('Chat history data:', data);
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(

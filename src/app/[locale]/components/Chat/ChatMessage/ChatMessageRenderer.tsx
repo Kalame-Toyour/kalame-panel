@@ -1,9 +1,10 @@
 /* eslint-disable jsx-a11y/media-has-caption */
 import type { Message } from '@/types';
 import { isRTL } from '@/libs/textUtils';
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 type ChatMessageRendererProps = {
   message: Message;
@@ -11,6 +12,48 @@ type ChatMessageRendererProps = {
 };
 
 const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => {
+  // Improved typewriter effect for AI streaming messages
+  const [visibleText, setVisibleText] = useState(message.text)
+  const typingTimeout = useRef<NodeJS.Timeout | null>(null)
+  const prevTextRef = useRef('')
+  const currentIndexRef = useRef(0)
+
+  useEffect(() => {
+    // Only animate for AI streaming messages
+    if (message.sender === 'ai' && message.isStreaming) {
+      // If the text is reset (new message), start from 0
+      if (prevTextRef.current !== message.text) {
+        // If text shrank, reset
+        if (message.text.length < prevTextRef.current.length) {
+          setVisibleText('')
+          currentIndexRef.current = 0
+        }
+        prevTextRef.current = message.text
+      }
+      // Animate only the new characters with faster timing
+      function typeNext() {
+        if (currentIndexRef.current < message.text.length) {
+          setVisibleText(message.text.slice(0, currentIndexRef.current + 1))
+          currentIndexRef.current++
+          typingTimeout.current = setTimeout(typeNext, 8)
+        } else {
+          setVisibleText(message.text)
+        }
+      }
+      // If visibleText is behind message.text, continue typing
+      if (visibleText.length < message.text.length) {
+        typeNext()
+      }
+      return () => {
+        if (typingTimeout.current) clearTimeout(typingTimeout.current)
+      }
+    } else {
+      setVisibleText(message.text)
+      currentIndexRef.current = message.text.length
+      return undefined
+    }
+  }, [message.text, message.isStreaming, message.sender])
+
   const renderMediaContent = () => {
     if (message.videoUrl) {
       return (
@@ -63,16 +106,38 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
           <div className="overflow-hidden whitespace-pre-wrap px-1 py-2">
             <ReactMarkdown
               components={{
-                p: ({ node, ...props }) => <span {...props} />,
+                p: (props) => <span {...props} />,
                 br: () => <br />,
-                strong: ({ node, ...props }) => (
+                strong: (props) => (
                   <strong className="font-bold" {...props} />
+                ),
+                h3: (props) => (
+                  <h3
+                    className="text-lg font-bold border-b-2 border-blue-300 pb-1 mt-4 text-blue-600 dark:text-blue-300"
+                    {...props}
+                  />
+                ),
+                a: ({href, children, ...props}) => (
+                  <a
+                    href={href}
+                    className="text-blue-600 underline underline-offset-2 hover:text-blue-800 transition-colors font-semibold"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    {...props}
+                  >
+                    {children}
+                  </a>
                 ),
               }}
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
             >
-              {message.text}
+              {message.sender === 'ai' && message.isStreaming ? visibleText : message.text}
             </ReactMarkdown>
+            {/* Streaming indicator */}
+            {message.isStreaming && (
+              <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1" />
+            )}
           </div>
         </div>
       </div>

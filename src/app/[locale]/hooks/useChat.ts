@@ -24,6 +24,9 @@ type ChatState = {
   handleCryptoTradeRequest: () => void;
   handleCryptoPortfolioRequest: () => void;
   chatEndRef: React.RefObject<HTMLDivElement>;
+  // Streaming related states
+  isStreaming: boolean;
+  stopStreaming: () => void;
 };
 
 export const useChat = (options?: { pendingMessage?: string, clearPendingMessage?: () => void, modelType?: string }): ChatState => {
@@ -39,6 +42,10 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pendingMessageSent, setPendingMessageSent] = useState(false);
   const [initialMessage, setInitialMessage] = useState<string | null>(null);
+  
+  // Streaming states
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const chatEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -59,6 +66,11 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     if (newChatId) {
       setIsInitializing(true);
       setMessages([]);
+      // Stop any ongoing streaming
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        setIsStreaming(false);
+      }
     }
   }, [searchParams, pathname]);
 
@@ -86,44 +98,20 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
         // If we have an initial message, add it to messages immediately
         if (initialMessage && !pendingMessageSent) {
           const userMessage: Message = {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             text: initialMessage,
             sender: 'user',
             type: 'text',
           };
-          setMessages([userMessage]);
+          setMessages(prev => [...prev, userMessage]);
           setHasHistory(true);
           setShowInsightCards(false);
           setShowCompactInsights(true);
           
-          // Send the message to API
+          // Send the message to API with streaming
           try {
             setIsLoading(true);
-            const response = await fetch('/api/chat/messages', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              credentials: 'include',
-              body: JSON.stringify({
-                chatId,
-                text: initialMessage,
-                modelType: 'gpt-4',
-                subModel: 'gpt4_standard',
-              }),
-            });
-            
-            const data = await response.json();
-            if (response.ok && data.success) {
-              const aiMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                text: data.response,
-                sender: 'ai',
-                type: 'text',
-              };
-              setMessages(prev => [...prev, aiMessage]);
-            }
+            await handleStreamingMessage(initialMessage, 'gemini');
           } catch (error) {
             console.error('Error sending initial message:', error);
           } finally {
@@ -136,7 +124,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
           const res = await fetch(`/api/chat/messages?chatCode=${encodeURIComponent(chatId)}&limit=100&order=asc`);
           if (res.ok) {
             const data = await res.json();
-            const history = data.chatHistory || [];
+            const history = Array.isArray(data.chatHistory) ? data.chatHistory : [];
             const mapped = history.map((msg: {
               ID: number;
               chat_id: string;
@@ -173,6 +161,129 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     initializeChat();
   }, [chatId, initialMessage, pendingMessageSent]);
 
+  // Streaming message handler
+  const handleStreamingMessage = useCallback(async (text: string, modelType: string = 'gpt-4') => {
+    if (!chatId) return;
+
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    setIsStreaming(true);
+
+    // Add AI message placeholder
+    const aiMessageId = generateMessageId();
+    const aiMessage: Message = {
+      id: aiMessageId,
+      text: '',
+      sender: 'ai',
+      type: 'text',
+      isStreaming: true,
+    };
+    setMessages(prev => [...prev, aiMessage]);
+
+    try {
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          chatId,
+          modelType,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      let fullContent = '';
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+
+            if (data === '[DONE]') {
+              // Stream completed
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMessageId 
+                  ? { ...msg, text: fullContent, isStreaming: false }
+                  : msg
+              ));
+              setIsStreaming(false);
+              return fullContent;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+
+              if (parsed.content) {
+                fullContent += parsed.content;
+                
+                // Update the AI message with new content
+                setMessages(prev => prev.map(msg => 
+                  msg.id === aiMessageId 
+                    ? { ...msg, text: fullContent }
+                    : msg
+                ));
+              }
+            } catch {
+              if (data !== '[DONE]') {
+                console.warn('Failed to parse streaming data:', data);
+              }
+            }
+          }
+        }
+      }
+
+      return fullContent;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was cancelled, don't show error
+        return;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // Update the AI message with error
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMessageId 
+          ? { ...msg, text: `خطا: ${errorMessage}`, isStreaming: false }
+          : msg
+      ));
+
+      setIsStreaming(false);
+      throw error;
+    }
+  }, [chatId]);
+
   const handleStartChat = useCallback(() => {
     setHasStartedChat(true);
   }, []);
@@ -200,7 +311,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     }
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       text: 'Buy/Sell Crypto',
       sender: 'user',
       type: 'text',
@@ -224,7 +335,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     }
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       text: 'Show my portfolio',
       sender: 'user',
       type: 'text',
@@ -246,8 +357,9 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     if (text.trim() === '' || !chatId) {
       return;
     }
+    
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       text,
       sender: 'user',
       type: 'text',
@@ -258,37 +370,12 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     handleStartChat();
 
     try {
-      // Send user message to API and get AI response
-      const response = await fetch('/api/chat/messages', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          chatId,
-          text,
-          modelType: modelTypeOverride || options?.modelType || 'gpt-4',
-          subModel: 'gpt4_standard',
-        }),
-      });
-      const data = await response.json();
-      console.log('Response from external API:', data, 'Status:', response.status);
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'خطا در دریافت پاسخ از هوش مصنوعی');
-      }
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        text: data.response,
-        sender: 'ai',
-        type: 'text',
-      };
-      setMessages(prev => [...prev, aiMessage]);
+      // Use streaming API instead of regular API
+      await handleStreamingMessage(text, modelTypeOverride || options?.modelType || 'gpt-4');
     } catch (error) {
       console.error('Error in handleSend:', error);
       const errorMessage: Message = {
-        id: Date.now().toString(),
+        id: generateMessageId(),
         text: `متاسفانه خطایی رخ داد. لطفا دوباره تلاش کنید. ${error instanceof Error ? error.message : 'Unknown error'}`,
         sender: 'ai',
         type: 'text',
@@ -297,7 +384,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, chatId, handleStartChat, options?.modelType]);
+  }, [inputText, chatId, handleStartChat, options?.modelType, handleStreamingMessage]);
 
   const handleSelectAnswer = useCallback((selectedAnswer: string) => {
     setMessages(prev => prev.map(msg =>
@@ -308,6 +395,14 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prevState => !prevState);
+  }, []);
+
+  const stopStreaming = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
   }, []);
 
   // Send pending message after chatId is set (e.g., after chat creation)
@@ -345,5 +440,13 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     handleCryptoTradeRequest,
     handleCryptoPortfolioRequest,
     chatEndRef,
+    // Streaming related states
+    isStreaming,
+    stopStreaming,
   };
 };
+
+// Add a helper to generate unique ids
+function generateMessageId() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}

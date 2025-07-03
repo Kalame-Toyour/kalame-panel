@@ -29,8 +29,10 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const isImagePage = basePath.endsWith('/image');
   const isTextToVoicePage = basePath.endsWith('/text-to-voice');
   const isVoiceToTextPage = basePath.endsWith('/voice-to-text');
+  const isPricingPage = basePath.endsWith('/pricing');
 
-  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage
+
+  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage
     ? "flex flex-col min-h-screen"
     : "flex h-screen flex-col overflow-hidden";
 
@@ -82,7 +84,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
         <div className={`
           my-2
           flex-1
-          ${isImagePage || isTextToVoicePage || isVoiceToTextPage ? '' : 'overflow-y-auto'}
+          ${isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage ? '' : 'overflow-y-auto'}
           ${getContentMarginClass()}
           transition-all 
           duration-300 

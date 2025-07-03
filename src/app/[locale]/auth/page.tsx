@@ -18,6 +18,14 @@ type SignupFormData = {
   referralCode?: string;
 };
 
+// Persian to English digit conversion utility
+function convertPersianToEnglishDigits(input: string): string {
+  if (!input) return ''
+  return input
+    .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))
+}
+
 const PhoneAuthFlow = () => {
   const [validationError, setValidationError] = useState<string>('');
   const [step, setStep] = useState(1);
@@ -32,12 +40,13 @@ const PhoneAuthFlow = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [usePassword, setUsePassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loginWithCode, setLoginWithCode] = useState(false);
+  const [loginWithCode, setLoginWithCode] = useState(true);
 
   const handlePhoneSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    // Validate phone number before sending
-    if (!formData.phone || typeof formData.phone !== 'string' || !/^\d{11}$/.test(formData.phone)) {
+    // Always normalize phone to English digits
+    const normalizedPhone = convertPersianToEnglishDigits(formData.phone);
+    if (!normalizedPhone || typeof normalizedPhone !== 'string' || !/^\d{11}$/.test(normalizedPhone)) {
       setValidationError('شماره موبایل باید ۱۱ رقم و فقط عدد باشد.');
       return;
     }
@@ -49,7 +58,7 @@ const PhoneAuthFlow = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mobile: formData.phone }),
+        body: JSON.stringify({ mobile: normalizedPhone }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -58,7 +67,6 @@ const PhoneAuthFlow = () => {
       setStep(2);
       if (data.message === 'IsNewUser') {
         setUsePassword(false);
-
       } else if (data.message === 'IsExistUser') {
         setUsePassword(true);
       } else {
@@ -66,6 +74,7 @@ const PhoneAuthFlow = () => {
         return;
       }
       setIsLoading(false);
+      setFormData({ ...formData, phone: normalizedPhone });
       return data;
     } catch (_error) {
       setValidationError('خطایی رخ داده است');
@@ -91,9 +100,11 @@ const PhoneAuthFlow = () => {
         body: JSON.stringify({ phone: formData.phone, password: formData.password }),
       });
       const data = await response.json();
-      console.log(data);
+      console.log('Login response:', data);
+      
       if (response.ok && data.accessToken) {
         // ورود موفق: ذخیره توکن با next-auth
+        console.log('Attempting to sign in with NextAuth...');
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
           password: formData.password,
@@ -103,14 +114,19 @@ const PhoneAuthFlow = () => {
           username: data.needUserData?.username,
           redirect: false,
         });
+        
+        console.log('SignIn result:', signInResult);
+        
         if (signInResult && signInResult.ok) {
           toast.success('ورود با موفقیت انجام شد');
+          // Wait a bit for session to be established
           setTimeout(() => {
             if (typeof window !== 'undefined') {
               window.location.replace('/');
             }
-          }, 700);
+          }, 1000);
         } else {
+          console.error('SignIn failed:', signInResult);
           setValidationError('ورود با خطا مواجه شد. لطفا مجددا تلاش کنید.');
         }
       } else if (data.message) {
@@ -159,6 +175,7 @@ const PhoneAuthFlow = () => {
       });
 
       const data = await response.json();
+      console.log('Registration response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send verification code');
@@ -166,6 +183,7 @@ const PhoneAuthFlow = () => {
 
       // New user: get token and login with next-auth session directly
       if (data.accessToken && data.needUserData) {
+        console.log('Attempting to sign in after registration...');
         // Use signIn with a custom provider to pass tokens directly
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
@@ -176,14 +194,19 @@ const PhoneAuthFlow = () => {
           username: data.needUserData.username,
           redirect: false,
         });
+        
+        console.log('SignIn result after registration:', signInResult);
+        
         if (signInResult && signInResult.ok) {
           toast.success('ثبت نام و ورود با موفقیت انجام شد');
+          // Wait a bit for session to be established
           setTimeout(() => {
             if (typeof window !== 'undefined') {
               window.location.replace('/');
             }
-          }, 700);
+          }, 1000);
         } else {
+          console.error('SignIn failed after registration:', signInResult);
           setValidationError('ورود خودکار با خطا مواجه شد. لطفا مجددا تلاش کنید.');
         }
       } else {
@@ -198,7 +221,7 @@ const PhoneAuthFlow = () => {
     }
   };
 
-  // One-time code login for existing users
+  // One-time code login for existing usersسلام 
   const handleLoginWithCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.phone || !formData.verificationCode) {
@@ -214,12 +237,16 @@ const PhoneAuthFlow = () => {
         body: JSON.stringify({ phone: formData.phone, code: formData.verificationCode }),
       });
       const data = await response.json();
+      console.log('Login with code response:', data);
+      
       if (!response.ok) {
         setValidationError(data.error || 'خطا در ورود با کد');
         return;
       }
+      
       // If tokens and user data are present, use them to sign in directly
       if (data.accessToken && data.needUserData) {
+        console.log('Attempting to sign in with code...');
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
           password: formData.verificationCode,
@@ -229,30 +256,40 @@ const PhoneAuthFlow = () => {
           username: data.needUserData.username,
           redirect: false,
         });
+        
+        console.log('SignIn result with code:', signInResult);
+        
         if (signInResult && signInResult.ok) {
           toast.success('ورود با موفقیت انجام شد');
+          // Wait a bit for session to be established
           setTimeout(() => {
             if (typeof window !== 'undefined') {
               window.location.replace('/');
             }
-          }, 700);
+          }, 1000);
         } else {
+          console.error('SignIn failed with code:', signInResult);
           setValidationError('ورود با خطا مواجه شد.');
         }
       } else {
         // Fallback: try legacy signIn if tokens are not present
+        console.log('Attempting fallback sign in...');
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
           password: formData.verificationCode,
           redirect: false,
         });
+        
+        console.log('Fallback signIn result:', signInResult);
+        
         if (signInResult && signInResult.ok) {
           toast.success('ورود با موفقیت انجام شد');
+          // Wait a bit for session to be established
           setTimeout(() => {
             if (typeof window !== 'undefined') {
               window.location.replace('/');
             }
-          }, 700);
+          }, 1000);
         } else {
           setValidationError('ورود با خطا مواجه شد.');
         }
@@ -360,8 +397,9 @@ const PhoneAuthFlow = () => {
                       type="tel"
                       maxLength={11}
                       value={formData.phone}
-                      onChange={(e) => {
-                        setFormData({ ...formData, phone: e.target.value });
+                      onChange={e => {
+                        const englishValue = convertPersianToEnglishDigits(e.target.value)
+                        setFormData({ ...formData, phone: englishValue })
                       }}
                       className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 px-4 py-3 text-right text-gray-900 dark:text-white transition-all focus:border-primary focus:ring-2 focus:ring-primary placeholder-gray-400 dark:placeholder-gray-500 shadow-sm animate-fade-in-up"
                       placeholder="شماره موبایل"
@@ -416,7 +454,7 @@ const PhoneAuthFlow = () => {
                         ? `کد تایید برای شماره ${formData.phone} ارسال شد. لطفا کد را وارد کنید.`
                         : usePassword
                           ? `لطفا رمز عبور خود را برای ${formData.phone} وارد کنید تا وارد حساب کاربری خود بشوید.`
-                          : `کد تایید برای شماره ${formData.phone} پیامک شد. همچنین نام و رمز عبور خود را وارد کنید.`}
+                          : `کد تایید برای شماره ${formData.phone} .پیامک شد. همچنین نام و رمز عبور خود را وارد کنید. در صورت دریافت نکردن کد با کد تایید 1404 حساب کاربری بسازید`}
                     </p>
                   </div>
                   <div className="space-y-4">
@@ -424,7 +462,19 @@ const PhoneAuthFlow = () => {
                       <input
                         type="text"
                         value={formData.verificationCode}
-                        onChange={e => setFormData({ ...formData, verificationCode: e.target.value })}
+                        onChange={e => {
+                          const englishCode = convertPersianToEnglishDigits(e.target.value)
+                          setFormData(prev => {
+                            // Auto-submit if 4 digits entered and not previously submitted
+                            if (englishCode.length === 4 && prev.verificationCode.length < 4) {
+                              setTimeout(() => {
+                                const form = e.target.form as HTMLFormElement | null
+                                if (form) form.requestSubmit()
+                              }, 0)
+                            }
+                            return { ...prev, verificationCode: englishCode }
+                          })
+                        }}
                         className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 px-4 py-3 text-center tracking-wider text-gray-900 dark:text-white transition-all focus:border-primary focus:ring-2 focus:ring-primary placeholder-gray-400 dark:placeholder-gray-500 shadow-sm animate-fade-in-up"
                         maxLength={4}
                         placeholder="کد تایید"

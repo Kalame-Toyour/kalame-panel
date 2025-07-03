@@ -67,7 +67,7 @@ const ImageGenerationPage = () => {
       const requestBody = {
         chatId: '-1',
         prompt,
-        modelType: 'midjourney',
+        modelType: 'gemini',
         subModel: 'midjourney_2',
         imageSize: selectedSize
       };
@@ -83,13 +83,13 @@ const ImageGenerationPage = () => {
       const data = await res.json();
       console.log('Response data:', data);
 
-      if (data.success && data.imageUrl) {
-        setResult(data.imageUrl);
+      if (data.success && data.data.response) {
+        setResult(data.data.response);
         // Refresh user images after generating a new one
         fetchUserImages();
       } else {
         console.error('API returned error:', data);
-        setError(data.error || 'خطا در دریافت تصویر.');
+        setError(data.message || 'خطا در دریافت تصویر.');
       }
     } catch (err) {
       console.error('Error generating image:', err);

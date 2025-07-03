@@ -11,6 +11,7 @@ import {
   Mic,
   BookText,
   LogIn,
+  Star,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -35,6 +36,7 @@ type NavigationItem = {
   icon: React.ReactNode;
   text: string;
   path: string;
+  isUpgrade?: boolean;
 };
 
 type Chat = {
@@ -114,13 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     return pathname === path || pathname.startsWith(`${path}/`);
   };
 
-  const handleNavigation = (path: string) => {
-    if (path) {
-      const fullPath = path === '/' ? `/${locale}` : `/${locale}${path.startsWith('/') ? path : `/${path}`}`;
-      router.push(fullPath);
-      toggleSidebar();
-    }
-  };
+
 
   const handleLogoutClick = () => {
     setIsLogoutDialogOpen(true);
@@ -154,9 +150,15 @@ const Sidebar: React.FC<SidebarProps> = ({
     toggleSidebar();
   };
 
+  const handleUpgradeClick = () => {
+    router.push(`/${locale}/pricing`);
+    toggleSidebar();
+  };
+
   const featureNavigationItems: NavigationItem[] = [
     { icon: <ImageIcon />, text: 'ساخت تصویر', path: '/image' },
     { icon: <Mic />, text: 'تبدیل متن به گفتار', path: '/text-to-voice' },
+    // { icon: <Star />, text: 'ارتقا بسته', path: '/pricing' },
     // { icon: <BookText />, text: 'تبدیل گفتار به متن', path: '/voice-to-text' },
   ];
 
@@ -281,6 +283,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               >
                 <BookText size={24} className="text-black dark:text-gray-200" />
               </button>
+              {/* <button
+                onClick={handleUpgradeClick}
+                className="rounded-lg p-2 transition-colors hover:bg-yellow-100 dark:hover:bg-yellow-700 bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-md"
+                title="ارتقا بسته"
+              >
+                <Star size={24} className="text-white" />
+              </button> */}
               <button
                 onClick={toggleCollapse}
                 className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -303,19 +312,31 @@ const Sidebar: React.FC<SidebarProps> = ({
               {/* Feature Navigation Buttons */}
               <div className="space-y-2">
                 {featureNavigationItems.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => handleFeatureNavigation(item.path)}
-                    className={`flex items-center gap-3 w-full rounded-lg px-4 py-2 border border-transparent dark:border-transparent transition-colors text-right font-medium
-                      ${isRouteActive(item.path)
-                        ? 'bg-gray-200 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700'
-                        : 'bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700'
-                      }
-                    `}
-                  >
-                    {React.cloneElement(item.icon as React.ReactElement, { className: `w-6 h-6 ${isRouteActive(item.path) ? 'text-blue-500' : 'text-blue-500'}` })}
-                    <span>{item.text}</span>
-                  </button>
+                  item.isUpgrade ? (
+                    <></>
+                    // <button
+                    //   key={item.path}
+                    //   onClick={handleUpgradeClick}
+                    //   className="flex items-center gap-3 w-full rounded-lg px-4 py-2 border border-transparent dark:border-transparent transition-colors text-right font-medium bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-400 hover:to-amber-500 text-white shadow-md"
+                    // >
+                    //   {React.cloneElement(item.icon as React.ReactElement, { className: `w-6 h-6 text-white` })}
+                    //   <span>ارتقا بسته</span>
+                    // </button>
+                  ) : (
+                    <button
+                      key={item.path}
+                      onClick={() => handleFeatureNavigation(item.path)}
+                      className={`flex items-center gap-3 w-full rounded-lg px-4 py-2 border border-transparent dark:border-transparent transition-colors text-right font-medium
+                        ${isRouteActive(item.path)
+                          ? 'bg-gray-200 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700'
+                          : 'bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700'
+                        }
+                      `}
+                    >
+                      {React.cloneElement(item.icon as React.ReactElement, { className: `w-6 h-6 ${isRouteActive(item.path) ? 'text-blue-500' : 'text-blue-500'}` })}
+                      <span>{item.text}</span>
+                    </button>
+                  )
                 ))}
               </div>
             </div>

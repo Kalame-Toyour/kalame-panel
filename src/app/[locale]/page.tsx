@@ -20,6 +20,7 @@ const MainPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chat');
+  const startParam = searchParams.get('start');
   const { user } = useAuth();
   const { isSidebarCollapsed } = useSidebar();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
@@ -28,6 +29,12 @@ const MainPage: React.FC = () => {
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  // Store start param in a ref so it persists across rerenders
+  const startRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (startParam) startRef.current = startParam;
+  }, [startParam]);
 
   useEffect(() => {
     window.addEventListener('beforeunload', startLoading);
@@ -56,7 +63,24 @@ const MainPage: React.FC = () => {
     handleChartRequest,
     handleCryptoTradeRequest,
     handleCryptoPortfolioRequest,
+    // Streaming states
+    isStreaming,
+    stopStreaming,
   } = useChat({ modelType: selectedModel });
+
+  // Check character limit for non-logged-in users
+  const handleInputChange = useCallback((text: string) => {
+    if (!user && text.length > 40) {
+      toast.success('برای گفت وگو با کلمه باید وارد حساب کاربری خود بشوید');
+      setTimeout(() => {
+        router.push('/auth');
+      }, 1200);
+      // Clear the input text to prevent further typing
+      setInputText('');
+      return;
+    }
+    setInputText(text);
+  }, [user, router, setInputText]);
 
   // Listen for clear-chat-messages event
   useEffect(() => {
@@ -64,12 +88,16 @@ const MainPage: React.FC = () => {
       setMessages([]);
       setInputText('');
       if (setHasStartedChat) setHasStartedChat(false);
+      // Stop any ongoing streaming when clearing chat
+      if (isStreaming) {
+        stopStreaming();
+      }
     };
     window.addEventListener('clear-chat-messages', clearHandler);
     return () => {
       window.removeEventListener('clear-chat-messages', clearHandler);
     };
-  }, [setMessages, setHasStartedChat, setInputText]);
+  }, [setMessages, setHasStartedChat, setInputText, isStreaming, stopStreaming]);
 
   // Handle chat switching
   useEffect(() => {
@@ -77,6 +105,11 @@ const MainPage: React.FC = () => {
       // Clear current state
       setIsSwitchingChat(true);
       setMessages([]);
+      
+      // Stop any ongoing streaming when switching chats
+      if (isStreaming) {
+        stopStreaming();
+      }
       
       // Log the event for debugging
       console.log('Chat history select event received:', event.detail);
@@ -86,7 +119,7 @@ const MainPage: React.FC = () => {
     return () => {
       window.removeEventListener('chat-history-select', handleChatSelect as EventListener);
     };
-  }, [setMessages]);
+  }, [setMessages, isStreaming, stopStreaming]);
 
   // Function to scroll to the bottom of the chat
   const scrollToBottom = useCallback((delay = 100) => {
@@ -181,7 +214,24 @@ const MainPage: React.FC = () => {
     }
   }, [pendingMessage, chatId, isCreatingChat, isLoading, handleSend]);
 
- 
+  // Log campaign entry after user login if start param exists
+  useEffect(() => {
+    async function logCampaignIfNeeded() {
+      if (!user?.id || !startRef.current) return;
+      try {
+        await fetchWithAuth('/api/logCampaignEntry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkCode: startRef.current, user_id: user.id })
+        });
+        // Optionally clear startRef so it doesn't send again
+        startRef.current = null;
+      } catch (err) {
+        console.error('Failed to log campaign entry:', err);
+      }
+    }
+    logCampaignIfNeeded();
+  }, [user]);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -238,7 +288,7 @@ const MainPage: React.FC = () => {
                   <Image src="/kalame-logo.png" alt="Logo" width={48} height={48} className="size-12 rounded-full object-contain relative z-10" />
                 </div>
                 <h2 className="text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">چطور می تونم کمکت کنم؟</h2>
-                <p className="text-center text-base text-gray-500 dark:text-gray-400">هر سوالی که داری سوال داری بپرس</p>
+                <p className="text-center text-base text-gray-500 dark:text-gray-400">هر سوالی که در هر زمینه ای داری بپرس</p>
               </div>
             </div>
           ) : (
@@ -254,7 +304,7 @@ const MainPage: React.FC = () => {
                   copyToClipboard={copyToClipboard}
                   onSelectAnswer={handleSelectAnswer}
                 >
-                  {(isLoading || isPendingMessageLoading) && (
+                  {(isLoading || isPendingMessageLoading) && !isStreaming && (
                     <div className="flex items-center justify-center py-4">
                       <motion.div
                         animate={{ rotate: 360 }}
@@ -264,6 +314,29 @@ const MainPage: React.FC = () => {
                         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
                         <Loader className="relative size-6 text-blue-500" />
                       </motion.div>
+                    </div>
+                  )}
+                  {/* Streaming indicator */}
+                  {isStreaming && (
+                    <div className="flex items-center justify-center py-4 gap-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                        className="relative"
+                      >
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
+                        <Loader className="relative size-6 text-blue-500" />
+                      </motion.div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        در حال دریافت پاسخ...
+                      </span>
+                      {/* <button
+                        onClick={stopStreaming}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                      >
+                        <StopCircle className="size-4" />
+                        توقف
+                      </button> */}
                     </div>
                   )}
                 </ChatMessageContainer>
@@ -278,9 +351,9 @@ const MainPage: React.FC = () => {
         <div className={`max-w-2xl md:max-w-[84%] mx-auto ${isSidebarCollapsed ? 'md:mr-[150px]' : 'md:mr-[400px] md:ml-[120px]'}`}>
           <ChatInput
             inputText={inputText}
-            setInputText={setInputText}
+            setInputText={handleInputChange}
             handleSend={handleSend}
-            isLoading={isLoading || isCreatingChat || isPendingMessageLoading}
+            isLoading={isLoading || isCreatingChat || isPendingMessageLoading || isStreaming}
             onChartRequest={handleChartRequest}
             onCryptoTradeRequest={handleCryptoTradeRequest}
             onCryptoPortfolioRequest={handleCryptoPortfolioRequest}

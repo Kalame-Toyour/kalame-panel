@@ -5,32 +5,33 @@ import { useLocale } from 'next-intl';
 import { useState } from 'react';
 import LanguageSwitcherModal from '../components/LanguageSwitcher';
 import { AnimatedBackground } from '../components/Layout/AnimatedBackground';
-import { Navigation } from '../components/Layout/Navigation';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Tabs, TabsContent } from '../components/ui/tabs';
+import { motion } from 'framer-motion';
 
 export default function PricingPage() {
   const locale = useLocale();
   const isRTL = locale === 'fa';
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
 
   return (
+    <motion.div
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    className="flex flex-col overflow-visible min-h-full"
+  >
     <div
-      className={`custom-scrollbar flex min-h-screen flex-col ${
+      className={`custom-scrollbar flex min-h-screen flex-col overflow-y-auto ${
         isRTL ? 'font-iran-sans' : 'font-poppins'
       }`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <AnimatedBackground />
-      <Navigation
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-        setIsLanguageModalOpen={setIsLanguageModalOpen}
-      />
-      <main className="mainbg relative grow px-4 dark:bg-gray-900 md:px-36 md:pt-16">
-        <div className="container flex flex-col items-center py-20">
+
+      <main className="mainbg relative grow px-4 dark:bg-gray-900 md:px-36 md:pt-10">
+        <div className="container flex flex-col items-center">
           <h1
             className={`mb-4 bg-gradient-to-l from-amber-500 to-pink-600 bg-clip-text text-center text-4xl font-bold text-transparent dark:from-amber-400 dark:to-pink-500 ${
               isRTL ? 'font-iran-sans' : 'font-poppins'
@@ -47,51 +48,14 @@ export default function PricingPage() {
           </p>
 
           <Tabs defaultValue="monthly" className="w-full">
-            <TabsList className="mx-auto mb-8 grid w-full max-w-md grid-cols-2">
+            {/* <TabsList className="mx-auto mb-8 grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="monthly">{isRTL ? 'ماهانه' : 'Monthly'}</TabsTrigger>
               <TabsTrigger value="yearly">{isRTL ? 'سالانه (۲۰٪ تخفیف)' : 'Yearly (Save 20%)'}</TabsTrigger>
-            </TabsList>
+            </TabsList> */}
 
             <TabsContent value="monthly" className="space-y-4">
-              <div className="mt-8 grid gap-6 md:grid-cols-3">
-                <PricingCard
-                  title="Free"
-                  price="$0"
-                  description={
-                    isRTL
-                      ? 'مناسب برای شروع'
-                      : 'Perfect for getting started'
-                  }
-                  features={
-                    isRTL
-                      ? [
-                          '۲۵ توکن روزانه',
-                          '۷۵۰ توکن ماهانه',
-                          'دستیار هوش مصنوعی پایه',
-                          'تحلیل بازار',
-                          'پیگیری سبد سرمایه',
-                          'پشتیبانی ایمیل',
-                        ]
-                      : [
-                          '25 Daily Tokens',
-                          '750 Monthly Tokens',
-                          'Basic AI Chat Assistant',
-                          'Market Analysis',
-                          'Portfolio Tracking',
-                          'Email Support',
-                        ]
-                  }
-                  tokenInfo={{
-                    daily: 25,
-                    monthly: 750,
-                  }}
-                  buttonText={
-                    isRTL
-                      ? 'شروع کنید'
-                      : 'Get Started'
-                  }
-                  buttonVariant="outline"
-                />
+              <div className="mt-2 grid gap-6 md:grid-cols-2">
+
                 <PricingCard
                   title="Pro"
                   price="$19.99"
@@ -254,7 +218,7 @@ export default function PricingPage() {
         </div>
 
         {/* Token Usage Information */}
-        <div className="mx-auto max-w-4xl pb-12">
+        <div className="mx-auto max-w-4xl pb-12 pt-8">
           <h2
             className={`mb-6 text-center text-2xl font-bold dark:text-gray-100 ${
               isRTL ? 'font-iran-sans' : 'font-poppins'
@@ -423,6 +387,7 @@ export default function PricingPage() {
         isCollapsed={false}
       />
     </div>
+    </motion.div>
   );
 }
 
@@ -488,7 +453,7 @@ function PricingCard({
     <Card
       className={`relative flex h-full flex-col justify-between p-6 ${
         popular ? 'border-primary shadow-lg dark:border-blue-500' : ''
-      }`}
+      } ${isRTL ? 'text-right' : 'text-left'}`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {popular && (
@@ -578,7 +543,7 @@ function PricingCard({
         </div>
         <ul className="mb-6 space-y-3">
           {features.map((feature, i) => (
-            <li key={i} className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <li key={i} className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse justify-end' : ''}`}>
               <Check className="size-4 text-blue-500 dark:text-blue-400" />
               <span
                 className={`dark:text-gray-300 ${

@@ -68,7 +68,7 @@ const isValidToken = (token: { accessToken?: string; expiresAt?: number } | null
 export default async function middleware(
   request: NextRequest,
 ) {
-  // Skip middleware for auth endpoints
+  // Skip middleware for auth endpoints to avoid CSRF issues
   if (isApiRoute(request) || isAuthEndpoint(request)) {
     return NextResponse.next();
   }
@@ -77,13 +77,22 @@ export default async function middleware(
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === 'production',
+      secureCookie: process.env.NODE_ENV === 'production' && process.env.NEXTAUTH_URL?.startsWith('https'),
+    });
+
+    console.log('Middleware - Token check:', {
+      hasToken: !!token,
+      tokenId: token?.id,
+      tokenName: token?.name,
+      path: request.nextUrl.pathname,
+      host: request.headers.get('host'),
     });
 
     // Handle protected routes
     if (isProtectedRoute(request)) {
       // Check if token is valid
       if (!isValidToken(token)) {
+        console.log('Middleware - Redirecting to auth (protected route)');
         // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
         const baseUrl = process.env.NEXTAUTH_URL || 
                        `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;
@@ -103,6 +112,7 @@ export default async function middleware(
 
     // Handle auth pages
     if (isAuthPage(request) && isValidToken(token)) {
+      console.log('Middleware - Redirecting to app (authenticated user on auth page)');
       // Extract locale from path - matches patterns like /fa/auth, /en/auth, etc.
       const localeMatch = request.nextUrl.pathname.match(/^\/([a-z]{2})(?:\/|$)/);
       const locale = localeMatch ? `/${localeMatch[1]}` : '';

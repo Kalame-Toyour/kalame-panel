@@ -12,7 +12,16 @@
     "db:setup": "powershell ./scripts/setup-db.ps1",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node --project ./scripts/tsconfig.json scripts/seed-db.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:stop": "pm2 stop kariz-app",
+    "pm2:restart": "pm2 restart kariz-app",
+    "pm2:delete": "pm2 delete kariz-app",
+    "pm2:logs": "pm2 logs kariz-app",
+    "pm2:status": "pm2 status",
+    "pm2:save": "pm2 save",
+    "pm2:startup": "pm2 startup",
+    "deploy": "bash deploy.sh"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
