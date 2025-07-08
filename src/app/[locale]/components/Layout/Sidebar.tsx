@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const featureNavigationItems: NavigationItem[] = [
     { icon: <ImageIcon />, text: 'ساخت تصویر', path: '/image' },
     { icon: <Mic />, text: 'تبدیل متن به گفتار', path: '/text-to-voice' },
-    // { icon: <Star />, text: 'ارتقا بسته', path: '/pricing' },
+    { icon: <Star />, text: 'ارتقا بسته', path: '/pricing' },
     // { icon: <BookText />, text: 'تبدیل گفتار به متن', path: '/voice-to-text' },
   ];
 
@@ -283,13 +283,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               >
                 <BookText size={24} className="text-black dark:text-gray-200" />
               </button>
-              {/* <button
+              <button
                 onClick={handleUpgradeClick}
                 className="rounded-lg p-2 transition-colors hover:bg-yellow-100 dark:hover:bg-yellow-700 bg-gradient-to-r from-amber-400 to-yellow-500 text-white shadow-md"
                 title="ارتقا بسته"
               >
                 <Star size={24} className="text-white" />
-              </button> */}
+              </button>
               <button
                 onClick={toggleCollapse}
                 className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"

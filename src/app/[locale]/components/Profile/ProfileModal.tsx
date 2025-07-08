@@ -7,7 +7,7 @@ import {
   Moon,
   Sun,
   Mic,
-  BookText,
+  Star,
   ImageIcon,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -126,6 +126,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const featureNavigationItems: NavigationItem[] = [
     { icon: <ImageIcon />, text: 'ساخت تصویر', path: 'image' },
     { icon: <Mic />, text: 'تبدیل متن به گفتار', path: 'text-to-voice' },
+    { icon: <Star />, text: 'ارتقا بسته', path: 'pricing' },
     // { icon: <BookText />, text: 'تبدیل گفتار به متن', path: 'voice-to-text' }, // Assuming this should also be without leading slash for consistency
   ];
 

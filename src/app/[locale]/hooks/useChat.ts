@@ -27,9 +27,11 @@ type ChatState = {
   // Streaming related states
   isStreaming: boolean;
   stopStreaming: () => void;
+  streamingError: string | null;
+  retryStreamingMessage: () => void;
 };
 
-export const useChat = (options?: { pendingMessage?: string, clearPendingMessage?: () => void, modelType?: string }): ChatState => {
+export const useChat = (options?: { pendingMessage?: string, clearPendingMessage?: () => void, modelType?: string }): ChatState & { retryStreamingMessage: (opts?: { continueLast?: boolean }) => void } => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -161,8 +163,14 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     initializeChat();
   }, [chatId, initialMessage, pendingMessageSent]);
 
-  // Streaming message handler
-  const handleStreamingMessage = useCallback(async (text: string, modelType: string = 'gpt-4') => {
+  // Streaming error state and retry logic
+  const [streamingError, setStreamingError] = useState<string | null>(null);
+  const lastStreamedTextRef = useRef<string>('');
+  const lastStreamedMsgIdRef = useRef<string>('');
+  const lastStreamedPromptRef = useRef<string>('');
+
+  // Streaming message handler with timeout and error handling
+  const handleStreamingMessage = useCallback(async (text: string, modelType: string = 'gpt-4', opts?: { reuseLast?: boolean }) => {
     if (!chatId) return;
 
     // Cancel any ongoing request
@@ -173,17 +181,30 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     // Create new abort controller
     abortControllerRef.current = new AbortController();
     setIsStreaming(true);
+    setStreamingError(null);
 
-    // Add AI message placeholder
-    const aiMessageId = generateMessageId();
-    const aiMessage: Message = {
-      id: aiMessageId,
-      text: '',
-      sender: 'ai',
-      type: 'text',
-      isStreaming: true,
-    };
-    setMessages(prev => [...prev, aiMessage]);
+    let aiMessageId: string;
+    if (opts && opts.reuseLast) {
+      // Find the last AI message that is not finished
+      const lastAi = [...messages].reverse().find(msg => msg.sender === 'ai' && (msg.isStreaming || msg.error));
+      if (lastAi) {
+        aiMessageId = lastAi.id;
+        // Reset its state
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMessageId
+            ? { ...msg, isStreaming: true, error: undefined }
+            : msg
+        ));
+      } else {
+        aiMessageId = generateMessageId();
+        setMessages(prev => [...prev, { id: aiMessageId, text: '', sender: 'ai', type: 'text', isStreaming: true }]);
+      }
+    } else {
+      aiMessageId = generateMessageId();
+      setMessages(prev => [...prev, { id: aiMessageId, text: '', sender: 'ai', type: 'text', isStreaming: true }]);
+    }
+    lastStreamedMsgIdRef.current = aiMessageId;
+    lastStreamedPromptRef.current = text;
 
     try {
       const response = await fetch('/api/chat/stream', {
@@ -211,45 +232,64 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
 
       let fullContent = '';
       const decoder = new TextDecoder();
+      let streamTimeout: NodeJS.Timeout | null = setTimeout(() => {
+        setIsStreaming(false);
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMessageId
+            ? { ...msg, text: fullContent, isStreaming: false, error: 'timeout' }
+            : msg
+        ));
+        // After a short delay, fetch latest history and update last AI message
+        setTimeout(fetchAndUpdateLastAIMessage, 2000);
+      }, 15000);
 
       while (true) {
         const { done, value } = await reader.read();
-
-        if (done) {
-          break;
+        if (done) break;
+        if (streamTimeout) {
+          clearTimeout(streamTimeout);
+          streamTimeout = setTimeout(() => {
+            setIsStreaming(false);
+            setMessages(prev => prev.map(msg =>
+              msg.id === aiMessageId
+                ? { ...msg, text: fullContent, isStreaming: false, error: 'timeout' }
+                : msg
+            ));
+            setTimeout(fetchAndUpdateLastAIMessage, 2000);
+          }, 15000);
         }
-
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
-
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-
             if (data === '[DONE]') {
-              // Stream completed
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMessageId 
+              setMessages(prev => prev.map(msg =>
+                msg.id === aiMessageId
                   ? { ...msg, text: fullContent, isStreaming: false }
                   : msg
               ));
               setIsStreaming(false);
+              if (streamTimeout) clearTimeout(streamTimeout);
               return fullContent;
             }
-
             try {
               const parsed = JSON.parse(data);
-              
               if (parsed.error) {
+                setIsStreaming(false);
+                setMessages(prev => prev.map(msg =>
+                  msg.id === aiMessageId
+                    ? { ...msg, text: fullContent, isStreaming: false, error: parsed.error }
+                    : msg
+                ));
+                setTimeout(fetchAndUpdateLastAIMessage, 2000);
                 throw new Error(parsed.error);
               }
-
               if (parsed.content) {
                 fullContent += parsed.content;
-                
-                // Update the AI message with new content
-                setMessages(prev => prev.map(msg => 
-                  msg.id === aiMessageId 
+                lastStreamedTextRef.current = fullContent;
+                setMessages(prev => prev.map(msg =>
+                  msg.id === aiMessageId
                     ? { ...msg, text: fullContent }
                     : msg
                 ));
@@ -262,27 +302,44 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
           }
         }
       }
-
+      if (streamTimeout) clearTimeout(streamTimeout);
       return fullContent;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         // Request was cancelled, don't show error
         return;
       }
-
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
-      // Update the AI message with error
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId 
-          ? { ...msg, text: `خطا: ${errorMessage}`, isStreaming: false }
+      setIsStreaming(false);
+      setMessages(prev => prev.map(msg =>
+        msg.id === aiMessageId
+          ? { ...msg, text: '', isStreaming: false, error: errorMessage }
           : msg
       ));
-
-      setIsStreaming(false);
+      setTimeout(fetchAndUpdateLastAIMessage, 2000);
+      // Only show error UI if fetch also fails (handled in fetchAndUpdateLastAIMessage)
+      // setStreamingError(errorMessage);
       throw error;
     }
-  }, [chatId]);
+  }, [chatId, messages]);
+
+  // Retry streaming the last failed message
+  const retryStreamingMessage = useCallback((opts?: { continueLast?: boolean }) => {
+    setStreamingError(null);
+    setIsStreaming(false);
+    if (opts && opts.continueLast) {
+      // Continue streaming into the last AI message (do not remove it)
+      if (lastStreamedPromptRef.current) {
+        handleStreamingMessage(lastStreamedPromptRef.current, undefined, { reuseLast: true });
+      }
+    } else {
+      // Remove the last failed AI message and re-send
+      setMessages(prev => prev.filter(msg => msg.id !== lastStreamedMsgIdRef.current));
+      if (lastStreamedPromptRef.current) {
+        handleStreamingMessage(lastStreamedPromptRef.current);
+      }
+    }
+  }, [handleStreamingMessage]);
 
   const handleStartChat = useCallback(() => {
     setHasStartedChat(true);
@@ -443,6 +500,8 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     // Streaming related states
     isStreaming,
     stopStreaming,
+    streamingError,
+    retryStreamingMessage,
   };
 };
 

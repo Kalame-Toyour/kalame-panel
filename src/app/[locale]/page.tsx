@@ -66,6 +66,8 @@ const MainPage: React.FC = () => {
     // Streaming states
     isStreaming,
     stopStreaming,
+    streamingError,
+    retryStreamingMessage,
   } = useChat({ modelType: selectedModel });
 
   // Check character limit for non-logged-in users
@@ -121,20 +123,55 @@ const MainPage: React.FC = () => {
     };
   }, [setMessages, isStreaming, stopStreaming]);
 
+  // Function to check if user is at the bottom of the chat
+  const isUserAtBottom = useCallback(() => {
+    const threshold = -5 // px
+    const scrollContainer = document.querySelector('.absolute.inset-0.overflow-y-auto');
+    if (!scrollContainer) return true;
+    return scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < threshold;
+  }, []);
+
   // Function to scroll to the bottom of the chat
   const scrollToBottom = useCallback((delay = 100) => {
     setTimeout(() => {
-      if (chatEndRef.current) {
-        // Force scroll to the very bottom
-        chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        
-        // Additional scroll to ensure we reach the bottom
-        setTimeout(() => {
-          window.scrollTo(0, document.body.scrollHeight);
-        }, 50);
+      const scrollContainer = document.querySelector('.absolute.inset-0.overflow-y-auto');
+      if (scrollContainer) {
+        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
       }
+      if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+      // Also scroll window to bottom for mobile
+      setTimeout(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }, 50);
     }, delay);
-  }, [chatEndRef]);
+  }, [chatEndRef, isStreaming]);
+
+  // Track if user is at bottom
+  const [userAtBottom, setUserAtBottom] = useState(true);
+  useEffect(() => {
+    const scrollContainer = document.querySelector('.absolute.inset-0.overflow-y-auto');
+    if (!scrollContainer) return;
+    function handleScroll() {
+      setUserAtBottom(isUserAtBottom());
+    }
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [isUserAtBottom]);
+
+  // After sending a message, always scroll to bottom
+  useEffect(() => {
+    if (!userAtBottom) return;
+    if (messages.length > 0 && !isSwitchingChat) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && !lastMsg.isStreaming) {
+        scrollToBottom(150);
+      }
+    }
+  }, [messages, isSwitchingChat, scrollToBottom, userAtBottom]);
 
   // Reset switching state when messages are loaded
   useEffect(() => {
@@ -143,13 +180,9 @@ const MainPage: React.FC = () => {
       scrollToBottom(150);
     }
   }, [messages, isSwitchingChat, scrollToBottom]);
-  
-  // Scroll to bottom whenever messages change
-  useEffect(() => {
-    if (messages.length > 0 && !isSwitchingChat) {
-      scrollToBottom(100);
-    }
-  }, [messages, isSwitchingChat, scrollToBottom]);
+
+  // For streaming: only scroll if a new line is added to the last AI message and user is at bottom
+  // This logic is now handled by the general scrollToBottom logic
 
    // Custom handleSend to support chat creation and navigation
    const handleSend = useCallback(async (text?: string) => {
@@ -349,6 +382,21 @@ const MainPage: React.FC = () => {
       {/* Fixed ChatInput at the bottom */}
       <div className="fixed bottom-0 left-0 right-0 w-full px-2  z-20 pt-2 pb-2">
         <div className={`max-w-2xl md:max-w-[84%] mx-auto ${isSidebarCollapsed ? 'md:mr-[150px]' : 'md:mr-[400px] md:ml-[120px]'}`}>
+          {streamingError && (
+            <div className="w-full max-w-2xl md:max-w-[84%] mx-auto mb-2 flex flex-col items-center justify-center">
+              <div className="rounded-xl bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 px-4 py-3 text-center text-red-700 dark:text-red-200 font-semibold flex flex-col gap-2 shadow">
+                <span>{streamingError}</span>
+                <button
+                  onClick={() => retryStreamingMessage({ continueLast: true })}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold shadow hover:from-blue-600 hover:to-blue-800 transition-all"
+                  disabled={isStreaming}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.635 19.364A9 9 0 104.582 9.582" /></svg>
+                  تلاش مجدد
+                </button>
+              </div>
+            </div>
+          )}
           <ChatInput
             inputText={inputText}
             setInputText={handleInputChange}
