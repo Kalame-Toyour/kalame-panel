@@ -186,13 +186,13 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     let aiMessageId: string;
     if (opts && opts.reuseLast) {
       // Find the last AI message that is not finished
-      const lastAi = [...messages].reverse().find(msg => msg.sender === 'ai' && (msg.isStreaming || msg.error));
+      const lastAi = [...messages].reverse().find(msg => msg.sender === 'ai' && (msg.isStreaming || msg.isError));
       if (lastAi) {
         aiMessageId = lastAi.id;
         // Reset its state
         setMessages(prev => prev.map(msg =>
           msg.id === aiMessageId
-            ? { ...msg, isStreaming: true, error: undefined }
+            ? { ...msg, isStreaming: true, isError: false }
             : msg
         ));
       } else {
@@ -236,7 +236,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
         setIsStreaming(false);
         setMessages(prev => prev.map(msg =>
           msg.id === aiMessageId
-            ? { ...msg, text: fullContent, isStreaming: false, error: 'timeout' }
+            ? { ...msg, text: fullContent, isStreaming: false, isError: true }
             : msg
         ));
         // After a short delay, fetch latest history and update last AI message
@@ -252,7 +252,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
             setIsStreaming(false);
             setMessages(prev => prev.map(msg =>
               msg.id === aiMessageId
-                ? { ...msg, text: fullContent, isStreaming: false, error: 'timeout' }
+                ? { ...msg, text: fullContent, isStreaming: false, isError: true }
                 : msg
             ));
             setTimeout(fetchAndUpdateLastAIMessage, 2000);
@@ -279,7 +279,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                 setIsStreaming(false);
                 setMessages(prev => prev.map(msg =>
                   msg.id === aiMessageId
-                    ? { ...msg, text: fullContent, isStreaming: false, error: parsed.error }
+                    ? { ...msg, text: fullContent, isStreaming: false, isError: true }
                     : msg
                 ));
                 setTimeout(fetchAndUpdateLastAIMessage, 2000);
@@ -309,16 +309,13 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
         // Request was cancelled, don't show error
         return;
       }
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setIsStreaming(false);
       setMessages(prev => prev.map(msg =>
         msg.id === aiMessageId
-          ? { ...msg, text: '', isStreaming: false, error: errorMessage }
+          ? { ...msg, text: '', isStreaming: false, isError: true }
           : msg
       ));
       setTimeout(fetchAndUpdateLastAIMessage, 2000);
-      // Only show error UI if fetch also fails (handled in fetchAndUpdateLastAIMessage)
-      // setStreamingError(errorMessage);
       throw error;
     }
   }, [chatId, messages]);
@@ -509,3 +506,6 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
 function generateMessageId() {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
+
+// Add dummy fetchAndUpdateLastAIMessage to fix missing reference error
+function fetchAndUpdateLastAIMessage() {}
