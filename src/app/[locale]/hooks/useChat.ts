@@ -1,6 +1,7 @@
 import type { Message } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 type ChatState = {
   messages: Message[];
@@ -50,6 +51,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const chatEndRef = useRef<null | HTMLDivElement>(null);
+  const { data: session, update } = useSession();
 
   // Initialize with null and update in useEffect to avoid hydration mismatch
   const [chatId, setChatId] = useState<string | null>(null);
@@ -271,6 +273,8 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
               ));
               setIsStreaming(false);
               if (streamTimeout) clearTimeout(streamTimeout);
+              // Update user credit after successful request
+              // updateUserCredit();
               return fullContent;
             }
             try {
@@ -279,11 +283,23 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                 setIsStreaming(false);
                 setMessages(prev => prev.map(msg =>
                   msg.id === aiMessageId
-                    ? { ...msg, text: fullContent, isStreaming: false, isError: true }
+                    ? {
+                        ...msg,
+                        text: parsed.error,
+                        isStreaming: false,
+                        isError: true,
+                        errorType: parsed.errorType || undefined,
+                        showRechargeButton: parsed.errorType === 'no_credit',
+                      }
                     : msg
                 ));
-                setTimeout(fetchAndUpdateLastAIMessage, 2000);
-                throw new Error(parsed.error);
+                // اگر خطای اتمام اعتبار بود، updateUserCredit را فراخوانی نکن
+                if (parsed.errorType !== 'no_credit') {
+                  setTimeout(fetchAndUpdateLastAIMessage, 2000);
+                }
+                // فوراً از stream خارج شو
+                if (streamTimeout) clearTimeout(streamTimeout);
+                return fullContent;
               }
               if (parsed.content) {
                 fullContent += parsed.content;
@@ -319,6 +335,27 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
       throw error;
     }
   }, [chatId, messages]);
+
+  // Function to update user credit after successful request
+  // const updateUserCredit = useCallback(async () => {
+  //   try {
+  //     const response = await fetch('/api/user/credit');
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       // Update session with new credit using NextAuth update()
+  //       await update({
+  //         ...session,
+  //         user: {
+  //           ...session?.user,
+  //           credit: data.credit
+  //         }
+  //       });
+  //       console.log('Credit updated in session:', data.credit);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to update credit:', error);
+  //   }
+  // }, [session, update]);
 
   // Retry streaming the last failed message
   const retryStreamingMessage = useCallback((opts?: { continueLast?: boolean }) => {

@@ -66,7 +66,8 @@ const PhoneAuthFlow = () => {
       }
       setStep(2);
       if (data.message === 'IsNewUser') {
-        setUsePassword(false);
+        setUsePassword(false); // برای کاربر جدید، فرم ثبت‌نام نمایش داده شود
+        setLoginWithCode(false); // کد تایید را غیرفعال کن
       } else if (data.message === 'IsExistUser') {
         setUsePassword(true);
         if (loginWithCode) handleSendLoginCode()
@@ -455,13 +456,13 @@ const PhoneAuthFlow = () => {
                         ? `کد تایید برای شماره ${formData.phone} ارسال شد. لطفا کد را وارد کنید.`
                         : usePassword
                           ? `لطفا رمز عبور خود را برای ${formData.phone} وارد کنید تا وارد حساب کاربری خود بشوید.`
-                          : `کد تایید برای شماره ${formData.phone} .پیامک شد. همچنین نام و رمز عبور خود را وارد کنید. در صورت دریافت نکردن کد با کد تایید 1404 حساب کاربری بسازید`}
+                          : `کد تایید برای شماره ${formData.phone} .پیامک شد. همچنین نام و رمز عبور خود را وارد کنید.`}
                     </p>
                   </div>
                   <div className="space-y-4">
                     {loginWithCode ? (
                       <input
-                        type="text"
+                        type="tel"
                         value={formData.verificationCode}
                         onChange={e => {
                           const englishCode = convertPersianToEnglishDigits(e.target.value)

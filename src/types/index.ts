@@ -9,7 +9,7 @@ export type ExchangeAccount = {
   apiKey: string;
   secret: string;
 };
-export type Message = {
+export type Message = { 
   id: string ;
   type: MessageType;
   text: string ;
@@ -25,6 +25,8 @@ export type Message = {
   language?: string;
   isPriceQuery?: boolean;
   isError?: boolean;
+  errorType?: string;
+  showRechargeButton?: boolean;
 };
 
 export type CryptoAnalysis = {

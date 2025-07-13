@@ -116,7 +116,7 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
         {mediaContent}
         <div className="relative" dir={isRTL(message.text) ? 'rtl' : 'ltr'}>
           {/* First render the markdown text */}
-          <div className="overflow-hidden whitespace-pre-wrap px-1 py-2">
+          <div className="overflow-hidden px-1 py-1 leading-relaxed md:px-2 md:py-2 space-y-3">
             <ReactMarkdown
               components={{
                 p: (props) => {
@@ -138,7 +138,7 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
                 ),
                 h3: (props) => (
                   <h3
-                    className="text-lg font-bold border-b-2 border-blue-300 pb-1 mt-4 text-blue-600 dark:text-blue-300"
+                    className="text-lg font-bold border-b-2 border-blue-300 pb-1 mt-6 text-blue-600 dark:text-blue-300"
                     {...props}
                   />
                 ),
@@ -194,6 +194,17 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({ message}) => 
             {/* Streaming indicator */}
             {message.isStreaming && (
               <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1" />
+            )}
+            {/* اگر پیام خطای اتمام اعتبار بود، دکمه شارژ حساب نمایش بده */}
+            {message.showRechargeButton && (
+              <div className="mt-4 flex justify-center">
+                <a
+                  href={`/${typeof window !== 'undefined' && window.location ? window.location.pathname.split('/')[1] : 'fa'}/pricing`}
+                  className="inline-block rounded-lg bg-blue-600 px-5 py-2 text-white font-bold shadow hover:bg-blue-700 transition-colors"
+                >
+                  شارژ حساب و ادامه مکالمه
+                </a>
+              </div>
             )}
           </div>
         </div>

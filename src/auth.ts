@@ -12,6 +12,7 @@ export type AuthUser = {
   image?: string;
   expiresAt?: number;
   error?: string;
+  credit?: number;
 };
 
 const config = {
@@ -99,7 +100,8 @@ const config = {
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
             image: undefined,
-            expiresAt: Date.now() + ((data.expiresIn ?? 3600) * 1000),
+            expiresAt: Date.now() + ((data.expiresIn ?? 36000) * 1000),
+            credit: data.needUserData.credit,
           };
         } catch (error) {
           console.error('Authentication error:', error);
@@ -123,6 +125,7 @@ const config = {
           picture: authUser.image,
           expiresAt: authUser.expiresAt ?? (Date.now() + 3600 * 1000),
           error: undefined,
+          credit: authUser.credit,
         };
       }
 
@@ -157,6 +160,7 @@ const config = {
           refreshToken: token.refreshToken as string,
           image: token.picture as string | undefined,
           expiresAt: token.expiresAt as number,
+          credit: token.credit as number | undefined,
         } as AuthUser,
         error: token.error as string | undefined,
       };
@@ -178,6 +182,7 @@ async function refreshAccessToken(token: Record<string, unknown>) {
     });
     const data = await response.json();
     
+    // اگر refreshToken جدید در پاسخ بود، آن را ذخیره کن. اگر نبود، مقدار قبلی را نگه دار.
     if (!response.ok || !data.accessToken) {
       console.error('Failed to refresh token:', data);
       return { error: 'RefreshAccessTokenError' };
