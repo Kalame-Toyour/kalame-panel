@@ -1,0 +1,38 @@
+# Mobile app files - exclude from server build
+kariz-mobile-capacitor/
+*.apk
+*.aab
+*.ipa
+android/
+ios/
+capacitor.config.ts
+capacitor.config.js
+
+# Build artifacts
+out/
+.next/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

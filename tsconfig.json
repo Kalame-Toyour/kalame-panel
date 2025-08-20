@@ -57,12 +57,13 @@
     "./out/**/*",
     "./node_modules/**/*",
     "**/*.spec.ts",
-    "**/*.e2e.ts"
+    "**/*.e2e.ts",
+    "./kariz-mobile-capacitor/**/*"
   ],
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".storybook/*.ts",
     ".next/types/**/*.ts",
     "**/*.mts"

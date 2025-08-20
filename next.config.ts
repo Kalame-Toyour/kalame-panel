@@ -20,6 +20,21 @@ const nextConfig = {
   images: {
     domains: ['cdn.coingraam.com'],
   },
+  
+  webpack: (config, { isServer }) => {
+    // Exclude mobile app files from server build
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        '@capacitor/cli': 'commonjs @capacitor/cli',
+        '@capacitor/core': 'commonjs @capacitor/core',
+        '@capacitor/android': 'commonjs @capacitor/android',
+        '@capacitor/ios': 'commonjs @capacitor/ios',
+      });
+    }
+    
+    return config;
+  },
 
   async rewrites() {
     return {
