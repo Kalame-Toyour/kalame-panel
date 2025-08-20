@@ -3,16 +3,16 @@ import { AppConfig } from '@/utils/AppConfig'
 import { auth } from '@/auth'
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // const session = await auth();
+  // if (!session?.user?.id) {
+  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // }
   try {
     console.log('[API] Proxying GET to', `${AppConfig.baseApiUrl}/packages`)
     const response = await fetch(`${AppConfig.baseApiUrl}/packages`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
+        // 'Authorization': `Bearer ${session.user.accessToken}`,
         'Content-Type': 'application/json',
       }
     })

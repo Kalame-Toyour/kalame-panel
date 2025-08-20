@@ -1,5 +1,4 @@
 import {
-  ChevronLeft,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -59,12 +58,26 @@ const Sidebar: React.FC<SidebarProps> = ({
   const locale = useLocale();
   const t = useTranslations('sidebar');
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(false);
   const searchParams = useSearchParams();
   const urlChatId = searchParams.get('chat') || '';
   const prevChatIdRef = useRef<string>('');
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [profileMenuOpen]);
 
   const refreshChatHistory = async () => {
     if (!user?.id) return;
@@ -133,11 +146,18 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Handler for starting a new chat
   const handleNewChat = () => {
+    // Navigate to main page first
     router.push(`/${locale}`);
-    // if (typeof window !== 'undefined') {
-    //   window.history.replaceState({}, '', `/app`);
-      window.dispatchEvent(new Event('clear-chat-messages'));
-    // }
+    
+    // Dispatch reset event after navigation
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('reset-chat-completely', { 
+        detail: { 
+          timestamp: Date.now(),
+          reason: 'new-chat-requested'
+        } 
+      }));
+    }, 50);
   };
 
   // Handler for selecting a chat from history
@@ -162,13 +182,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     // { icon: <BookText />, text: 'تبدیل گفتار به متن', path: '/voice-to-text' },
   ];
 
-  // Add CSS for waving hand animation
-  const waveStyle = {
-    display: 'inline-block',
-    animation: 'wave 1.5s infinite',
-    transformOrigin: '70% 70%',
-  };
-
   return (
     <>
       <style>{`
@@ -184,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
       `}</style>
       <div
-        className={`inset-y-0 hidden font-sans md:fixed md:block ${sidebarWidth} bg-white shadow-lg transition-all duration-500 ease-in-out dark:bg-gray-800
+        className={`inset-y-0 hidden md:fixed md:block ${sidebarWidth} bg-white/80 dark:bg-gray-900/80 shadow-xl border-r border-gray-200 dark:border-gray-800 backdrop-blur-lg transition-all duration-500 ease-in-out
        ${isOpen ? 'translate-x-0' : 'translate-x-full'}
        ${locale === 'fa' ? 'right-0' : 'left-0'}
        z-50 md:translate-x-0`}
@@ -212,29 +225,27 @@ const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
           ) : (
-            <div className="flex h-16 items-center justify-between border-b px-4 dark:border-gray-700">
+            <div className="flex h-16 items-center justify-between border-b px-4 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md">
               <div className="flex items-center w-full justify-between">
                 <div className="flex items-center">
                   <img
                     src="/kalame-logo.png"
                     alt="logo"
-                    className="w-12 rounded-2xl transition-transform hover:scale-105"
+                    className="w-12 rounded-2xl transition-transform hover:scale-110 hover:shadow-lg duration-200"
                   />
-                  <span className="mx-2 text-2xl font-bold text-primary dark:text-primary">
-                    {t('home')}
-                  </span>
+                  <span className="mx-2 text-2xl font-bold text-primary dark:text-primary select-none">{t('home')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="rounded-lg p-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-400"
                     title={t('lightmode')}
                   >
                     {theme === 'light' ? <Moon size={20} className="dark:text-gray-200" /> : <Sun size={20} className="dark:text-gray-200" />}
                   </button>
                   <button
                     onClick={toggleCollapse}
-                    className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="rounded-lg p-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-400"
                     title={t('about')}
                   >
                     <PanelLeftOpen size={20} className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'} dark:text-gray-200`} />
@@ -245,12 +256,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Greeting at the very top */}
-          {!isCollapsed && (
+          {/* {!isCollapsed && (
             <div className="flex flex-row items-center justify-start gap-2 px-4 pt-2 pb-2">
               <span style={waveStyle} aria-label="waving hand" role="img" className="text-2xl select-none">👋</span>
               <h2 className="text-xl font-bold dark:text-gray-200">سلام {user?.name}</h2>
             </div>
-          )}
+          )} */}
 
           {/* آیکون هیستوری وقتی سایدبار بسته است */}
           {isCollapsed && (
@@ -305,40 +316,32 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="mb-2 px-4 pt-2">
               <button
                 onClick={handleNewChat}
-                className="w-full rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 transition-colors text-base font-semibold mb-4"
+                className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-white hover:from-blue-600 hover:to-blue-700 hover:scale-[1.03] focus:ring-2 focus:ring-blue-400 transition-all text-sm font-semibold mb-4 shadow-md"
               >
                 + گفت‌وگوی جدید
               </button>
               {/* Feature Navigation Buttons */}
-              <div className="space-y-2">
+              <div className="space-y-2 mb-4">
                 {featureNavigationItems.map((item) => (
                   item.isUpgrade ? (
                     <></>
-                    // <button
-                    //   key={item.path}
-                    //   onClick={handleUpgradeClick}
-                    //   className="flex items-center gap-3 w-full rounded-lg px-4 py-2 border border-transparent dark:border-transparent transition-colors text-right font-medium bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-yellow-400 hover:to-amber-500 text-white shadow-md"
-                    // >
-                    //   {React.cloneElement(item.icon as React.ReactElement, { className: `w-6 h-6 text-white` })}
-                    //   <span>ارتقا بسته</span>
-                    // </button>
                   ) : (
                     <button
                       key={item.path}
                       onClick={() => handleFeatureNavigation(item.path)}
-                      className={`flex items-center gap-3 w-full rounded-lg px-4 py-2 border border-transparent dark:border-transparent transition-colors text-right font-medium
+                      className={`flex items-center gap-3 w-full rounded-lg px-3 py-2 border border-transparent dark:border-transparent transition-all text-right font-medium text-xs md:text-sm
                         ${isRouteActive(item.path)
-                          ? 'bg-gray-200 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700'
-                          : 'bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700'
-                        }
-                      `}
+                          ? 'bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-700 dark:text-blue-200 shadow-md scale-[1.03]'
+                          : 'bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700 hover:scale-[1.03]'}
+                        focus:ring-2 focus:ring-blue-400 focus:outline-none duration-150`}
                     >
-                      {React.cloneElement(item.icon as React.ReactElement, { className: `w-6 h-6 ${isRouteActive(item.path) ? 'text-blue-500' : 'text-blue-500'}` })}
-                      <span>{item.text}</span>
+                      {React.cloneElement(item.icon as React.ReactElement, { className: `w-5 h-5 md:w-6 md:h-6 ${isRouteActive(item.path) ? 'text-blue-500' : 'text-blue-400'} transition-colors` })}
+                      <span className="truncate">{item.text}</span>
                     </button>
                   )
                 ))}
               </div>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
             </div>
           )}
 
@@ -347,7 +350,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* User Info, New Chat Button, and Chat History - Hidden when collapsed */}
             {!isCollapsed && (
               <div className="mb-2">
-                <div>
+                <div className="rounded-xl bg-white/70 dark:bg-gray-900/70 shadow-sm p-2">
                   <ChatHistorySidebar
                     chatHistory={chatHistory}
                     onChatSelect={handleSelectChat}
@@ -356,7 +359,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   />
                   {/* پیام اگر هیچ تاریخچه‌ای نبود */}
                   {!isChatHistoryLoading && chatHistory.length === 0 && (
-                    <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                    <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-xs">
                       هیچ تاریخچه‌ای ندارید
                     </div>
                   )}
@@ -365,43 +368,107 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Logout Section */}
-          <div className="border-t p-4 dark:border-gray-700">
-            <div
-              className={`group relative flex h-12 items-center ${
-                isCollapsed ? 'justify-center' : 'justify-between'
-              } cursor-pointer rounded-lg p-2 transition-colors ${user ? 'text-red-800 hover:bg-slate-100 dark:text-red-400 dark:hover:bg-gray-700' : 'text-blue-500 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10'}`}
-              onClick={user ? handleLogoutClick : () => router.push(`/${locale}/auth`)}
-              title={isCollapsed ? (user ? t('logout') : 'ورود به حساب') : undefined}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  if (user) handleLogoutClick();
-                  else router.push(`/${locale}/auth`);
-                }
-              }}
-            >
-              {!isCollapsed && (
-                <div className="flex flex-row items-center">
-                  {user ? (
-                    <LogOut className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'}`} size={24} />
-                  ) : (
-                    <LogIn className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'}`} size={24} />
-                  )}
-                  <span className={`mx-4 rtl:mx-2 font-medium ${user ? '' : 'text-blue-500'}`}>{user ? t('logout') : 'ورود به حساب'}</span>
+          {/* User Profile Dropdown or Login Button */}
+          <div className="border-t p-4 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 relative">
+            {isAuthLoading ? (
+              // Skeleton loading for authentication state
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+                  </div>
                 </div>
-              )}
-              {isCollapsed && (
-                user ? (
-                  <LogOut className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'}`} size={24} />
+              </div>
+            ) : user ? (
+              // User is authenticated
+              <div className="relative" ref={profileMenuRef}>
+                {isCollapsed ? (
+                  // Collapsed state - show only small profile icon
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                      title={user.name || 'پروفایل کاربر'}
+                    >
+                      <img
+                        src={user.image || 'https://cdn-icons-png.flaticon.com/512/3237/3237472.png'}
+                        alt="آواتار کاربر"
+                        className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
+                      />
+                    </button>
+                  </div>
                 ) : (
-                  <LogIn className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'}`} size={24} />
-                )
-              )}
-              {!isCollapsed && <ChevronLeft size={24} className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'}`} />}
-            </div>
+                  // Expanded state - show full profile with dropdown
+                  <>
+                    <button
+                      className="flex items-center gap-3 w-full rounded-lg px-3 py-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                      onClick={() => setProfileMenuOpen((v) => !v)}
+                      aria-haspopup="true"
+                      aria-expanded={profileMenuOpen}
+                      tabIndex={0}
+                    >
+                      <img
+                        src={user.image || 'https://cdn-icons-png.flaticon.com/512/3237/3237472.png'}
+                        alt="آواتار کاربر"
+                        className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
+                      />
+                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate max-w-[120px]">{user.name}</span>
+                    </button>
+                    {profileMenuOpen && (
+                      <div className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl py-3 px-0 min-w-[210px] animate-fade-in flex flex-col gap-1">
+                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"   onClick={() => {
+                          setProfileMenuOpen(false)
+                          router.push(`/${locale}/about`)
+                        }}>
+                          <BookText size={18} className="text-blue-500" />
+                          درباره ما
+                        </button>
+                        {/* <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all" onClick={() => router.push(`/${locale}/settings`)}>
+                          <MessageCircle size={18} className="text-green-500" />
+                          تنظیمات
+                        </button> */}
+                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"   onClick={() => {
+                          setProfileMenuOpen(false)
+                          router.push(`/${locale}/help`)
+                        }}>
+                          <Star size={18} className="text-yellow-500" />
+                          راهنما
+                        </button>
+                        <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
+                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all" onClick={handleLogoutClick}>
+                          <LogOut size={18} className="" />
+                          خروج
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              // User is not authenticated
+              <div className="flex items-center justify-center">
+                {isCollapsed ? (
+                  // Collapsed state - show only login icon
+                  <button
+                    className="rounded-lg p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+                    title="ورود به حساب"
+                    onClick={() => router.push(`/${locale}/auth`)}
+                  >
+                    <LogIn size={24} className="text-blue-500 dark:text-blue-400" />
+                  </button>
+                ) : (
+                  // Expanded state - show full login button
+                  <button
+                    className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    onClick={() => router.push(`/${locale}/auth`)}
+                  >
+                    <LogIn size={20} />
+                    <span className="font-bold text-sm">ورود به حساب</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

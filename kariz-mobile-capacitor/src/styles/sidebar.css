@@ -1,0 +1,116 @@
+/* Simple Sidebar Animations */
+/* This file ensures smooth sidebar slide animations */
+
+/* Main sidebar container */
+.sidebar-main {
+  /* Ensure smooth transitions */
+  transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Force hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Sidebar slide states */
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-closed {
+  transform: translateX(100%);
+}
+
+/* Smooth backdrop blur transition */
+.backdrop-blur-lg {
+  transition: backdrop-filter 300ms ease-out;
+}
+
+/* Ensure smooth scrolling */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Optimize for WebView */
+@media (max-width: 768px) {
+  .sidebar-main {
+    transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Model Dropdown Dark Mode Fixes */
+/* .model-dropdown-content {
+  /* Ensure proper dark mode background */
+  /* background-color: var(--tw-bg-opacity, 1); */
+/* } */ 
+
+/* Dark mode specific styles for dropdown items */
+.dark .model-dropdown-item:hover {
+  background-color: rgb(55 65 81) !important;
+}
+
+.dark .model-dropdown-item.selected {
+  background-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Ensure proper text colors in dark mode */
+.dark .model-dropdown-content .text-gray-700 {
+  color: rgb(209 213 219) !important;
+}
+
+.dark .model-dropdown-content .text-gray-300 {
+  color: rgb(209 213 219) !important;
+}
+
+/* Fix for size dropdown in ImagePage */
+.dark .bg-gray-50 {
+  background-color: rgb(55 65 81) !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: rgba(55, 65, 81, 0.8) !important;
+}
+
+/* Enhanced dark mode styling for dropdowns */
+.dark .model-dropdown-content {
+  background-color: rgb(3 7 18) !important; /* Very dark background */
+}
+
+.dark .model-dropdown-content .border-gray-700 {
+  border-color: rgb(55 65 81) !important;
+}
+
+.dark .model-dropdown-content .border-gray-600 {
+  border-color: rgb(75 85 99) !important;
+}
+
+/* Improved contrast for dark mode text */
+.dark .model-dropdown-content .text-gray-200 {
+  color: rgb(229 231 235) !important;
+}
+
+.dark .model-dropdown-content .text-gray-300 {
+  color: rgb(209 213 219) !important;
+}
+
+/* Sidebar specific dark mode improvements */
+.dark .sidebar-main {
+  /* Keep animations working */
+  transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .sidebar-main .bg-white\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+.dark .sidebar-main .dark\:bg-gray-900\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}
+
+.dark .sidebar-main .bg-white\/95.dark\:bg-gray-800\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+.dark .sidebar-main .bg-white\/95.dark\:bg-gray-900\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}

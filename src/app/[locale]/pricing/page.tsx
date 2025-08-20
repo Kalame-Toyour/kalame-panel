@@ -11,6 +11,9 @@ import { Card } from '../components/ui/card';
 import { Tabs, TabsContent } from '../components/ui/tabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../hooks/useAuth';
+import PurchaseAuthNotification from '../components/PurchaseAuthNotification';
 
 interface Package {
   ID: number
@@ -51,12 +54,16 @@ interface PackagesApiResponse {
 export default function PricingPage() {
   const locale = useLocale();
   const isRTL = locale === 'fa';
+  const router = useRouter();
+  const { user } = useAuth();
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [packages, setPackages] = useState<Package[] | null>(null);
   const [usageHelp, setUsageHelp] = useState<UsageHelp[] | null>(null);
   const [faq, setFaq] = useState<FaqItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [buyingId, setBuyingId] = useState<number | null>(null);
+  const [showAuthNotification, setShowAuthNotification] = useState(false);
 
   useEffect(function fetchPackages() {
     let isMounted = true;
@@ -83,6 +90,17 @@ export default function PricingPage() {
     };
   }, []);
 
+  const handleAuthRedirect = () => {
+    setShowAuthNotification(false);
+    setTimeout(() => {
+      router.push('/auth');
+    }, 300);
+  };
+
+  const handleCloseNotification = () => {
+    setShowAuthNotification(false);
+  };
+
   return (
     <motion.div
     initial={{ opacity: 0, y: 50 }}
@@ -91,14 +109,18 @@ export default function PricingPage() {
     className="flex flex-col overflow-visible min-h-full"
   >
     <div
-      className={`custom-scrollbar flex min-h-screen flex-col overflow-y-auto ${
+      className={`custom-scrollbar dark:bg-gray-900 flex min-h-screen flex-col overflow-y-auto ${
         isRTL ? 'font-iran-sans' : 'font-poppins'
       }`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <AnimatedBackground />
+      <PurchaseAuthNotification 
+        isVisible={showAuthNotification} 
+        onClose={handleCloseNotification}
+        onLogin={handleAuthRedirect}
+      />
 
-      <main className="mainbg relative grow px-2 dark:bg-gray-900 md:px-36 md:pt-10">
+      <main className=" relative grow px-2  dark:bg-gray-900 md:px-36 md:pt-10">
         <div className="container flex flex-col items-center">
           <h1
             className={`mb-10 bg-gradient-to-l from-amber-500 to-pink-600 bg-clip-text text-center text-4xl font-bold text-transparent dark:from-amber-400 dark:to-pink-500 ${
@@ -141,6 +163,33 @@ export default function PricingPage() {
                     tokenInfo={{ monthly: pkg.token_number }}
                     buttonText={isRTL ? 'خرید این پکیج' : 'Buy this package'}
                     buttonVariant="default"
+                    isLoading={buyingId === pkg.ID}
+                    onBuy={async () => {
+                      // Check if user is logged in
+                      if (!user) {
+                        setShowAuthNotification(true);
+                        return;
+                      }
+                      
+                      setBuyingId(pkg.ID)
+                      try {
+                        const res = await fetch('/api/payment-request', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ packageID: pkg.ID })
+                        })
+                        const data = await res.json()
+                        if (res.ok && data.payment) {
+                          window.location.href = data.payment
+                        } else {
+                          toast.error(data.error || 'خطا در دریافت لینک پرداخت')
+                        }
+                      } catch (err) {
+                        toast.error('خطا در ارتباط با سرور پرداخت')
+                      } finally {
+                        setBuyingId(null)
+                      }
+                    }}
                   />
                 ))}
                 {!isLoading && hasError && (
@@ -211,7 +260,7 @@ export default function PricingPage() {
         </div>
 
         {/* Token Usage Information */}
-        <div className="mx-auto max-w-4xl pb-12 pt-8">
+        {/* <div className="mx-auto max-w-4xl pb-12 pt-8">
           <h2
             className={`mb-6 text-center text-2xl font-bold dark:text-gray-100 ${isRTL ? 'font-iran-sans' : 'font-poppins'}`}
           >
@@ -245,10 +294,10 @@ export default function PricingPage() {
               </div>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* FAQ Section */}
-        <div className="mx-auto max-w-4xl pb-12">
+        <div className="mx-auto max-w-4xl pt-6 pb-12">
           <h2
             className={`mb-6 text-center text-2xl font-bold dark:text-gray-100 ${isRTL ? 'font-iran-sans' : 'font-poppins'}`}
           >
@@ -318,6 +367,8 @@ interface PricingCardProps {
   tokenInfo: { monthly: number }
   buttonText: string
   buttonVariant: 'outline' | 'default'
+  isLoading?: boolean
+  onBuy?: () => void
 }
 
 function PricingCard({
@@ -329,6 +380,8 @@ function PricingCard({
   tokenInfo,
   buttonText,
   buttonVariant,
+  isLoading = false,
+  onBuy,
 }: PricingCardProps) {
   const locale = useLocale()
   const isRTL = locale === 'fa'
@@ -346,10 +399,6 @@ function PricingCard({
       default:
         return title
     }
-  }
-
-  function handleBuyClick() {
-    toast(isRTL ? 'برای خرید پکیج به پشتیبانی پیام دهید.' : 'Please contact support to purchase a package.')
   }
 
   return (
@@ -390,10 +439,20 @@ function PricingCard({
       <Button
         variant={buttonVariant}
         className={`w-full mt-2 text-lg font-bold py-4 rounded-xl shadow-lg transition-all duration-200 border-0 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 dark:from-blue-700 dark:to-blue-900 dark:hover:from-blue-800 dark:hover:to-blue-950 text-white flex items-center justify-center gap-2 ${isRTL ? 'font-iran-sans' : 'font-poppins'}`}
-        onClick={handleBuyClick}
+        onClick={onBuy}
+        disabled={isLoading}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A2 2 0 007.48 19h8.04a2 2 0 001.83-1.3L17 13M7 13V6h13" /></svg>
-        {buttonText}
+        {isLoading ? (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 animate-spin opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+            <span>{isRTL ? 'در حال انتقال به درگاه...' : 'Redirecting to payment...'}</span>
+          </>
+        ) : (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A2 2 0 007.48 19h8.04a2 2 0 001.83-1.3L17 13M7 13V6h13" /></svg>
+            {buttonText}
+          </>
+        )}
       </Button>
     </Card>
   )

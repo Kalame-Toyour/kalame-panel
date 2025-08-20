@@ -1,0 +1,129 @@
+/* Keyboard handling and viewport management for mobile devices */
+
+/* Ensure viewport is properly managed on mobile */
+@supports (height: 100dvh) {
+  html, body {
+    height: 100dvh; /* Use dynamic viewport height */
+    height: 100vh; /* Fallback for older browsers */
+  }
+}
+
+/* Prevent body scroll when keyboard is open */
+body.keyboard-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* Smooth transitions for keyboard animations */
+.chat-input-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure input is visible above keyboard */
+.chat-input-above-keyboard {
+  position: relative;
+  z-index: 1000;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Prevent zoom on input focus for iOS */
+  input, textarea {
+    font-size: 16px;
+  }
+  
+  /* Ensure proper touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Android-specific keyboard handling */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific styles */
+  .ios-keyboard-fix {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* Android-specific keyboard handling */
+@supports not (-webkit-touch-callout: none) {
+  /* Android specific styles */
+  .android-keyboard-fix {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* Smooth scrolling for keyboard focus */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent content jumping when keyboard opens */
+.prevent-jump {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Keyboard animation keyframes */
+@keyframes keyboard-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes keyboard-slide-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.keyboard-slide-up {
+  animation: keyboard-slide-up 0.3s ease-out;
+}
+
+.keyboard-slide-down {
+  animation: keyboard-slide-down 0.3s ease-out;
+}
+
+/* Ensure proper spacing above keyboard */
+.keyboard-spacer {
+  height: var(--keyboard-height, 0px);
+  transition: height 0.3s ease-in-out;
+}
+
+/* Mobile viewport fixes */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 1;
+  user-scalable: no;
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Ensure proper touch handling */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}

@@ -6,6 +6,8 @@ import fetchWithAuth from '../components/utils/fetchWithAuth';
 import { motion } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
 import { AppConfig } from '@/utils/AppConfig';
+import { ModelDropdown, type LanguageModel } from '../components/ModelDropdown'
+import { SimpleDropdown } from '../components/SimpleDropdown'
 
 interface MediaItem {
   ID: number;
@@ -22,14 +24,31 @@ const IMAGE_SIZES = [
   { label: 'افقی (16:9)', value: '16:9', size: 3 },
 ];
 
-const MODELS = [
-  { label: 'تولید تصویر با ChatGPT 4o', value: 'gpt4o', note: '' }
-];
+// Local type matching API response for models
+interface ApiModel {
+  id: number
+  name: string
+  short_name: string
+  token_cost: number
+  icon_url: string
+  provider: string
+  model_path: string
+  max_tokens: number
+  context_length: number
+  temperature: number
+  supports_streaming: number
+  supports_web_search: number
+  supports_reasoning: number
+  type?: string
+  supported_sizes?: string[]
+  supported_sizes_json?: string
+  description?: string
+}
 
 const ImageGenerationPage = () => {
   const [prompt, setPrompt] = useState('');
-  const [size, setSize] = useState(IMAGE_SIZES[0]?.value || '1:1');
-  const [model, setModel] = useState(MODELS[0]?.value || 'gpt4o');
+  const [size, setSize] = useState<string>('');
+  // Model shortName is read from selectedModel; no separate model state needed
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +56,73 @@ const ImageGenerationPage = () => {
   const [loadingImages, setLoadingImages] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [models, setModels] = useState<LanguageModel[]>([])
+  const [modelsLoading, setModelsLoading] = useState<boolean>(true)
+  const [selectedModel, setSelectedModel] = useState<LanguageModel | null>(null)
 
   useEffect(() => {
     fetchUserImages();
   }, []);
+
+  // Fetch image models for dropdown
+  useEffect(() => {
+    let isMounted = true
+    setModelsLoading(true)
+    fetch('/api/language-models?type=image')
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted) return
+        if (Array.isArray(data.models)) {
+          const mapped: LanguageModel[] = data.models.map((m: ApiModel) => {
+            let sizes: string[] | undefined
+            if (Array.isArray(m.supported_sizes)) sizes = m.supported_sizes
+            else if (m.supported_sizes_json) {
+              try {
+                const parsed = JSON.parse(m.supported_sizes_json)
+                if (Array.isArray(parsed)) sizes = parsed
+              } catch {}
+            }
+            return {
+              name: m.name,
+              shortName: m.short_name,
+              icon: m.icon_url,
+              tokenCost: m.token_cost,
+              provider: m.provider,
+              modelPath: m.model_path,
+              description: m.description,
+              type: m.type,
+              supportedSizes: sizes,
+              features: {
+                maxTokens: m.max_tokens,
+                contextLength: m.context_length,
+                temperature: m.temperature,
+                supportsStreaming: m.supports_streaming === 1,
+                supportsWebSearch: m.supports_web_search === 1,
+                supportsReasoning: m.supports_reasoning === 1,
+              },
+            }
+          })
+          setModels(mapped)
+          const first = mapped[0] ?? null
+          if (first) {
+            setSelectedModel(first)
+            // Set initial size when first model is loaded
+            const firstSize = first.supportedSizes && first.supportedSizes[0];
+            if (firstSize) setSize(firstSize);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (isMounted) setModelsLoading(false) })
+    return () => { isMounted = false }
+  }, [])
+  
+  // Update size when model changes: pick first supported size
+  useEffect(() => {
+    if (!selectedModel) return
+    const firstSize = (selectedModel.supportedSizes && selectedModel.supportedSizes[0]) || ''
+    setSize(firstSize)
+  }, [selectedModel])
 
   const fetchUserImages = async () => {
     try {
@@ -61,19 +143,17 @@ const ImageGenerationPage = () => {
     setResult(null);
     setError(null);
     try {
-      const selectedSize = IMAGE_SIZES.find(s => s.value === size)?.size || 1;
-      console.log('Sending request with size:', selectedSize);
-      
+      const selectedSize = size || (selectedModel?.supportedSizes && selectedModel.supportedSizes[0]) || '512x512'
+      const provider = selectedModel?.modelPath || 'openai'
       const requestBody = {
         chatId: '-1',
         prompt,
-        modelType: 'gemini',
-        subModel: 'midjourney_2',
-        imageSize: selectedSize
-      };
+        provider,
+        resolution: selectedSize,
+      }
       console.log('Request body:', requestBody);
 
-      const res = await fetchWithAuth('/api/generate-image', {
+      const res = await fetchWithAuth('/api/generate-image-edenai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -83,13 +163,13 @@ const ImageGenerationPage = () => {
       const data = await res.json();
       console.log('Response data:', data);
 
-      if (data.success && data.data.response) {
-        setResult(data.data.response);
+      if (data?.success && data?.data?.imageUrl) {
+        setResult(data.data.imageUrl);
         // Refresh user images after generating a new one
         fetchUserImages();
       } else {
         console.error('API returned error:', data);
-        setError(data.message || 'خطا در دریافت تصویر.');
+        setError(data?.message || 'خطا در دریافت تصویر.');
       }
     } catch (err) {
       console.error('Error generating image:', err);
@@ -143,29 +223,46 @@ const ImageGenerationPage = () => {
             />
           </div>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">سایز تصویر</label>
-              <select
-                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2 text-right text-gray-800 dark:text-gray-100 focus:outline-none"
-                value={size}
-                onChange={e => setSize(e.target.value)}
-              >
-                {IMAGE_SIZES.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
+            {/* مدل هوش مصنوعی - اول */}
+            <div className="flex-1 min-w-0">
               <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">مدل هوش مصنوعی</label>
-              <select
-                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2 text-right text-gray-800 dark:text-gray-100 focus:outline-none"
-                value={model}
-                onChange={e => setModel(e.target.value)}
-              >
-                {MODELS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label} {opt.note}</option>
-                ))}
-              </select>
+              <ModelDropdown
+                selectedModel={selectedModel}
+                setSelectedModel={(m) => { setSelectedModel(m) }}
+                models={models}
+                loading={modelsLoading}
+                className="w-full"
+                mode="image"
+                title="انتخاب مدل تولید تصویر"
+              />
+              {/* Show description and cost when model is selected */}
+              {selectedModel && (
+                <div className="mt-3 space-y-2">
+                  {selectedModel.description && (
+                    <div className="text-xs md:text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {selectedModel.description}
+                    </div>
+                  )}
+                  {typeof selectedModel.tokenCost === 'number' && (
+                    <div className="text-xs md:text-sm text-amber-700 dark:text-amber-300 font-medium">
+                      هزینه تولید هر عکس: {selectedModel.tokenCost.toLocaleString('fa-IR')} تومان
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* سایز تصویر - دوم */}
+            <div className="flex-1 min-w-0">
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">سایز تصویر</label>
+              <SimpleDropdown
+                options={(selectedModel?.supportedSizes && selectedModel.supportedSizes.length > 0)
+                  ? selectedModel.supportedSizes.map(s => ({ label: s, value: s }))
+                  : IMAGE_SIZES.map(s => ({ label: s.label, value: s.value }))}
+                value={size}
+                onChange={setSize}
+                title="انتخاب اندازه تصویر"
+                className="w-full"
+              />
             </div>
           </div>
           <button
@@ -174,11 +271,11 @@ const ImageGenerationPage = () => {
             onClick={handleGenerate}
           >
             <ImageIcon size={22} />
-            {loading ? 'در حال تولید... (حدود ۲۰ ثانیه صبر کنید)' : 'تولید عکس'}
+            {loading ? 'در حال تولید... ( صبر کنید)' : 'تولید عکس'}
           </button>
           {loading && (
             <div className="text-center text-blue-600 dark:text-blue-400 mt-4 animate-pulse">
-              تولید عکس ممکن است تا ۲۰ ثانیه طول بکشد. لطفاً صبر کنید...
+              تولید عکس ممکن است تا دقایقی طول بکشد. لطفاً صبر کنید...
             </div>
           )}
           {error && <div className="text-center text-red-500 mt-4">{error}</div>}

@@ -9,11 +9,13 @@ import {
   Mic,
   Star,
   ImageIcon,
+  BookText,
+  LogIn,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useLocale } from 'next-intl';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import LanguageSwitcherModal from '../LanguageSwitcher';
 import LogoutDialog from '../LogoutDialog';
@@ -52,6 +54,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(false);
   const { theme, setTheme } = useTheme();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [profileMenuOpen]);
 
   const waveStyle = {
     display: 'inline-block',
@@ -110,10 +126,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const handleLogoutClick = () => {
-    setIsLogoutDialogOpen(true);
-  };
-
   const handleLogoutConfirm = async () => {
     try {
       await signOut({ redirect: false });
@@ -121,6 +133,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const handleLoginClick = () => {
+    onClose();
+    router.push(`/${locale}/auth`);
   };
 
   const featureNavigationItems: NavigationItem[] = [
@@ -181,10 +198,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className={`fixed inset-y-0 ${locale === 'fa' ? 'right-0' : 'left-0'} z-50 w-full max-w-sm bg-white shadow-xl dark:bg-gray-800 md:hidden`}
+              className={`fixed inset-y-0 ${locale === 'fa' ? 'right-0' : 'left-0'} z-50 w-full max-w-sm bg-white shadow-xl dark:bg-gray-800 md:hidden flex flex-col justify-between`}
               dir={locale === 'fa' ? 'rtl' : 'ltr'}
             >
-              {/* Original Header with bg-primary */}
+              {/* Header - Different for authenticated and non-authenticated users */}
               <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-primary text-white">
                 <div className="flex items-center gap-3">
                   <button
@@ -195,8 +212,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                     <X size={24} />
                   </button>
                   <h1 className="text-lg font-semibold">
-                    سلام {user?.name}!
-                    <span style={waveStyle} className="ml-1 rtl:mr-1 inline-block">👋</span>
+                    {user ? (
+                      <>
+                        سلام {user.name}!
+                        <span style={waveStyle} className="ml-1 rtl:mr-1 inline-block">👋</span>
+                      </>
+                    ) : (
+                      'منوی اصلی'
+                    )}
                   </h1>
                 </div>
                 <button
@@ -207,7 +230,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                 </button>
               </header>
 
-              <div className="flex h-[calc(100%-64px)] flex-col overflow-y-auto p-3">
+              <div className="flex-1 h-[calc(100%-64px)] flex flex-col overflow-y-auto p-3 pb-24"> {/* pb-24 for profile bar */}
                 {/* Feature Navigation Items - Placed at the top */}
                 <div className="mb-3 space-y-1.5">
                   {featureNavigationItems.map((item) => {
@@ -231,58 +254,93 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                   })}
                 </div>
 
-                {/* Original New Chat Button - Centered */}
-                <div className="my-4 text-center">
-                  <button
-                    onClick={() => {
-                      router.push(`/${locale}`);
-                      if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new Event('clear-chat-messages'));
-                      }
-                      onClose();
-                    }}
-                    className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark transition-colors"
-                  >
-                    + گفت‌وگوی جدید
-                  </button>
-                </div>
+                {/* New Chat Button - Only show for authenticated users */}
+                {user && (
+                  <div className="my-4 text-center">
+                    <button
+                      onClick={() => {
+                        router.push(`/${locale}`);
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new Event('clear-chat-messages'));
+                        }
+                        onClose();
+                      }}
+                      className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark transition-colors"
+                    >
+                      + گفت‌وگوی جدید
+                    </button>
+                  </div>
+                )}
 
-                {/* Chat History Section */}
-                <div className="flex-grow mb-3 border-t border-b dark:border-gray-700 py-2 -mx-3 px-3">
-                  <ChatHistorySidebar
-                    chatHistory={chatHistory}
-                    isLoading={isChatHistoryLoading}
-                    onChatSelect={onClose} // Close modal on chat select
-                    activeChatId={pathname.split('/').pop() || ''} // Simplified active chat ID logic
-                  />
-                  {!isChatHistoryLoading && chatHistory.length === 0 && (
-                    <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                      هیچ گفتگویی وجود ندارد
+                {/* Chat History Section - Only show for authenticated users */}
+                {user && (
+                  <div className="flex-grow mb-3 border-t border-b dark:border-gray-700 py-2 -mx-3 px-3">
+                    <ChatHistorySidebar
+                      chatHistory={chatHistory}
+                      isLoading={isChatHistoryLoading}
+                      onChatSelect={onClose} // Close modal on chat select
+                      activeChatId={pathname.split('/').pop() || ''} // Simplified active chat ID logic
+                    />
+                    {!isChatHistoryLoading && chatHistory.length === 0 && (
+                      <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        هیچ گفتگویی وجود ندارد
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer items: Language and Logout - Restored to simpler style */}
+                {/* Removed old footer items */}
+              </div>
+              
+              {/* Fixed Bottom Bar - Different for authenticated and non-authenticated users */}
+              {user ? (
+                // Profile Bar for authenticated users
+                <div className="fixed bottom-0 z-50 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center justify-between gap-3 shadow-2xl w-full max-w-sm" style={{left: locale === 'fa' ? 'auto' : '0', right: locale === 'fa' ? '0' : 'auto'}}>
+                  <button
+                    className="flex items-center gap-3 w-full rounded-lg px-3 py-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    onClick={() => setProfileMenuOpen((v) => !v)}
+                    aria-haspopup="true"
+                    aria-expanded={profileMenuOpen}
+                    tabIndex={0}
+                  >
+                    <img
+                      src={user.image || 'https://cdn-icons-png.flaticon.com/512/3237/3237472.png'}
+                      alt="آواتار کاربر"
+                      className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
+                    />
+                    <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate max-w-[120px]">{user.name}</span>
+                  </button>
+                  {profileMenuOpen && (
+                    <div ref={profileMenuRef} className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl py-3 px-0 min-w-[210px] animate-fade-in flex flex-col gap-1 mx-4">
+                      <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); onClose(); router.push(`/${locale}/about`) }}>
+                        <BookText size={18} className="text-blue-500" />
+                        درباره ما
+                      </button>
+                      <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); onClose(); router.push(`/${locale}/help`) }}>
+                        <BookText size={18} className="text-purple-500" />
+                        راهنما
+                      </button>
+                      <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
+                      <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); handleLogoutConfirm(); }}>
+                        <LogOut size={18} className="" />
+                        خروج
+                      </button>
                     </div>
                   )}
                 </div>
-
-                {/* Footer items: Language and Logout - Restored to simpler style */}
-                <div className="mt-auto space-y-2 pt-3 dark:border-gray-700">
-                  {user ? (
-                    <button
-                      onClick={handleLogoutClick}
-                      className="flex w-full items-center rounded-lg p-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                    >
-                      <LogOut size={20} />
-                      <span className="rtl:mx-2 font-medium">خروج</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => router.push(`/${locale}/auth`)}
-                      className="flex w-full items-center rounded-lg p-2.5 text-sm text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                    >
-                      <LogOut size={20} />
-                      <span className="rtl:mx-2 font-medium">ورود به حساب</span>
-                    </button>
-                  )}
+              ) : (
+                // Login Button for non-authenticated users
+                <div className="fixed bottom-0 z-50 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-700 px-4 py-3 shadow-2xl w-full max-w-sm" style={{left: locale === 'fa' ? 'auto' : '0', right: locale === 'fa' ? '0' : 'auto'}}>
+                  <button
+                    onClick={handleLoginClick}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200"
+                  >
+                    <LogIn size={20} />
+                    <span>ورود / ثبت‌نام</span>
+                  </button>
                 </div>
-              </div>
+              )}
             </motion.div>
           </>
         )}

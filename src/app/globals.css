@@ -3,13 +3,31 @@
 @tailwind utilities;
 
 @font-face {
+  font-family: 'IranSansX';
+  src: url('/fonts/IranSansX-Regular.woff2') format('woff2'),
+       url('/fonts/IranSansX-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IranSansX';
+  src: url('/fonts/IranSansX-Bold.woff2') format('woff2'),
+       url('/fonts/IranSansX-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+@font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir-Bold.woff2') format('woff2');
@@ -17,7 +35,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir-Light.woff2') format('woff2');
@@ -25,7 +42,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir-Medium.woff2') format('woff2');
@@ -33,6 +49,7 @@
   font-style: normal;
   font-display: swap;
 }
+*/
 
 @layer utilities {
   /* Dark mode scrollbar styles */
@@ -151,6 +168,7 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+    font-family: 'IranSansX', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
 
@@ -160,6 +178,31 @@ body {
   width: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  font-family: 'IranSansX', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  max-width: 100vw;
+}
+
+/* Prevent horizontal overflow at root level */
+#__next,
+[data-nextjs-page] {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Ensure all containers respect width constraints */
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal scroll on all containers */
+.container,
+.container-fluid,
+.row,
+.col,
+.col-* {
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -174,7 +217,7 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Vazir', Tahoma, Arial, sans-serif;
+  font-family: 'IranSansX', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 @layer utilities {

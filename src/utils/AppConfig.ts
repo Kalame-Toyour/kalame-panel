@@ -12,4 +12,5 @@ export const AppConfig = {
   authApiUrl: 'https://api.kalame.chat/auth',
   authApiUrl2: 'https://api.kalame.chat/auth',
   mediaBaseUrl: 'https://media.kalame.chat',
+  appUrl: 'https://kalame.chat',
 };

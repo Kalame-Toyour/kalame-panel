@@ -27,6 +27,10 @@ export type Message = {
   isError?: boolean;
   errorType?: string;
   showRechargeButton?: boolean;
+  model?: string;
+  // Reasoning support
+  reasoningContent?: string;
+  isReasoningComplete?: boolean;
 };
 
 export type CryptoAnalysis = {
@@ -272,7 +276,6 @@ export type ChatInputProps = {
 
 export type ChatMessageContainerProps = {
   messages: Message[];
-  copyToClipboard: (text: string) => void;
   onSelectAnswer: (text: string) => void;
 };
 

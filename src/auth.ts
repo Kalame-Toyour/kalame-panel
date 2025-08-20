@@ -19,7 +19,7 @@ const config = {
   secret: process.env.NEXTAUTH_SECRET,
   session: { 
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 60 * 24 * 60 * 60, // 60 days - longer than token expiration to allow refresh
   },
   pages: {
     signIn: '/auth',
@@ -41,7 +41,7 @@ const config = {
         refreshToken: { label: 'Refresh Token', type: 'text' },
         userId: { label: 'User ID', type: 'text' },
         username: { label: 'Username', type: 'text' },
-        expiresAt: { label: 'Expires At', type: 'text' },
+        expireAt: { label: 'Expire At', type: 'text' },
       },
       async authorize(credentials): Promise<AuthUser | null> {
         if (!credentials) return null;
@@ -52,7 +52,7 @@ const config = {
           refreshToken,
           userId,
           username,
-          expiresAt,
+          expireAt,
         } = credentials as {
           phone?: string;
           password: string;
@@ -60,49 +60,46 @@ const config = {
           refreshToken?: string;
           userId?: string | number;
           username?: string;
-          expiresAt?: number;
+          expireAt?: string;
         };
-        
+
         // If we have tokens and user data, use them directly
-        if (accessToken && refreshToken && userId && username) {
-          console.log('Using provided tokens for authentication');
+        if (accessToken && userId && username) {
           return {
             id: userId.toString(),
             name: username,
             accessToken,
-            refreshToken,
+            refreshToken: refreshToken || '',
             image: undefined,
-            expiresAt: expiresAt ?? (Date.now() + 3600 * 1000),
+            expiresAt: expireAt ? new Date(expireAt).getTime() : Date.now() + 60 * 60 * 1000, // fallback: 1h
           };
         }
-        
-        // Otherwise, authenticate with phone and password
+
+        // Otherwise, authenticate with phone and password or code
         if (!password || !phone) return null;
-        
+
         try {
-          console.log('Authenticating with phone and password');
           const response = await fetch(`${AppConfig.authApiUrl}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mobile: phone, pass: password }),
           });
           const data = await response.json();
-          
-          if (!response.ok || !data.accessToken || !data.needUserData) {
-            console.error('Authentication failed:', data);
-            return null;
+
+          // Accept both password and code login
+          if (response.ok && data.accessToken && data.needUserData) {
+            return {
+              id: data.needUserData.ID?.toString() || data.needUserData.id?.toString() || '',
+              name: data.needUserData.username,
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken || '',
+              image: undefined,
+              expiresAt: data.needUserData.expireAt ? new Date(data.needUserData.expireAt).getTime() : Date.now() + 60 * 60 * 1000,
+              credit: data.needUserData.credit,
+            };
           }
-          
-          console.log('Authentication successful');
-          return {
-            id: data.needUserData.ID.toString(),
-            name: data.needUserData.username,
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            image: undefined,
-            expiresAt: Date.now() + ((data.expiresIn ?? 36000) * 1000),
-            credit: data.needUserData.credit,
-          };
+
+          return null;
         } catch (error) {
           console.error('Authentication error:', error);
           return null;
@@ -115,7 +112,6 @@ const config = {
       // Initial sign in
       if (account && user) {
         const authUser = user as AuthUser;
-        console.log('JWT callback - initial sign in:', { id: authUser.id, name: authUser.name });
         return {
           ...token,
           id: authUser.id,
@@ -123,32 +119,53 @@ const config = {
           accessToken: authUser.accessToken,
           refreshToken: authUser.refreshToken,
           picture: authUser.image,
-          expiresAt: authUser.expiresAt ?? (Date.now() + 3600 * 1000),
+          expiresAt: authUser.expiresAt,
           error: undefined,
           credit: authUser.credit,
         };
       }
 
       // Return previous token if the access token has not expired yet
-      if (typeof token.expiresAt === 'number' && Date.now() < token.expiresAt) {
-        console.log('JWT callback - token still valid');
+      // Add a 5-minute buffer to refresh tokens before they expire
+      const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+      if (typeof token.expiresAt === 'number' && Date.now() < (token.expiresAt - bufferTime)) {
         return token;
       }
 
-      // Access token has expired, try to update it
-      console.log('Token expired, refreshing...');
-      const refreshedToken = await refreshAccessToken(token);
+      // Access token has expired or is close to expiring, try to update it
+      if (token.refreshToken) {
+        console.log('Token expired or close to expiring, attempting refresh...');
+        const refreshedToken = await refreshAccessToken(token);
+        
+        if (refreshedToken.error) {
+          console.error('Token refresh failed:', refreshedToken.error);
+          return {
+            ...token,
+            error: refreshedToken.error,
+          };
+        }
+        
+        return {
+          ...token,
+          ...refreshedToken,
+        };
+      }
+
+      // No refresh token available, return token with error
       return {
         ...token,
-        ...refreshedToken,
+        error: 'RefreshAccessTokenError',
       };
     },
     async session({ session, token }) {
-      console.log('Session callback - token:', { id: token.id, name: token.name, error: token.error });
-      
-      if (token.error) {
-        console.error('Session error:', token.error);
-      }
+      console.log('Session callback:', {
+        hasToken: !!token,
+        tokenId: token.id,
+        tokenName: token.name,
+        tokenError: token.error,
+        tokenExpiresAt: token.expiresAt ? new Date(token.expiresAt).toISOString() : 'No expiration',
+        timeLeft: token.expiresAt ? token.expiresAt - Date.now() : 'No expiration',
+      });
       
       return {
         ...session,
@@ -174,29 +191,44 @@ export const { auth, handlers: { GET, POST }, signIn, signOut } = NextAuth(confi
 // Helper to refresh access token
 async function refreshAccessToken(token: Record<string, unknown>) {
   try {
-    console.log('Refreshing access token...');
+    console.log('Attempting to refresh token...');
+    
     const response = await fetch(`${AppConfig.authApiUrl}/refreshToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: token.refreshToken }),
-    });
-    const data = await response.json();
-    
-    // اگر refreshToken جدید در پاسخ بود، آن را ذخیره کن. اگر نبود، مقدار قبلی را نگه دار.
-    if (!response.ok || !data.accessToken) {
-      console.error('Failed to refresh token:', data);
-      return { error: 'RefreshAccessTokenError' };
+    })
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType?.includes('application/json')) {
+      const text = await response.text()
+      console.error('Unexpected response (not JSON):', text)
+      return { error: 'RefreshAccessTokenError', detail: 'Response is not JSON', responseText: text }
     }
-    
-    console.log('Token refreshed successfully');
+
+    const data = await response.json()
+    console.log('Refresh token response:', { status: response.status, hasAccessToken: !!data.accessToken, hasUserData: !!data.needUserData })
+
+    if (!response.ok || !data.accessToken || !data.needUserData) {
+      console.error('Refresh token failed:', { status: response.status, data })
+      return { error: 'RefreshAccessTokenError', detail: data }
+    }
+
+    const newExpiresAt = data.needUserData.expireAt ? new Date(data.needUserData.expireAt).getTime() : undefined
+    console.log('Token refreshed successfully:', {
+      newExpiresAt: newExpiresAt ? new Date(newExpiresAt).toISOString() : 'No expiration',
+      timeLeft: newExpiresAt ? newExpiresAt - Date.now() : 'No expiration',
+    })
+
     return {
       accessToken: data.accessToken,
       refreshToken: data.refreshToken ?? token.refreshToken,
-      expiresAt: Date.now() + ((data.expiresIn ?? 3600) * 1000),
+      expiresAt: newExpiresAt,
       error: undefined,
-    };
+      credit: data.needUserData.credit,
+    }
   } catch (error) {
-    console.error('Token refresh error:', error);
-    return { error: 'RefreshAccessTokenError' };
+    console.error('Token refresh error:', error)
+    return { error: 'RefreshAccessTokenError', detail: error instanceof Error ? error.message : String(error) }
   }
 }

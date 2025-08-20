@@ -1,26 +1,30 @@
 import { NextResponse } from 'next/server';
 import { cacheManager } from '@/utils/cacheManager';
 import { AppConfig } from '@/utils/AppConfig';
-import { auth } from '@/auth';
+// import { auth } from '@/auth';
 
 
 const CACHE_KEY = 'language-models';
 const CACHE_TTL = 600; // 10 minutes in seconds
 
-async function fetchLanguageModelsFromUpstream() {
+async function fetchLanguageModelsFromUpstream(type?: string | null) {
 
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // const session = await auth();
+  // if (!session?.user?.id) {
+  //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // }
 
-    const response = await fetch(`${AppConfig.baseApiUrl}/language-models`, {
+    const url = new URL(`${AppConfig.baseApiUrl}/language-models`);
+    if (type) {
+      url.searchParams.set('type', type);
+    }
+    const response = await fetch(url.toString(), {
 
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization': `Bearer ${session.user.accessToken}`
+      // 'Authorization': `Bearer ${session.user.accessToken}`/
     },
     });
   if (!response.ok) {
@@ -28,19 +32,23 @@ async function fetchLanguageModelsFromUpstream() {
   }
   const data = await response.json();
   // Defensive: ensure the structure is as expected
-  if (!data.models || !Array.isArray(data.models.language.models)) {
+  if (!data.models || !Array.isArray(data.models)) {
     throw new Error('Invalid response structure from upstream');
   }
   // Return only the array of models
-  return data.models.language.models;
+  return data.models;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    let models = cacheManager.get(CACHE_KEY);
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type');
+    const cacheKey = `${CACHE_KEY}:${type || 'all'}`;
+
+    let models = cacheManager.get(cacheKey);
     if (!models) {
-      models = await fetchLanguageModelsFromUpstream();
-      cacheManager.set(CACHE_KEY, models, CACHE_TTL);
+      models = await fetchLanguageModelsFromUpstream(type);
+      cacheManager.set(cacheKey, models, CACHE_TTL);
     }
     return NextResponse.json({ models });
   } catch (error) {

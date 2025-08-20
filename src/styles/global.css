@@ -3,13 +3,29 @@
 @tailwind utilities;
 
 @font-face {
+  font-family: 'IranSans';
+  src: url('/fonts/IranSansX-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IranSans';
+  src: url('/fonts/IranSansX-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+@font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir-Bold.woff2') format('woff2');
@@ -17,7 +33,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir-Light.woff2') format('woff2');
@@ -25,7 +40,6 @@
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Vazir';
   src: url('/fonts/Vazir-Medium.woff2') format('woff2');
@@ -33,6 +47,7 @@
   font-style: normal;
   font-display: swap;
 }
+*/
 
 @layer utilities {
   /* Dark mode scrollbar styles */
@@ -151,6 +166,7 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+    font-family: 'IranSans', Tahoma, Arial, sans-serif;
   }
 }
 
@@ -161,6 +177,7 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  font-family: 'IranSans', Tahoma, Arial, sans-serif;
 }
 
 /* Mobile responsiveness adjustments */
@@ -174,7 +191,7 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Vazir', Tahoma, Arial, sans-serif;
+  font-family: 'IranSans', Tahoma, Arial, sans-serif;
 }
 
 @layer utilities {

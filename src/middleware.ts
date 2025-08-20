@@ -58,10 +58,38 @@ const isAuthEndpoint = createRoutesMatcher([
 ]);
 
 // Helper function to validate token
-const isValidToken = (token: { accessToken?: string; expiresAt?: number } | null) => {
-  if (!token) return false;
-  if (!token.accessToken) return false;
-  if (token.expiresAt && Date.now() > token.expiresAt) return false;
+const isValidToken = (token: { accessToken?: string; expiresAt?: number; error?: string } | null) => {
+  if (!token) {
+    console.log('Middleware - No token found');
+    return false;
+  }
+  
+  if (token.error) {
+    console.log('Middleware - Token has error:', token.error);
+    return false;
+  }
+  
+  if (!token.accessToken) {
+    console.log('Middleware - No access token found');
+    return false;
+  }
+  
+  if (token.expiresAt && Date.now() > token.expiresAt) {
+    console.log('Middleware - Token expired:', {
+      expiresAt: new Date(token.expiresAt).toISOString(),
+      now: new Date().toISOString(),
+      timeLeft: token.expiresAt - Date.now(),
+    });
+    return false;
+  }
+  
+  console.log('Middleware - Token is valid:', {
+    hasAccessToken: !!token.accessToken,
+    expiresAt: token.expiresAt ? new Date(token.expiresAt).toISOString() : 'No expiration',
+    timeLeft: token.expiresAt ? token.expiresAt - Date.now() : 'No expiration',
+    tokenError: token.error,
+  });
+  
   return true;
 };
 
@@ -84,8 +112,14 @@ export default async function middleware(
       hasToken: !!token,
       tokenId: token?.id,
       tokenName: token?.name,
+      tokenError: token?.error,
+      tokenExpiresAt: token?.expiresAt ? new Date(token.expiresAt).toISOString() : 'No expiration',
       path: request.nextUrl.pathname,
       host: request.headers.get('host'),
+      isProtected: isProtectedRoute(request),
+      isAuthPage: isAuthPage(request),
+      hasAccessToken: !!token?.accessToken,
+      hasRefreshToken: !!token?.refreshToken,
     });
 
     // Handle protected routes
@@ -108,6 +142,9 @@ export default async function middleware(
         
         return NextResponse.redirect(signInUrl);
       }
+      
+      // Token is valid, allow access to protected route
+      console.log('Middleware - Access granted to protected route');
     }
 
     // Handle auth pages

@@ -1,0 +1,1414 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import fonts */
+@import './fonts.css';
+
+/* Font weight classes */
+.font-regular {
+  font-weight: 400;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* Custom CSS Variables for Dark Mode */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+  
+  /* Dropdown specific variables */
+  --dropdown-bg: 0 0% 100%;
+  --dropdown-border: 214.3 31.8% 91.4%;
+  --dropdown-header-bg: 210 40% 96%;
+  --dropdown-item-hover: 210 40% 96%;
+  --dropdown-item-selected: 221.2 83.2% 53.3%;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 84% 4.9%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 94.1%;
+  
+  /* Dropdown specific variables for dark mode */
+  --dropdown-bg: 222.2 84% 4.9%;
+  --dropdown-border: 217.2 32.6% 17.5%;
+  --dropdown-header-bg: 217.2 32.6% 17.5%;
+  --dropdown-item-hover: 217.2 32.6% 17.5%;
+  --dropdown-item-selected: 217.2 91.2% 59.8%;
+}
+
+/* Force dark mode styles with higher specificity */
+html.dark body {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+}
+
+/* Custom animations */
+@keyframes progress {
+  0% {
+    transform: scaleX(0);
+  }
+  50% {
+    transform: scaleX(0.7);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes success-bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes checkmark-appear {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(-45deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.slide-up-in {
+  animation: slide-up 0.6s ease-out;
+}
+
+/* Enhanced loading animations */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.loading-bounce {
+  animation: bounce 1s infinite;
+}
+
+.loading-spin {
+  animation: spin 1s linear infinite;
+}
+
+.loading-container-pulse {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth transitions for loading states */
+.loading-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Progress bar animations */
+.progress-fill {
+  animation: progress 2s ease-in-out infinite;
+}
+
+/* Loading step animations */
+.loading-step {
+  transition: all 0.3s ease;
+  animation: fade-in 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.loading-step:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.loading-step:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.loading-step:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+.loading-step.active {
+  transform: scale(1.1);
+  color: #3b82f6;
+}
+
+.loading-step.completed {
+  color: #10b981;
+}
+
+/* Success animations */
+.success-bounce {
+  animation: success-bounce 1s ease-in-out;
+}
+
+.checkmark-appear {
+  animation: checkmark-appear 0.6s ease-out forwards;
+}
+
+/* Enhanced progress animations */
+.progress-success {
+  animation: progress 1s ease-out forwards;
+}
+
+html.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #374151 !important;
+}
+
+html.dark .bg-gray-100 {
+  background-color: #4b5563 !important;
+}
+
+html.dark .bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+html.dark .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+html.dark .text-gray-800 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-gray-700 {
+  color: #e5e7eb !important;
+}
+
+html.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+html.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .text-gray-300 {
+  color: #d1d5db !important;
+}
+
+html.dark .border-gray-200 {
+  border-color: #374151 !important;
+}
+
+html.dark .border-gray-300 {
+  border-color: #4b5563 !important;
+}
+
+html.dark .border-gray-600 {
+  border-color: #6b7280 !important;
+}
+
+html.dark .border-gray-700 {
+  border-color: #4b5563 !important;
+}
+
+html.dark .hover\:bg-gray-100:hover {
+  background-color: #374151 !important;
+}
+
+html.dark .hover\:bg-gray-50:hover {
+  background-color: #374151 !important;
+}
+
+html.dark .hover\:bg-gray-700:hover {
+  background-color: #4b5563 !important;
+}
+
+html.dark .hover\:bg-gray-800:hover {
+  background-color: #374151 !important;
+}
+
+/* Specific dark mode overrides for ModelDropdown */
+html.dark .dark\:bg-blue-800 {
+  background-color: #1e40af !important;
+}
+
+html.dark .dark\:bg-blue-900\/30 {
+  background-color: rgba(30, 64, 175, 0.3) !important;
+}
+
+html.dark .dark\:bg-blue-900\/40 {
+  background-color: rgba(30, 64, 175, 0.4) !important;
+}
+
+html.dark .dark\:bg-purple-900\/40 {
+  background-color: rgba(147, 51, 234, 0.4) !important;
+}
+
+html.dark .dark\:text-blue-300 {
+  color: #93c5fd !important;
+}
+
+html.dark .dark\:text-purple-300 {
+  color: #c4b5fd !important;
+}
+
+html.dark .dark\:border-blue-700 {
+  border-color: #1d4ed8 !important;
+}
+
+html.dark .dark\:border-purple-700 {
+  border-color: #7c3aed !important;
+}
+
+/* Sidebar specific dark mode overrides */
+html.dark .dark\:bg-gray-900\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}
+
+html.dark .dark\:bg-gray-800\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+html.dark .dark\:bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .dark\:bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+/* Force dark mode for sidebar chat list header */
+html.dark .bg-white.dark\:bg-gray-800 {
+  background-color: #111827 !important;
+}
+
+html.dark .bg-gray-100.dark\:bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+html.dark .dark\:text-blue-400 {
+  color: #60a5fa !important;
+}
+
+html.dark .dark\:text-gray-200 {
+  color: #e5e7eb !important;
+}
+
+html.dark .dark\:text-gray-100 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .dark\:text-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .dark\:border-gray-700 {
+  border-color: #374151 !important;
+}
+
+html.dark .dark\:hover\:bg-gray-700:hover {
+  background-color: #374151 !important;
+}
+
+html.dark .dark\:hover\:bg-gray-800:hover {
+  background-color: #1f2937 !important;
+}
+
+html.dark .dark\:hover\:bg-blue-900\/30:hover {
+  background-color: rgba(30, 64, 175, 0.3) !important;
+}
+
+/* Button styles for AuthPage */
+.bg-primary {
+  background-color: #3b82f6 !important;
+}
+
+.hover\:bg-blue-900:hover {
+  background-color: #1e3a8a !important;
+}
+
+.dark .hover\:bg-amber-700:hover {
+  background-color: #a16207 !important;
+}
+
+.dark .hover\:bg-amber-600:hover {
+  background-color: #d97706 !important;
+}
+
+/* Theme toggle button styles */
+html.dark .bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .hover\:bg-white\/30:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+html.dark .bg-gray-800\/20 {
+  background-color: rgba(31, 41, 55, 0.2) !important;
+}
+
+html.dark .hover\:bg-gray-800\/30:hover {
+  background-color: rgba(31, 41, 55, 0.3) !important;
+}
+
+html.dark .border-white\/20 {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+html.dark .border-gray-700\/20 {
+  border-color: rgba(55, 65, 81, 0.2) !important;
+}
+
+/* Remove backgrounds from theme toggle buttons in dark mode */
+html.dark button[title*="تغییر تم"],
+html.dark button[title*="تغییر به حالت"],
+html.dark button[onclick*="setTheme"],
+html.dark button[onclick*="handleThemeToggle"] {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+html.dark button[title*="تغییر تم"]:hover,
+html.dark button[title*="تغییر به حالت"]:hover,
+html.dark button[onclick*="setTheme"]:hover,
+html.dark button[onclick*="handleThemeToggle"]:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+/* Specific override for sidebar theme toggle */
+html.dark .sidebar-theme-toggle,
+html.dark button[onclick*="handleThemeToggle"] {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+html.dark .sidebar-theme-toggle:hover,
+html.dark button[onclick*="handleThemeToggle"]:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+/* Profile modal theme toggle - keep blue background since it's in header */
+html.dark .profile-theme-toggle {
+  background-color: transparent !important;
+  background: none !important;
+
+}
+
+html.dark .profile-theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* General theme toggle button */
+html.dark .theme-toggle-btn {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+html.dark .theme-toggle-btn:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+/* ModelDropdown specific dark mode styles */
+html.dark .model-dropdown-item {
+  background-color: transparent !important;
+}
+
+html.dark .model-dropdown-item:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+html.dark .model-dropdown-item.selected {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+  border-left-color: #3b82f6 !important;
+}
+
+/* Override any conflicting dark mode styles for dropdown items */
+html.dark div[class*="hover:bg-gray-50"]:not(.selected):hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+html.dark div[class*="bg-transparent"] {
+  background-color: transparent !important;
+}
+
+/* Specific ModelDropdown dark mode overrides */
+html.dark .model-dropdown-item:not(.selected) {
+  background-color: transparent !important;
+}
+
+html.dark .model-dropdown-item:not(.selected):hover {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+}
+
+html.dark .model-dropdown-item.selected {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+html.dark .model-dropdown-item.selected:hover {
+  background-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Force dark background for ModelDropdown content */
+html.dark .model-dropdown-content {
+  background-color: rgb(3 7 18) !important; /* Very dark background */
+}
+
+html.dark .model-dropdown-content .bg-gray-50 {
+  background-color: rgb(31 41 55) !important;
+}
+
+html.dark .model-dropdown-content .dark\:bg-gray-800 {
+  background-color: rgb(31 41 55) !important;
+}
+
+html.dark .model-dropdown-content .dark\:bg-gray-900 {
+  background-color: rgb(3 7 18) !important;
+}
+
+html.dark .model-dropdown-content .border-gray-200 {
+  border-color: rgb(55 65 81) !important;
+}
+
+html.dark .model-dropdown-content .dark\:border-gray-600 {
+  border-color: rgb(75 85 99) !important;
+}
+
+html.dark .model-dropdown-content .dark\:border-gray-700 {
+  border-color: rgb(55 65 81) !important;
+}
+
+/* Additional dropdown styling with higher specificity */
+html.dark div[class*="model-dropdown-content"] {
+  background-color: rgb(3 7 18) !important;
+}
+
+html.dark div[class*="model-dropdown-content"] .bg-gray-50 {
+  background-color: rgb(31 41 55) !important;
+}
+
+html.dark div[class*="model-dropdown-content"] .dark\:bg-gray-800 {
+  background-color: rgb(31 41 55) !important;
+}
+
+html.dark div[class*="model-dropdown-content"] .dark\:bg-gray-900 {
+  background-color: rgb(3 7 18) !important;
+}
+
+html.dark div[class*="model-dropdown-content"] .border-gray-200 {
+  border-color: rgb(55 65 81) !important;
+}
+
+html.dark div[class*="model-dropdown-content"] .dark\:border-gray-600 {
+  border-color: rgb(75 85 99) !important;
+}
+
+html.dark div[class*="model-dropdown-content"] .dark\:border-gray-700 {
+  border-color: rgb(55 65 81) !important;
+}
+
+/* AuthPage specific dark mode styles */
+html.dark .bg-gradient-to-br.from-blue-50.via-white.to-cyan-50 {
+  background: linear-gradient(to bottom right, #1f2937, #111827, #1e293b) !important;
+}
+
+html.dark .dark\:from-gray-700.dark\:via-gray-900.dark\:to-gray-800 {
+  background: linear-gradient(to bottom right, #1f2937, #111827, #1e293b) !important;
+}
+
+html.dark .bg-white\/0 {
+  background-color: transparent !important;
+}
+
+html.dark .dark\:bg-gray-900\/0 {
+  background-color: transparent !important;
+}
+
+html.dark .bg-white\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html.dark .dark\:bg-gray-900\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}
+
+html.dark .bg-white\/70 {
+  background-color: rgba(31, 41, 55, 0.7) !important;
+}
+
+html.dark .dark\:bg-gray-800\/70 {
+  background-color: rgba(31, 41, 55, 0.7) !important;
+}
+
+html.dark .border-gray-200 {
+  border-color: #374151 !important;
+}
+
+html.dark .dark\:border-gray-700 {
+  border-color: #374151 !important;
+}
+
+html.dark .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+html.dark .dark\:text-white {
+  color: #f9fafb !important;
+}
+
+html.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+html.dark .dark\:text-gray-300 {
+  color: #d1d5db !important;
+}
+
+html.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .dark\:text-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .placeholder-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .dark\:placeholder-gray-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .focus\:border-primary {
+  border-color: #3b82f6 !important;
+}
+
+html.dark .focus\:ring-primary {
+  --tw-ring-color: #3b82f6 !important;
+}
+
+html.dark .text-red-500 {
+  color: #ef4444 !important;
+}
+
+html.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+html.dark .hover\:text-blue-700:hover {
+  color: #3b82f6 !important;
+}
+
+html.dark .dark\:text-blue-400 {
+  color: #60a5fa !important;
+}
+
+html.dark .dark\:hover\:text-blue-300:hover {
+  color: #93c5fd !important;
+}
+
+html.dark .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .dark\:text-gray-400 {
+  color: #9ca3af !important;
+}
+
+html.dark .hover\:text-gray-700:hover {
+  color: #d1d5db !important;
+}
+
+html.dark .dark\:hover\:text-white:hover {
+  color: #f9fafb !important;
+}
+
+html.dark .hover\:bg-gray-100 {
+  background-color: #374151 !important;
+}
+
+html.dark .dark\:hover\:bg-gray-700 {
+  background-color: #374151 !important;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: 'IranSansX', 'Tahoma', 'Arial', sans-serif;
+}
+
+/* Apply IranSansX font to all elements */
+* {
+  font-family: 'IranSansX', 'Tahoma', 'Arial', sans-serif;
+}
+
+/* Specific font classes */
+.font-iran {
+  font-family: 'IranSansX', 'Tahoma', 'Arial', sans-serif;
+}
+
+.font-iran-regular {
+  font-family: 'IranSansX', 'Tahoma', 'Arial', sans-serif;
+  font-weight: 400;
+}
+
+.font-iran-bold {
+  font-family: 'IranSansX', 'Tahoma', 'Arial', sans-serif;
+  font-weight: 700;
+}
+
+/* Animation classes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.15s ease-out;
+}
+
+/* Additional animations for auth page */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.delay-100 {
+  animation-delay: 0.1s;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+/* Grid pattern background */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Loading animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Gradient animation */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 15s ease infinite;
+  background-size: 200% 200%;
+}
+
+/* Active chat styling for sidebar */
+.active-chat {
+  background-color: #dbeafe !important;
+  border-right: 4px solid #3b82f6 !important;
+}
+
+html.dark .active-chat {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  border-right: 4px solid #60a5fa !important;
+}
+
+.active-chat:hover {
+  background-color: #bfdbfe !important;
+}
+
+html.dark .active-chat:hover {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Override any conflicting styles for active chat */
+html.dark .active-chat.bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+html.dark .active-chat.dark\:bg-blue-900\/50 {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+html.dark .active-chat.border-blue-500 {
+  border-right-color: #60a5fa !important;
+}
+
+/* Dark mode styles for code blocks and reasoning box */
+html.dark .bg-gray-50 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .dark\:bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .dark\:bg-gray-900\/40 {
+  background-color: rgba(17, 24, 39, 0.4) !important;
+}
+
+html.dark .dark\:bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+html.dark .dark\:bg-blue-900\/20 {
+  background-color: rgba(30, 64, 175, 0.2) !important;
+}
+
+html.dark .dark\:bg-blue-900\/30 {
+  background-color: rgba(30, 64, 175, 0.3) !important;
+}
+
+html.dark .dark\:bg-blue-900\/40 {
+  background-color: rgba(30, 64, 175, 0.4) !important;
+}
+
+html.dark .dark\:border-blue-800 {
+  border-color: #1e40af !important;
+}
+
+html.dark .dark\:border-blue-200 {
+  border-color: #3b82f6 !important;
+}
+
+html.dark .dark\:text-blue-200 {
+  color: #bfdbfe !important;
+}
+
+html.dark .dark\:text-blue-100 {
+  color: #dbeafe !important;
+}
+
+html.dark .dark\:text-blue-400 {
+  color: #60a5fa !important;
+}
+
+html.dark .dark\:text-blue-600 {
+  color: #2563eb !important;
+}
+
+html.dark .dark\:text-blue-800 {
+  color: #1e40af !important;
+}
+
+html.dark .dark\:text-blue-900 {
+  color: #1e3a8a !important;
+}
+
+/* Specific overrides for code blocks */
+html.dark pre {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+html.dark code {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  color: #60a5fa !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+html.dark .text-blue-700 {
+  color: #3b82f6 !important;
+}
+
+html.dark .text-blue-300 {
+  color: #93c5fd !important;
+}
+
+/* Sidebar chat items dark mode improvements */
+html.dark .bg-white\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+html.dark .dark\:bg-gray-800\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #374151 !important;
+}
+
+html.dark .dark\:bg-gray-800 {
+  background-color: #374151 !important;
+}
+
+html.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563 !important;
+}
+
+html.dark .dark\:hover\:bg-gray-700:hover {
+  background-color: #4b5563 !important;
+}
+
+/* Force dark mode for chat items in sidebar */
+html.dark .bg-white\/95.dark\:bg-gray-800\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+html.dark .bg-white.dark\:bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .bg-gray-100.dark\:bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+/* Specific sidebar dark mode improvements */
+html.dark .sidebar-chat-item {
+  background-color: #1f2937 !important;
+}
+
+html.dark .sidebar-chat-item:hover {
+  background-color: #374151 !important;
+}
+
+html.dark .sidebar-chat-item.active {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+html.dark .sidebar-chat-item.active:hover {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Override sidebar background in dark mode */
+html.dark .bg-white\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+html.dark .dark\:bg-gray-900\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}
+
+/* Force dark mode for sidebar header */
+html.dark .bg-white\/95.dark\:bg-gray-900\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+/* Force dark mode for sidebar footer */
+html.dark .bg-white\/95.dark\:bg-gray-900\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important;
+}
+
+/* ModelDropdown centering styles */
+.model-dropdown-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.model-dropdown-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.model-dropdown-content {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  top: 100%;
+  margin-top: 0.5rem;
+}
+
+/* Ensure dropdown is centered on mobile */
+@media (max-width: 768px) {
+  .model-dropdown-content {
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 2rem);
+    max-width: 320px;
+  }
+  
+  .model-dropdown-container {
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .model-dropdown-button {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* Desktop centering improvements */
+@media (min-width: 769px) {
+  .model-dropdown-content {
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 280px;
+  }
+}
+
+/* Fix mobile icon centering issues */
+@media (max-width: 768px) {
+  /* Ensure all icon buttons are properly centered */
+  button[class*="sidebar-theme-toggle"],
+  button[class*="theme-toggle"],
+  button[class*="rounded-lg p-2"],
+  .sidebar button,
+  .header button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  
+  /* Fix sidebar header centering */
+  .sidebar-main .flex.h-16.items-center.justify-between {
+    justify-content: space-between !important;
+  }
+  
+  .sidebar-main .flex.h-16.items-center.justify-between > div {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+}
+
+/* Remove all unwanted backgrounds from theme toggle buttons in dark mode */
+html.dark button[title*="تغییر تم"],
+html.dark button[title*="تغییر به حالت"],
+html.dark button[onclick*="setTheme"],
+html.dark button[onclick*="handleThemeToggle"],
+html.dark .sidebar-theme-toggle,
+html.dark .theme-toggle-btn,
+html.dark .profile-theme-toggle {
+  background-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+html.dark button[title*="تغییر تم"]:hover,
+html.dark button[title*="تغییر به حالت"]:hover,
+html.dark button[onclick*="setTheme"]:hover,
+html.dark button[onclick*="handleThemeToggle"]:hover,
+html.dark .sidebar-theme-toggle:hover,
+html.dark .theme-toggle-btn:hover,
+html.dark .profile-theme-toggle:hover {
+  background-color: rgba(55, 65, 81, 0.3) !important;
+  background: rgba(55, 65, 81, 0.3) !important;
+}
+
+/* Remove backgrounds from all icon buttons in dark mode */
+html.dark button[class*="rounded-lg p-2"]:not([class*="bg-"]):not([class*="hover:bg-"]) {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+html.dark button[class*="rounded-lg p-2"]:not([class*="bg-"]):not([class*="hover:bg-"]):hover {
+  background-color: rgba(55, 65, 81, 0.3) !important;
+  background: rgba(55, 65, 81, 0.3) !important;
+}
+
+
+/* Remove any remaining unwanted backgrounds in dark mode */
+html.dark .bg-white\/20,
+html.dark .bg-gray-800\/20,
+html.dark .bg-transparent {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+html.dark .hover\:bg-white\/30:hover,
+html.dark .hover\:bg-gray-800\/30:hover {
+  background-color: rgba(55, 65, 81, 0.3) !important;
+  background: rgba(55, 65, 81, 0.3) !important;
+}
+
+/* Ensure all theme toggle buttons have no background by default */
+html.dark button[class*="sidebar-theme-toggle"],
+html.dark button[class*="theme-toggle"],
+html.dark button[class*="profile-theme-toggle"] {
+  background: none !important;
+  background-color: transparent !important;
+}
+
+/* Only show background on hover for theme toggle buttons */
+html.dark button[class*="sidebar-theme-toggle"]:hover,
+html.dark button[class*="theme-toggle"]:hover,
+html.dark button[class*="profile-theme-toggle"]:hover {
+  background-color: rgba(55, 65, 81, 0.3) !important;
+}
+
+/* ChatInputModern button styles for dark mode */
+html.dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+html.dark .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+html.dark .border-blue-300 {
+  border-color: #3b82f6 !important;
+}
+
+html.dark .dark\:bg-blue-900 {
+  background-color: rgba(30, 64, 175, 0.3) !important;
+}
+
+html.dark .dark\:text-blue-200 {
+  color: #bfdbfe !important;
+}
+
+html.dark .dark\:border-blue-600 {
+  border-color: #2563eb !important;
+}
+
+/* About and Help pages specific dark mode fixes */
+html.dark .about-help-page {
+  background: linear-gradient(to bottom right, #0f172a, #1e293b, #0f172a) !important;
+}
+
+html.dark .about-help-header {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: #475569 !important;
+}
+
+html.dark .about-help-content {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-color: #475569 !important;
+}
+
+html.dark .about-help-text {
+  color: #e2e8f0 !important;
+}
+
+html.dark .about-help-heading {
+  color: #f1f5f9 !important;
+}
+
+html.dark .about-help-accent {
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6) !important;
+}
+
+html.dark .about-help-accent-green {
+  background: linear-gradient(to bottom, #10b981, #3b82f6) !important;
+}
+
+html.dark .about-help-accent-blue {
+  background: linear-gradient(to bottom, #3b82f6, #06b6d4) !important;
+}
+
+html.dark .about-help-border {
+  border-color: #475569 !important;
+}
+
+html.dark .about-help-hover {
+  background-color: #475569 !important;
+}
+
+html.dark .about-help-loading {
+  color: #94a3b8 !important;
+}
+
+html.dark .about-help-error {
+  color: #f87171 !important;
+}
+
+html.dark .about-help-footer {
+  color: #94a3b8 !important;
+}
+
+/* Remove focus ring from reasoning and web search buttons */
+.reasoning-button:focus,
+.websearch-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  ring: none !important;
+}
+
+.reasoning-button:focus-visible,
+.websearch-button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+
+/* Ensure all icons have consistent sizing */
+svg,
+.lucide,
+[class*="icon"] {
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+
+/* Remove any remaining focus rings that might interfere */
+.sidebar-theme-toggle:focus,
+.theme-toggle-btn:focus,
+.profile-theme-toggle:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* Fix like/dislike/copy buttons in dark mode */
+html.dark button[class*="hover:bg-gray-300"]:not([class*="bg-green-100"]):not([class*="bg-red-100"]),
+html.dark button[class*="hover:bg-gray-700"]:not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+/* Ensure action buttons are properly centered */
+.flex.items-center.gap-2 button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 2rem !important;
+  min-height: 2rem !important;
+}
+
+/* Fix action button icons centering */
+.flex.items-center.gap-2 button svg,
+.flex.items-center.gap-2 button .lucide {
+  display: block !important;
+  margin: 0 auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* Remove unwanted backgrounds from action buttons in dark mode */
+html.dark .flex.items-center.gap-2 button:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+  background-color: transparent !important;
+  background: none !important;
+}
+
+/* Only show background for active states (liked/disliked) */
+html.dark .flex.items-center.gap-2 button.bg-green-100,
+html.dark .flex.items-center.gap-2 button.dark\:bg-green-900\/30 {
+  background-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+html.dark .flex.items-center.gap-2 button.bg-red-100,
+html.dark .flex.items-center.gap-2 button.dark\:bg-red-900\/30 {
+  background-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Additional fixes for action buttons */
+.flex.items-center.justify-between .flex.items-center.gap-2 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+/* Ensure all action buttons have consistent styling */
+.flex.items-center.gap-2 button[title*="کپی"],
+.flex.items-center.gap-2 button[title*="پاسخ مفید بود"],
+.flex.items-center.gap-2 button[title*="پاسخ مفید نبود"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.5rem !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Fix hover states for action buttons */
+.flex.items-center.gap-2 button:hover:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+  background-color: rgba(156, 163, 175, 0.3) !important;
+}
+
+html.dark .flex.items-center.gap-2 button:hover:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+  background-color: rgba(75, 85, 99, 0.3) !important;
+}

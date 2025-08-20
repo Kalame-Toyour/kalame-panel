@@ -1,0 +1,111 @@
+/* WebView Optimizations for Chromium Performance */
+/* This file contains CSS optimizations to reduce paint timing issues in Android WebView */
+
+/* Reduce complex animations on mobile */
+@media (max-width: 768px) {
+  /* Simplify complex animations */
+  .animate-bounce {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Reduce transition complexity */
+  .transition-all {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+  
+  /* Simplify shadows for better performance */
+  .shadow-lg {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Reduce blur effects */
+  .blur-xl {
+    filter: blur(8px);
+  }
+  
+  /* Optimize gradients */
+  .bg-gradient-to-tr {
+    background: linear-gradient(to top right, var(--tw-gradient-stops));
+  }
+}
+
+/* WebView specific optimizations */
+.webview-optimized {
+  /* Force hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  
+  /* Reduce paint complexity */
+  will-change: auto;
+  
+  /* Optimize transitions */
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduce animation complexity on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Optimize image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Reduce complex CSS properties that cause paint issues */
+.webview-simplified {
+  /* Use simpler shadows */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  /* Use solid colors instead of gradients */
+  background: #3b82f6;
+  
+  /* Reduce border radius complexity */
+  border-radius: 8px;
+}
+
+/* Optimize scrolling performance */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Reduce paint complexity for loading states */
+.loading-optimized {
+  /* Use simpler animations */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  /* Reduce transition complexity */
+  transition: opacity 150ms ease-in-out;
+}
+
+/* Optimize backdrop filters for WebView */
+.backdrop-blur-md {
+  /* Fallback for WebView */
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Reduce complex hover effects on mobile */
+@media (hover: none) {
+  .hover\:scale-110:hover {
+    transform: none;
+  }
+  
+  .hover\:rotate-\[360deg\]:hover {
+    transform: none;
+  }
+  
+  .hover\:shadow-lg:hover {
+    box-shadow: none;
+  }
+}

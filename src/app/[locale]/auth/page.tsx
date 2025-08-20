@@ -41,6 +41,7 @@ const PhoneAuthFlow = () => {
   const [usePassword, setUsePassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginWithCode, setLoginWithCode] = useState(true);
+  const [isCodeSubmitted, setIsCodeSubmitted] = useState(false);
 
   const handlePhoneSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -106,7 +107,16 @@ const PhoneAuthFlow = () => {
       
       if (response.ok && data.accessToken) {
         // ورود موفق: ذخیره توکن با next-auth
-        console.log('Attempting to sign in with NextAuth...');
+        console.log('Login successful, attempting to sign in with NextAuth...', {
+          phone: formData.phone,
+          hasAccessToken: !!data.accessToken,
+          hasRefreshToken: !!data.refreshToken,
+          userId: data.needUserData?.ID,
+          username: data.needUserData?.username,
+          expireAt: data.needUserData?.expireAt,
+          parsedExpireAt: data.needUserData?.expireAt ? new Date(data.needUserData.expireAt).toISOString() : 'No expiration',
+        });
+        
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
           password: formData.password,
@@ -114,6 +124,7 @@ const PhoneAuthFlow = () => {
           refreshToken: data.refreshToken,
           userId: data.needUserData?.ID,
           username: data.needUserData?.username,
+          expireAt: data.needUserData?.expireAt,
           redirect: false,
         });
         
@@ -185,7 +196,16 @@ const PhoneAuthFlow = () => {
 
       // New user: get token and login with next-auth session directly
       if (data.accessToken && data.needUserData) {
-        console.log('Attempting to sign in after registration...');
+        console.log('Registration successful, attempting to sign in after registration...', {
+          phone: formData.phone,
+          hasAccessToken: !!data.accessToken,
+          hasRefreshToken: !!data.refreshToken,
+          userId: data.needUserData.ID,
+          username: data.needUserData.username,
+          expireAt: data.needUserData.expireAt,
+          parsedExpireAt: data.needUserData.expireAt ? new Date(data.needUserData.expireAt).toISOString() : 'No expiration',
+        });
+        
         // Use signIn with a custom provider to pass tokens directly
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
@@ -194,6 +214,7 @@ const PhoneAuthFlow = () => {
           refreshToken: data.refreshToken,
           userId: data.needUserData.ID,
           username: data.needUserData.username,
+          expireAt: data.needUserData.expireAt,
           redirect: false,
         });
         
@@ -226,8 +247,11 @@ const PhoneAuthFlow = () => {
   // One-time code login for existing usersسلام 
   const handleLoginWithCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCodeSubmitted) return;
+    setIsCodeSubmitted(true);
     if (!formData.phone || !formData.verificationCode) {
       setValidationError('شماره موبایل و کد تایید الزامی است.');
+      setIsCodeSubmitted(false);
       return;
     }
     setValidationError('');
@@ -248,7 +272,16 @@ const PhoneAuthFlow = () => {
       
       // If tokens and user data are present, use them to sign in directly
       if (data.accessToken && data.needUserData) {
-        console.log('Attempting to sign in with code...');
+        console.log('Code login successful, attempting to sign in with code...', {
+          phone: formData.phone,
+          hasAccessToken: !!data.accessToken,
+          hasRefreshToken: !!data.refreshToken,
+          userId: data.needUserData.ID,
+          username: data.needUserData.username,
+          expireAt: data.needUserData.expireAt,
+          parsedExpireAt: data.needUserData.expireAt ? new Date(data.needUserData.expireAt).toISOString() : 'No expiration',
+        });
+        
         const signInResult = await signIn('credentials', {
           phone: formData.phone,
           password: formData.verificationCode,
@@ -256,6 +289,7 @@ const PhoneAuthFlow = () => {
           refreshToken: data.refreshToken,
           userId: data.needUserData.ID,
           username: data.needUserData.username,
+          expireAt: data.needUserData.expireAt,
           redirect: false,
         });
         
@@ -301,6 +335,7 @@ const PhoneAuthFlow = () => {
       console.error('Login with code error:', _error);
     } finally {
       setIsLoading(false);
+      setIsCodeSubmitted(false);
     }
   };
 
@@ -337,7 +372,7 @@ const PhoneAuthFlow = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-700 dark:via-gray-900 dark:to-gray-800">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-700 dark:via-gray-900 dark:to-gray-800">
       <AnimatedBackground />
       <div className="absolute top-6 left-6 z-20">
         <ThemeToggle />
@@ -467,8 +502,7 @@ const PhoneAuthFlow = () => {
                         onChange={e => {
                           const englishCode = convertPersianToEnglishDigits(e.target.value)
                           setFormData(prev => {
-                            // Auto-submit if 4 digits entered and not previously submitted
-                            if (englishCode.length === 4 && prev.verificationCode.length < 4) {
+                            if (englishCode.length === 4 && prev.verificationCode.length < 4 && !isCodeSubmitted) {
                               setTimeout(() => {
                                 const form = e.target.form as HTMLFormElement | null
                                 if (form) form.requestSubmit()

@@ -2,89 +2,48 @@
 
 import type { ChatMessageContainerProps, Message } from '@/types';
 import { isRTL } from '@/libs/textUtils';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ChatMessageRenderer from './ChatMessageRenderer';
 
-const ChatMessageContainer: React.FC<ChatMessageContainerProps & { children?: React.ReactNode }> = ({
+const ChatMessageContainer: React.FC<ChatMessageContainerProps & { children?: React.ReactNode, isUserAtBottom: boolean }> = ({
   messages,
-  copyToClipboard,
   onSelectAnswer,
   children,
+  isUserAtBottom,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [lastMessageCount, setLastMessageCount] = useState(messages.length);
-  const [lastStreaming, setLastStreaming] = useState(false);
 
   useEffect(() => {
-    // Always scroll to bottom if the last message is streaming (AI response growing)
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.isStreaming) {
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg?.isStreaming && isUserAtBottom) {
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({
           behavior: 'smooth',
           block: 'end',
           inline: 'nearest',
-        });
-      }, 30);
+        })
+      }, 30)
     }
-  }, [messages]);
-
-  useEffect(() => {
-    // Find if the last message is streaming
-    const lastMsg = messages[messages.length - 1];
-    const isLastStreaming = !!lastMsg?.isStreaming;
-
-    // Only scroll if a new message is added
-    if (messages.length > lastMessageCount) {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-          inline: 'nearest',
-        });
-      }, 30);
-      setLastMessageCount(messages.length);
-      setLastStreaming(isLastStreaming);
-      return;
-    }
-
-    // If streaming just finished, scroll to bottom (to show full answer)
-    if (lastStreaming && !isLastStreaming) {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-          inline: 'nearest',
-        });
-      }, 30);
-      setLastStreaming(false);
-      return;
-    }
-
-    // If user is at bottom and a streaming message is growing, do NOT force scroll (let browser handle it)
-    // If user scrolled up, don't force scroll
-  }, [messages, lastMessageCount, lastStreaming]);
+  }, [messages, isUserAtBottom])
 
   return (
-    <div ref={containerRef} className="flex-1 min-h-0 flex flex-col md:mb-0 p-2 md:mr-10 font-sans overflow-y-auto">
+    <div className="flex-1 min-h-0 flex flex-col md:mb-0 p-2 md:mr-8 mb-6 w-full max-w-full overflow-hidden">
       {messages.map((message: Message) => {
         const messageKey = `message-${message.id}`;
         return (
           <React.Fragment key={messageKey}>
             <ChatMessageRenderer
               message={message}
-              copyToClipboard={copyToClipboard}
             />
 
             {message.selectableAnswers && (
-              <div className="mt-4 flex flex-wrap justify-center">
+              <div className="mt-4 flex flex-wrap justify-center w-full max-w-full overflow-hidden">
                 {message.selectableAnswers.map((answer: string, index: number) => (
                   <button
                     type="button"
                     key={`${messageKey}-answer-${index}`}
                     onClick={() => onSelectAnswer(answer)}
-                    className="m-1 rounded-full bg-primary p-2 text-sm text-white transition-colors duration-200 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+                    className="m-1 rounded-full bg-primary p-2 text-sm text-white transition-colors duration-200 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 break-words"
                     dir={isRTL(answer) ? 'rtl' : 'ltr'}
                   >
                     {answer}

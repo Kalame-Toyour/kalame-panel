@@ -86,8 +86,8 @@ const config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Vazir', 'Tahoma', 'Arial', 'sans-serif'],
-        'iran-sans': ['Vazir', 'ui-sans-serif', 'system-ui'],
+        sans: ['IranSans', 'Tahoma', 'Arial', 'sans-serif'],
+        'iran-sans': ['IranSans', 'ui-sans-serif', 'system-ui'],
       },
       keyframes: {
         'accordion-down': {

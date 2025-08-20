@@ -1,4 +1,5 @@
 import BlogDetailPage from '@/app/[locale]/components/BlogDetailPage';
+import { getBaseUrl } from '@/utils/Helpers';
 import React from 'react';
 
 type BlogPost = {
@@ -11,7 +12,8 @@ type BlogPost = {
 
 const fetchBlogPost = async (id: string): Promise<BlogPost | null> => {
   try {
-    const response = await fetch(`http://localhost:3000/api/blog-posts/${id}`);
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/api/blog-posts/${id}`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
