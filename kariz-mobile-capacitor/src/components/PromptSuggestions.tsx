@@ -112,11 +112,11 @@ export function PromptSuggestions({ onSelectPrompt }: PromptSuggestionsProps) {
         {[...Array(6)].map((_, index) => (
           <div
             key={index}
-            className="flex items-center gap-2 rounded-xl px-3 py-2 md:px-4 md:py-2 bg-gray-200 dark:bg-gray-700 animate-pulse"
+            className="flex items-center gap-2 rounded-xl px-3 py-2 md:px-4 md:py-2 animate-pulse"
             style={{ minWidth: '90px', maxWidth: '200px' }}
           >
-            <div className="w-5 h-5 md:w-6 md:h-6 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-            <div className="w-16 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            <div className="w-5 h-5 md:w-6 md:h-6"></div>
+            <div className="w-16 h-4 rounded"></div>
           </div>
         ))}
       </div>
@@ -140,7 +140,7 @@ export function PromptSuggestions({ onSelectPrompt }: PromptSuggestionsProps) {
           <button
             key={id}
             type="button"
-            className={`flex items-center gap-2 rounded-xl px-3 py-2 md:px-4 md:py-2 bg-white dark:bg-gray-900 border ${borderClass} shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-2 transition-all text-xs md:text-sm min-w-[90px] md:min-w-[120px] max-w-xs focus:ring-2 focus:ring-blue-400 focus:outline-none`}
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 md:px-4 md:py-2 border ${borderClass} shadow-sm hover:border-2 transition-all text-xs md:text-sm min-w-[90px] md:min-w-[120px] max-w-xs focus:ring-2 focus:ring-blue-400 focus:outline-none`}
             onClick={() => onSelectPrompt(prompt)}
             aria-label={title}
             style={{ borderWidth: 1.5 }}
@@ -148,7 +148,7 @@ export function PromptSuggestions({ onSelectPrompt }: PromptSuggestionsProps) {
             <img 
               src={icon} 
               alt="" 
-              className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover drop-shadow" 
+              className="w-5 h-5 md:w-6 md:h-6 object-cover drop-shadow" 
               loading="lazy"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';

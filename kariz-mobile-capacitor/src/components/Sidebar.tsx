@@ -85,6 +85,77 @@ const Sidebar: React.FC<SidebarProps> = ({
   const logoutDialogRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
+  const loadChatHistory = useCallback(async () => {
+    if (!user?.id || !user?.accessToken) {
+      console.log('No user ID or access token available');
+      return;
+    }
+    
+    setIsLoadingChats(true);
+    try {
+      const response = await api.getWithAuth(`/chats?userID=${user.id}`, user.accessToken);
+      console.log('Chat history response:', response);
+      
+      // Handle different response formats
+      let chats: Chat[] = [];
+      if (response && Array.isArray(response)) {
+        chats = response.map((chat: ChatResponse) => ({
+          ...chat,
+          chatCode: chat.code || chat.chatCode || chat.id // Extract 'code' field or fallback
+        }));
+      } else if (response && typeof response === 'object' && 'chats' in response && Array.isArray((response as unknown as ChatsResponse).chats)) {
+        chats = (response as unknown as ChatsResponse).chats.map((chat: ChatResponse) => ({
+          ...chat,
+          chatCode: chat.code || chat.chatCode || chat.id // Extract 'code' field or fallback
+        }));
+      } else {
+        chats = [];
+      }
+
+      console.log('Processed chats with chatCode:', chats.map(chat => ({ 
+        id: chat.id, 
+        code: chat.code, 
+        chatCode: chat.chatCode 
+      })));
+      
+      // Sort chats by insert_time (newest first) to ensure new chats appear at the top
+      const sortedChats = chats.sort((a, b) => {
+        const timeA = new Date(a.insert_time).getTime();
+        const timeB = new Date(b.insert_time).getTime();
+        return timeB - timeA; // Newest first
+      });
+      
+      console.log('[Sidebar] Setting sorted chat history, newest first');
+      console.log('[Sidebar] First few chats:', sortedChats.slice(0, 3).map(chat => ({
+        id: chat.id,
+        code: chat.code,
+        chatCode: chat.chatCode,
+        insert_time: chat.insert_time,
+        title: chat.title
+      })));
+      
+      setChatHistory(sortedChats);
+      
+      // If we have a currentChatId, check if it's in the new history
+      if (currentChatId && sortedChats.length > 0) {
+        const currentChatInHistory = sortedChats.some(chat => 
+          chat.id === currentChatId || chat.chatCode === currentChatId || chat.code === currentChatId
+        );
+        
+        if (currentChatInHistory) {
+          console.log('[Sidebar] Current chat found in refreshed history:', currentChatId);
+        } else {
+          console.log('[Sidebar] Current chat not found in refreshed history, might need another refresh:', currentChatId);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      setChatHistory([]);
+    } finally {
+      setIsLoadingChats(false);
+    }
+  }, [user?.id, user?.accessToken, currentChatId]);
+
   useEffect(() => {
     if (!profileMenuOpen) return;
     function handleClickOutside(event: MouseEvent) {
@@ -130,12 +201,28 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }, [isAuthenticated, user]);
 
-  // Reload chat history when user changes (after login)
+  // Force reload chat history when user changes
   useEffect(() => {
     if (user?.id && user?.accessToken) {
+      console.log('[Sidebar] User changed, loading chat history');
       loadChatHistory();
     }
-  }, [user?.id, user?.accessToken]);
+  }, [user?.id, user?.accessToken, loadChatHistory]);
+
+  // Additional effect to force refresh when currentChatId changes
+  useEffect(() => {
+    if (currentChatId && user?.id && user?.accessToken) {
+      console.log('[Sidebar] Current chat ID changed, forcing chat history refresh:', currentChatId);
+      
+      // Force refresh after a short delay to ensure we get the latest data
+      const timer = setTimeout(() => {
+        console.log('[Sidebar] Forcing chat history refresh for current chat:', currentChatId);
+        loadChatHistory();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentChatId, user?.id, user?.accessToken, loadChatHistory]);
 
   // Force reload chat history when authentication state changes
   useEffect(() => {
@@ -162,9 +249,18 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     if (refreshChatHistory && user?.id && user?.accessToken) {
       console.log('[Sidebar] Refreshing chat history from parent trigger');
+      // Force reload chat history immediately
       loadChatHistory();
+      
+      // Also reload after a short delay to ensure we get the latest data
+      const timer = setTimeout(() => {
+        console.log('[Sidebar] Additional delayed refresh from parent trigger');
+        loadChatHistory();
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
-  }, [refreshChatHistory, user?.id, user?.accessToken]);
+  }, [refreshChatHistory, user?.id, user?.accessToken, loadChatHistory]);
 
   // When chat history is updated, check if we need to highlight a new chat
   useEffect(() => {
@@ -207,59 +303,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       } else {
         console.log('[Sidebar] Current chat not found in updated history, might be a new chat');
         console.log('[Sidebar] This could mean the chat was just created and needs to be added to the list');
+        
+        // If current chat is not found, it might be a newly created chat
+        // Force a refresh to ensure we get the latest data
+        if (refreshChatHistory) {
+          console.log('[Sidebar] Forcing refresh to get newly created chat');
+          setTimeout(() => {
+            refreshChatHistory();
+          }, 500);
+        }
       }
     }
-  }, [chatHistory, currentChatId]);
-
-  const loadChatHistory = useCallback(async () => {
-    if (!user?.id || !user?.accessToken) {
-      console.log('No user ID or access token available');
-      return;
-    }
-    
-    setIsLoadingChats(true);
-    try {
-      const response = await api.getWithAuth(`/chats?userID=${user.id}`, user.accessToken);
-      console.log('Chat history response:', response);
-      
-      // Handle different response formats
-      let chats: Chat[] = [];
-      if (response && Array.isArray(response)) {
-        chats = response.map((chat: ChatResponse) => ({
-          ...chat,
-          chatCode: chat.code || chat.chatCode || chat.id // Extract 'code' field or fallback
-        }));
-      } else if (response && typeof response === 'object' && 'chats' in response && Array.isArray((response as unknown as ChatsResponse).chats)) {
-        chats = (response as unknown as ChatsResponse).chats.map((chat: ChatResponse) => ({
-          ...chat,
-          chatCode: chat.code || chat.chatCode || chat.id // Extract 'code' field or fallback
-        }));
-      } else {
-        chats = [];
-      }
-
-      console.log('Processed chats with chatCode:', chats.map(chat => ({ 
-        id: chat.id, 
-        code: chat.code, 
-        chatCode: chat.chatCode 
-      })));
-      
-      // Sort chats by insert_time (newest first) to ensure new chats appear at the top
-      const sortedChats = chats.sort((a, b) => {
-        const timeA = new Date(a.insert_time).getTime();
-        const timeB = new Date(b.insert_time).getTime();
-        return timeB - timeA; // Newest first
-      });
-      
-      console.log('[Sidebar] Setting sorted chat history, newest first');
-      setChatHistory(sortedChats);
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-      setChatHistory([]);
-    } finally {
-      setIsLoadingChats(false);
-    }
-  }, [user?.id, user?.accessToken]);
+  }, [chatHistory, currentChatId, refreshChatHistory]);
 
   const handleNewChat = () => {
     if (onNewChat) {
@@ -435,14 +490,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <img
                   src="/kalamelogo.png"
                   alt="logo"
-                  className="w-12 rounded-2xl transition-all duration-300 ease-out hover:scale-110 hover:shadow-lg"
+                  className="w-12 rounded-2xl hover:scale-110 hover:shadow-lg"
                 />
                 <span className="mx-2 text-2xl font-bold text-primary dark:text-blue-400 select-none">کلمه</span>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleThemeToggle}
-                  className="sidebar-theme-toggle rounded-lg p-2 transition-all duration-300 ease-out hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-400"
+                  className="sidebar-theme-toggle rounded-lg p-2 transition-all duration-300 ease-out hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-400 bg-transparent dark:bg-transparent"
                   title="تغییر تم"
                 >
                   {theme === 'light' ? <Moon size={20} className="text-gray-600 dark:text-gray-200" /> : <Sun size={20} className="text-gray-600 dark:text-gray-200" />}
@@ -515,31 +570,43 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <ul>
                         {[...(groupedChats[groupKey] ?? [])]
                           .sort((a, b) => Number(new Date(b.insert_time)) - Number(new Date(a.insert_time)))
-                          .map((chat) => (
-                            <li key={chat.id}>
-                              <button
-                                onClick={() => {
-                                  console.log('Chat button clicked:', { id: chat.id, code: chat.code, chatCode: chat.chatCode });
-                                  handleChatSelect(chat.id, chat.chatCode);
-                                }}
-                                className={`w-full px-4 py-2 text-left rounded transition-all duration-300 ease-out truncate focus:outline-none hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 ${
-                                  currentChatId === chat.id || currentChatId === chat.code || currentChatId === chat.chatCode 
-                                    ? 'active-chat active bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500' 
-                                    : ''
-                                }`}
-                              >
-                                <p className="truncate text-gray-900 dark:text-gray-100 font-medium text-sm text-right">
-                                  {chat.title || 'بدون عنوان'}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 text-right">
-                                  {(() => {
-                                    const displayDate = parseDate(chat.insert_time);
-                                    return displayDate.isValid() ? displayDate.locale('fa').format('HH:mm') : '--:--';
-                                  })()}
-                                </p>
-                              </button>
-                            </li>
-                          ))}
+                          .map((chat) => {
+                            // Check if this chat is the current active chat
+                            const isActiveChat = currentChatId === chat.id || 
+                                               currentChatId === chat.code || 
+                                               currentChatId === chat.chatCode;
+                            
+                            return (
+                              <li key={chat.id}>
+                                <button
+                                  onClick={() => {
+                                    console.log('Chat button clicked:', { 
+                                      id: chat.id, 
+                                      code: chat.code, 
+                                      chatCode: chat.chatCode,
+                                      isActive: isActiveChat 
+                                    });
+                                    handleChatSelect(chat.id, chat.chatCode);
+                                  }}
+                                  className={`w-full px-4 py-2 text-left rounded transition-all duration-300 ease-out truncate focus:outline-none hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                                    isActiveChat 
+                                      ? 'active-chat active bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500' 
+                                      : ''
+                                  }`}
+                                >
+                                  <p className="truncate text-gray-900 dark:text-gray-100 font-medium text-sm text-right">
+                                    {chat.title || 'بدون عنوان'}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 text-right">
+                                    {(() => {
+                                      const displayDate = parseDate(chat.insert_time);
+                                      return displayDate.isValid() ? displayDate.locale('fa').format('HH:mm') : '--:--';
+                                    })()}
+                                  </p>
+                                </button>
+                              </li>
+                            );
+                          })}
                       </ul>
                     </div>
                   ))}

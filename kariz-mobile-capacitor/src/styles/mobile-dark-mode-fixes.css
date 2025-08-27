@@ -1,0 +1,1387 @@
+/* Mobile Dark Mode Fixes */
+/* This file addresses dark mode issues on all devices */
+
+/* Force proper dark mode application */
+@media (prefers-color-scheme: dark) {
+  html.dark,
+  html[data-theme="dark"],
+  body.dark,
+  body[data-theme="dark"] {
+    color-scheme: dark !important;
+  }
+  
+  html.light,
+  html[data-theme="light"],
+  body.light,
+  body[data-theme="light"] {
+    color-scheme: light !important;
+  }
+}
+
+/* Dark mode overrides for all screen sizes */
+/* Force dark mode for sticky header with ModelDropdown */
+html.dark .sticky.top-0.z-30.backdrop-blur-md,
+html[data-theme="dark"] .sticky.top-0.z-30.backdrop-blur-md,
+html.dark div[class*="sticky"][class*="top-0"][class*="z-30"],
+html[data-theme="dark"] div[class*="sticky"][class*="top-0"][class*="z-30"] {
+  background-color: #111827 !important; /* gray-900 */
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Force dark mode for backdrop-blur elements */
+html.dark .backdrop-blur-md,
+html[data-theme="dark"] .backdrop-blur-md {
+  background-color: rgba(17, 24, 39, 0.8) !important; /* gray-900 with opacity */
+}
+
+/* Force dark mode for ModelDropdown */
+html.dark .model-dropdown-content,
+html[data-theme="dark"] .model-dropdown-content {
+  background-color: #0f172a !important; /* slate-950 */
+  border-color: #475569 !important; /* slate-600 */
+}
+
+html.dark .model-dropdown-content .bg-gray-50,
+html[data-theme="dark"] .model-dropdown-content .bg-gray-50 {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+html.dark .model-dropdown-content .bg-gray-100,
+html[data-theme="dark"] .model-dropdown-content .bg-gray-100 {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+/* Force dark mode for dropdown items */
+html.dark .model-dropdown-item,
+html[data-theme="dark"] .model-dropdown-item {
+  background-color: transparent !important;
+}
+
+html.dark .model-dropdown-item:hover,
+html[data-theme="dark"] .model-dropdown-item:hover {
+  background-color: #475569 !important; /* slate-600 */
+}
+
+html.dark .model-dropdown-item.selected,
+html[data-theme="dark"] .model-dropdown-item.selected {
+  background-color: rgba(59, 130, 246, 0.3) !important; /* blue-600 with opacity */
+  border-left-color: #3b82f6 !important; /* blue-500 */
+}
+
+/* Force dark mode for sidebar */
+html.dark .sidebar-main,
+html[data-theme="dark"] .sidebar-main {
+  background-color: rgba(17, 24, 39, 0.95) !important; /* gray-900 with opacity */
+}
+
+html.dark .sidebar-main .bg-white\/95,
+html[data-theme="dark"] .sidebar-main .bg-white\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity */
+}
+
+html.dark .sidebar-main .dark\:bg-gray-900\/95,
+html[data-theme="dark"] .sidebar-main .dark\:bg-gray-900\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important; /* gray-900 with opacity */
+}
+
+/* Force dark mode for sidebar header on mobile */
+html.dark .sidebar-main .bg-white\/95.dark\:bg-gray-900\/95,
+html[data-theme="dark"] .sidebar-main .bg-white\/95.dark\:bg-gray-900\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity */
+}
+
+/* Force dark mode for sidebar footer */
+html.dark .sidebar-main .border-t,
+html[data-theme="dark"] .sidebar-main .border-t {
+  border-color: #374151 !important; /* gray-700 */
+}
+
+/* Force dark mode for theme toggle button */
+html.dark .sidebar-theme-toggle,
+html[data-theme="dark"] .sidebar-theme-toggle {
+  background-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+html.dark .sidebar-theme-toggle:hover,
+html[data-theme="dark"] .sidebar-theme-toggle:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important; /* gray-700 with opacity */
+}
+
+/* Force dark mode for chat list headers */
+html.dark .bg-white.dark\:bg-gray-800,
+html[data-theme="dark"] .bg-white.dark\:bg-gray-800 {
+  background-color: #1f2937 !important; /* gray-800 */
+}
+
+html.dark .bg-gray-100.dark\:bg-gray-900,
+html[data-theme="dark"] .bg-gray-100.dark\:bg-gray-900 {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+/* Force dark mode for chat items */
+html.dark .bg-white\/95.dark\:bg-gray-800\/95,
+html[data-theme="dark"] .bg-white\/95.dark\:bg-gray-800\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity */
+}
+
+/* Force dark mode for profile section */
+html.dark .bg-white\/95.dark\:bg-gray-900\/95,
+html[data-theme="dark"] .bg-white\/95.dark\:bg-gray-900\/95 {
+  background-color: rgba(31, 41, 55, 0.95) !important; /* gray-800 with opacity */
+}
+
+/* Light mode overrides for all screen sizes */
+/* Light mode styles for sticky header */
+html.light .sticky.top-0.z-30.backdrop-blur-md,
+html[data-theme="light"] .sticky.top-0.z-30.backdrop-blur-md {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* white with opacity */
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+html.light .sticky.top-0.z-30.backdrop-blur-md.bg-white,
+html[data-theme="light"] .sticky.top-0.z-30.backdrop-blur-md.bg-white {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* white with opacity */
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+html.light .sticky.top-0.z-30.backdrop-blur-md.border-gray-100,
+html[data-theme="light"] .sticky.top-0.z-30.backdrop-blur-md.border-gray-100 {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Light mode for backdrop-blur elements */
+html.light .backdrop-blur-md,
+html[data-theme="light"] .backdrop-blur-md {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* white with opacity */
+}
+
+/* Light mode for bg-white elements */
+html.light .bg-white,
+html[data-theme="light"] .bg-white {
+  background-color: #ffffff !important; /* white */
+}
+
+/* Light mode for border-gray-100 elements */
+html.light .border-gray-100,
+html[data-theme="light"] .border-gray-100 {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Light mode for text elements */
+html.light .text-gray-900,
+html[data-theme="light"] .text-gray-900 {
+  color: #111827 !important; /* gray-900 */
+}
+
+html.light .text-gray-800,
+html[data-theme="light"] .text-gray-800 {
+  color: #1f2937 !important; /* gray-800 */
+}
+
+html.light .text-gray-700,
+html[data-theme="light"] .text-gray-700 {
+  color: #374151 !important; /* gray-700 */
+}
+
+html.light .text-gray-600,
+html[data-theme="light"] .text-gray-600 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.light .text-gray-500,
+html[data-theme="light"] .text-gray-500 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+html.light .text-gray-400,
+html[data-theme="light"] .text-gray-400 {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Light mode for specific components */
+/* Force light mode for sticky header when app is in light mode */
+html.light div.sticky.top-0.z-30.backdrop-blur-md.bg-white.dark\:bg-gray-900,
+html[data-theme="light"] div.sticky.top-0.z-30.backdrop-blur-md.bg-white.dark\:bg-gray-900 {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* white with opacity */
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Force light mode for any element containing the ModelDropdown when app is in light mode */
+html.light div:has(.model-dropdown-container),
+html[data-theme="light"] div:has(.model-dropdown-container) {
+  background-color: rgba(255, 255, 255, 0.9) !important; /* white with opacity */
+}
+
+/* Force light mode for ModelDropdown button when app is in light mode */
+html.light .model-dropdown-button,
+html[data-theme="light"] .model-dropdown-button {
+  background-color: #ffffff !important; /* white */
+  color: #111827 !important; /* gray-900 */
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+html.light .model-dropdown-button:hover,
+html[data-theme="light"] .model-dropdown-button:hover {
+  background-color: #f3f4f6 !important; /* gray-100 */
+  color: #374151 !important; /* gray-700 */
+}
+
+/* Force light mode for ModelDropdown content when app is in light mode */
+html.light .model-dropdown-content,
+html[data-theme="light"] .model-dropdown-content {
+  background-color: #ffffff !important; /* white */
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Force light mode for ModelDropdown items when app is in light mode */
+html.light .model-dropdown-item,
+html[data-theme="light"] .model-dropdown-item {
+  background-color: transparent !important;
+}
+
+html.light .model-dropdown-item:hover,
+html[data-theme="light"] .model-dropdown-item:hover {
+  background-color: #f9fafb !important; /* gray-50 */
+}
+
+html.light .model-dropdown-item.selected,
+html[data-theme="light"] .model-dropdown-item.selected {
+  background-color: rgba(59, 130, 246, 0.1) !important; /* blue-600 with low opacity */
+  border-left-color: #3b82f6 !important; /* blue-500 */
+}
+
+/* Light mode for sidebar and other components */
+/* Force light mode for sidebar when app is in light mode */
+html.light .sidebar-main,
+html[data-theme="light"] .sidebar-main {
+  background-color: rgba(255, 255, 255, 0.95) !important; /* white with opacity */
+}
+
+/* Force light mode for sidebar elements when app is in light mode */
+html.light .sidebar-main .bg-white\/95,
+html[data-theme="light"] .sidebar-main .bg-white\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important; /* white with opacity */
+}
+
+html.light .sidebar-main .dark\:bg-gray-900\/95,
+html[data-theme="light"] .sidebar-main .dark\:bg-gray-900\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important; /* white with opacity */
+}
+
+/* Force light mode for sidebar borders when app is in light mode */
+html.light .sidebar-main .border-t,
+html[data-theme="light"] .sidebar-main .border-t {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Force light mode for theme toggle button when app is in light mode */
+html.light .sidebar-theme-toggle,
+html[data-theme="light"] .sidebar-theme-toggle {
+  background-color: transparent !important;
+}
+
+html.light .sidebar-theme-toggle:hover,
+html[data-theme="light"] .sidebar-theme-toggle:hover {
+  background-color: rgba(55, 65, 81, 0.1) !important; /* gray-700 with low opacity */
+}
+
+/* Force light mode for chat list headers when app is in light mode */
+html.light .bg-white.dark\:bg-gray-800,
+html[data-theme="light"] .bg-white.dark\:bg-gray-800 {
+  background-color: #ffffff !important; /* white */
+}
+
+html.light .bg-gray-100.dark\:bg-gray-900,
+html[data-theme="light"] .bg-gray-100.dark\:bg-gray-900 {
+  background-color: #f3f4f6 !important; /* gray-100 */
+}
+
+/* Light mode for chat items and other components */
+/* Force light mode for chat item backgrounds when app is in light mode */
+html.light .bg-white\/95.dark\:bg-gray-800\/95,
+html[data-theme="light"] .bg-white\/95.dark\:bg-gray-800\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important; /* white with opacity */
+}
+
+/* Force light mode for profile section when app is in light mode */
+html.light .bg-white\/95.dark\:bg-gray-900\/95,
+html[data-theme="light"] .bg-white\/95.dark\:bg-gray-900\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important; /* white with opacity */
+}
+
+/* Force light mode for dropdown content when app is in light mode */
+html.light .bg-white.dark\:bg-gray-800,
+html[data-theme="light"] .bg-white.dark\:bg-gray-800 {
+  background-color: #ffffff !important; /* white */
+}
+
+html.light .bg-white.dark\:bg-gray-900,
+html[data-theme="light"] .bg-white.dark\:bg-gray-900 {
+  background-color: #ffffff !important; /* white */
+}
+
+/* Force light mode for dropdown borders when app is in light mode */
+html.light .border-gray-200.dark\:border-gray-700,
+html[data-theme="light"] .border-gray-200.dark\:border-gray-700 {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Force light mode for dropdown text when app is in light mode */
+html.light .text-gray-600.dark\:text-gray-300,
+html[data-theme="light"] .text-gray-600.dark\:text-gray-300 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+/* Light mode for hover states and other components */
+/* Force light mode for hover states when app is in light mode */
+html.light .hover\:bg-gray-50:hover,
+html[data-theme="light"] .hover\:bg-gray-50:hover {
+  background-color: #f9fafb !important; /* gray-50 */
+}
+
+html.light .hover\:bg-gray-100:hover,
+html[data-theme="light"] .hover\:bg-gray-100:hover {
+  background-color: #f3f4f6 !important; /* gray-100 */
+}
+
+html.light .hover\:bg-gray-700\/50:hover,
+html[data-theme="light"] .hover\:bg-gray-700\/50:hover {
+  background-color: rgba(55, 65, 81, 0.5) !important; /* gray-700 with opacity */
+}
+
+/* Force light mode for selected states when app is in light mode */
+html.light .bg-blue-50,
+html[data-theme="light"] .bg-blue-50 {
+  background-color: #eff6ff !important; /* blue-50 */
+}
+
+/* Force light mode for form elements when app is in light mode */
+html.light .bg-gray-50,
+html[data-theme="light"] .bg-gray-50 {
+  background-color: #f9fafb !important; /* gray-50 */
+}
+
+html.light .bg-gray-100,
+html[data-theme="light"] .bg-gray-100 {
+  background-color: #f3f4f6 !important; /* gray-100 */
+}
+
+/* Force light mode for focus rings when app is in light mode */
+html.light .focus\:ring-blue-400:focus,
+html[data-theme="light"] .focus\:ring-blue-400:focus {
+  --tw-ring-color: #60a5fa !important; /* blue-400 */
+}
+
+html.light .focus\:ring-2:focus,
+html[data-theme="light"] .focus\:ring-2:focus {
+  --tw-ring-width: 2px !important;
+}
+
+/* Light mode for buttons and other components */
+/* Force light mode for button styles when app is in light mode */
+html.light .bg-blue-600,
+html[data-theme="light"] .bg-blue-600 {
+  background-color: #2563eb !important; /* blue-600 */
+}
+
+html.light .bg-blue-700,
+html[data-theme="light"] .bg-blue-700 {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+html.light .hover\:bg-blue-700:hover,
+html[data-theme="light"] .hover\:bg-blue-700:hover {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Force light mode for disabled states when app is in light mode */
+html.light .bg-gray-400,
+html[data-theme="light"] .bg-gray-400 {
+  background-color: #9ca3af !important; /* gray-400 */
+}
+
+html.light .cursor-not-allowed,
+html[data-theme="light"] .cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+
+/* Force light mode for loading states when app is in light mode */
+html.light .animate-spin,
+html[data-theme="light"] .animate-spin {
+  animation: spin 1s linear infinite !important;
+}
+
+html.light .animate-pulse,
+html[data-theme="light"] .animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+/* Force light mode for ImagePage when app is in light mode */
+html.light .bg-white.dark\:bg-gray-900,
+html[data-theme="light"] .bg-white.dark\:bg-gray-900 {
+  background-color: #ffffff !important; /* white */
+}
+
+html.light .bg-white.dark\:bg-gray-800,
+html[data-theme="light"] .bg-white.dark\:bg-gray-800 {
+  background-color: #ffffff !important; /* white */
+}
+
+/* Force light mode for ImagePage borders when app is in light mode */
+html.light .border-gray-200.dark\:border-gray-700,
+html[data-theme="light"] .border-gray-200.dark\:border-gray-700 {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Light mode for ImagePage text colors and other components */
+/* Force light mode for ImagePage text when app is in light mode */
+html.light .text-gray-900.dark\:text-gray-100,
+html[data-theme="light"] .text-gray-900.dark\:text-gray-100 {
+  color: #111827 !important; /* gray-900 */
+}
+
+html.light .text-gray-800.dark\:text-gray-100,
+html[data-theme="light"] .text-gray-800.dark\:text-gray-100 {
+  color: #1f2937 !important; /* gray-800 */
+}
+
+html.light .text-gray-700.dark\:text-gray-300,
+html[data-theme="light"] .text-gray-700.dark\:text-gray-300 {
+  color: #374151 !important; /* gray-700 */
+}
+
+html.light .text-gray-600.dark\:text-gray-300,
+html[data-theme="light"] .text-gray-600.dark\:text-gray-300 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+/* Force light mode for ImagePage input fields when app is in light mode */
+html.light .bg-gray-50.dark\:bg-gray-900,
+html[data-theme="light"] .bg-gray-50.dark\:bg-gray-900 {
+  background-color: #f9fafb !important; /* gray-50 */
+}
+
+/* Force light mode for ImagePage button states when app is in light mode */
+html.light .bg-blue-600:hover,
+html[data-theme="light"] .bg-blue-600:hover {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+html.light .bg-blue-600:disabled,
+html[data-theme="light"] .bg-blue-600:disabled {
+  background-color: #9ca3af !important; /* gray-400 */
+}
+
+/* Force light mode for error and success states when app is in light mode */
+html.light .bg-red-50,
+html[data-theme="light"] .bg-red-50 {
+  background-color: #fef2f2 !important; /* red-50 */
+}
+
+html.light .bg-green-50,
+html[data-theme="light"] .bg-green-50 {
+  background-color: #f0fdf4 !important; /* green-50 */
+}
+
+html.light .border-red-200,
+html[data-theme="light"] .border-red-200 {
+  border-color: #fecaca !important; /* red-200 */
+}
+
+html.light .border-green-200,
+html[data-theme="light"] .border-green-200 {
+  border-color: #bbf7d0 !important; /* green-200 */
+}
+
+html.light .text-red-700,
+html[data-theme="light"] .text-red-700 {
+  color: #b91c1c !important; /* red-700 */
+}
+
+html.light .text-green-700,
+html[data-theme="light"] .text-green-700 {
+  color: #15803d !important; /* green-700 */
+}
+
+/* Light mode for feedback buttons and other components */
+/* Force light mode for feedback button colors when app is in light mode */
+html.light .text-blue-600,
+html[data-theme="light"] .text-blue-600 {
+  color: #2563eb !important; /* blue-600 */
+}
+
+html.light .hover\:text-blue-700:hover,
+html[data-theme="light"] .hover\:text-blue-700:hover {
+  color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Force light mode for like/dislike buttons when app is in light mode */
+html.light .text-green-600,
+html[data-theme="light"] .text-green-600 {
+  color: #16a34a !important; /* green-600 */
+}
+
+html.light .text-red-600,
+html[data-theme="light"] .text-red-600 {
+  color: #dc2626 !important; /* red-600 */
+}
+
+html.light .bg-green-600,
+html[data-theme="light"] .bg-green-600 {
+  background-color: #16a34a !important; /* green-600 */
+}
+
+html.light .bg-red-600,
+html[data-theme="light"] .bg-red-600 {
+  background-color: #dc2626 !important; /* red-600 */
+}
+
+/* Force light mode for modal backgrounds when app is in light mode */
+html.light .bg-black.bg-opacity-50,
+html[data-theme="light"] .bg-black.bg-opacity-50 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+html.light .bg-white.dark\:bg-gray-900,
+html[data-theme="light"] .bg-white.dark\:bg-gray-900 {
+  background-color: #ffffff !important; /* white */
+}
+
+/* Force light mode for shadow effects when app is in light mode */
+html.light .shadow-2xl,
+html[data-theme="light"] .shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.light .shadow-xl,
+html[data-theme="light"] .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light .shadow-lg,
+html[data-theme="light"] .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Light mode for border radius and other components */
+/* Force light mode for border radius when app is in light mode */
+html.light .rounded-xl,
+html[data-theme="light"] .rounded-xl {
+  border-radius: 0.75rem !important;
+}
+
+html.light .rounded-2xl,
+html[data-theme="light"] .rounded-2xl {
+  border-radius: 1rem !important;
+}
+
+html.light .rounded-lg,
+html[data-theme="light"] .rounded-lg {
+  border-radius: 0.5rem !important;
+}
+
+/* Force light mode for remaining elements when app is in light mode */
+html.light .bg-gray-800,
+html[data-theme="light"] .bg-gray-800 {
+  background-color: #f9fafb !important; /* gray-50 */
+}
+
+html.light .bg-gray-900,
+html[data-theme="light"] .bg-gray-900 {
+  background-color: #ffffff !important; /* white */
+}
+
+html.light .bg-gray-950,
+html[data-theme="light"] .bg-gray-950 {
+  background-color: #ffffff !important; /* white */
+}
+
+/* Force light mode for text colors when app is in light mode */
+html.light .text-white,
+html[data-theme="light"] .text-white {
+  color: #ffffff !important; /* white */
+}
+
+/* Force proper colors for gray borders in light mode */
+/* Chat input border in light mode */
+html.light .border-gray-200,
+html[data-theme="light"] .border-gray-200 {
+  border-color: #e5e7eb !important; /* gray-200 - lighter gray */
+}
+
+/* Ensure all gray borders are properly colored in light mode */
+html.light .border-gray-300,
+html[data-theme="light"] .border-gray-300 {
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+html.light .border-gray-400,
+html[data-theme="light"] .border-gray-400 {
+  border-color: #9ca3af !important; /* gray-400 */
+}
+
+/* Force proper border colors for chat input container */
+html.light div[class*="border-gray-200"],
+html[data-theme="light"] div[class*="border-gray-200"] {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+html.light div[class*="border-gray-300"],
+html[data-theme="light"] div[class*="border-gray-300"] {
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+/* Force proper text colors in light mode */
+html.light .text-gray-200,
+html[data-theme="light"] .text-gray-200 {
+  color: #374151 !important; /* gray-700 */
+}
+
+html.light .text-gray-300,
+html[data-theme="light"] .text-gray-300 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.light .text-gray-400,
+html[data-theme="light"] .text-gray-400 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+html.light .text-gray-500,
+html[data-theme="light"] .text-gray-500 {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+html.light .text-gray-600,
+html[data-theme="light"] .text-gray-600 {
+  color: #4b5563 !important; /* gray-600 */
+}
+
+html.light .text-gray-700,
+html[data-theme="light"] .text-gray-700 {
+  color: #374151 !important; /* gray-700 */
+}
+
+html.light .text-gray-800,
+html[data-theme="light"] .text-gray-800 {
+  color: #1f2937 !important; /* gray-800 */
+}
+
+html.light .text-gray-900,
+html[data-theme="light"] .text-gray-900 {
+  color: #111827 !important; /* gray-900 */
+}
+
+/* Force light mode for border colors when app is in light mode */
+html.light .border-gray-700,
+html[data-theme="light"] .border-gray-700 {
+  border-color: #e5e7eb !important; /* gray-200 */
+}
+
+html.light .border-gray-600,
+html[data-theme="light"] .border-gray-600 {
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+/* Force light mode for hover states when app is in light mode */
+html.light .hover\:bg-gray-700:hover,
+html[data-theme="light"] .hover\:bg-gray-700:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+html.light .hover\:bg-gray-800:hover,
+html[data-theme="light"] .hover\:bg-gray-800:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+
+/* Light mode for promptSuggestion borders */
+/* Force light mode for promptSuggestion borders when app is in light mode */
+html.light .border-green-400,
+html[data-theme="light"] .border-green-400 {
+  border-color: #4ade80 !important; /* green-400 */
+}
+
+html.light .border-purple-400,
+html[data-theme="light"] .border-purple-400 {
+  border-color: #c084fc !important; /* purple-400 */
+}
+
+html.light .border-blue-400,
+html[data-theme="light"] .border-blue-400 {
+  border-color: #60a5fa !important; /* blue-400 */
+}
+
+html.light .border-red-400,
+html[data-theme="light"] .border-red-400 {
+  border-color: #f87171 !important; /* red-400 */
+}
+
+html.light .border-yellow-400,
+html[data-theme="light"] .border-yellow-400 {
+  border-color: #facc15 !important; /* yellow-400 */
+}
+
+html.light .border-indigo-400,
+html[data-theme="light"] .border-indigo-400 {
+  border-color: #818cf8 !important; /* indigo-400 */
+}
+
+html.light .border-cyan-400,
+html[data-theme="light"] .border-cyan-400 {
+  border-color: #22d3ee !important; /* cyan-400 */
+}
+
+html.light .border-emerald-400,
+html[data-theme="light"] .border-emerald-400 {
+  border-color: #34d399 !important; /* emerald-400 */
+}
+
+html.light .border-pink-400,
+html[data-theme="light"] .border-pink-400 {
+  border-color: #f472b6 !important; /* pink-400 */
+}
+
+html.light .border-fuchsia-500,
+html[data-theme="light"] .border-fuchsia-500 {
+  border-color: #d946ef !important; /* fuchsia-500 */
+}
+
+html.light .border-orange-400,
+html[data-theme="light"] .border-orange-400 {
+  border-color: #fb923c !important; /* orange-400 */
+}
+
+html.light .border-lime-400,
+html[data-theme="light"] .border-lime-400 {
+  border-color: #a3e635 !important; /* lime-400 */
+}
+
+/* Force white text for user messages in chat */
+/* User message text should always be white regardless of theme */
+html.light .bg-blue-600 .text-white,
+html[data-theme="light"] .bg-blue-600 .text-white,
+html.dark .bg-blue-600 .text-white,
+html[data-theme="dark"] .bg-blue-600 .text-white {
+  color: #ffffff !important; /* white */
+}
+
+/* Force white text for any text inside blue backgrounds */
+html.light .bg-blue-600 *,
+html[data-theme="light"] .bg-blue-600 *,
+html.dark .bg-blue-600 *,
+html[data-theme="dark"] .bg-blue-600 * {
+  color: #ffffff !important; /* white */
+}
+
+/* Force white text for user message containers */
+html.light div[class*="bg-blue-600"] .text-white,
+html[data-theme="light"] div[class*="bg-blue-600"] .text-white,
+html.dark div[class*="bg-blue-600"] .text-white,
+html[data-theme="dark"] div[class*="bg-blue-600"] .text-white {
+  color: #ffffff !important; /* white */
+}
+
+/* Force white text for any element inside user message containers */
+html.light div[class*="bg-blue-600"] *,
+html[data-theme="light"] div[class*="bg-blue-600"] *,
+html.dark div[class*="bg-blue-600"] *,
+html[data-theme="dark"] div[class*="bg-blue-600"] * {
+  color: #ffffff !important; /* white */
+}
+
+/* Force darker text for reasoning content in light mode */
+/* Reasoning text should be darker and more readable in light mode */
+html.light .bg-purple-50 .text-purple-700,
+html[data-theme="light"] .bg-purple-50 .text-purple-700 {
+  color: #7c3aed !important; /* purple-700 - darker */
+}
+
+html.light .bg-blue-50 .text-blue-700,
+html[data-theme="light"] .bg-blue-50 .text-blue-700 {
+  color: #1d4ed8 !important; /* blue-700 - darker */
+}
+
+/* Force darker text for any reasoning-related elements in light mode */
+html.light .bg-purple-50 *,
+html[data-theme="light"] .bg-purple-50 * {
+  color: #7c3aed !important; /* purple-700 - darker */
+}
+
+html.light .bg-blue-50 *,
+html[data-theme="light"] .bg-blue-50 * {
+  color: #1d4ed8 !important; /* blue-700 - darker */
+}
+
+/* Force darker text for reasoning badges in light mode */
+html.light .bg-purple-50.dark\:bg-purple-900\/40 .text-purple-700.dark\:text-purple-300,
+html[data-theme="light"] .bg-purple-50.dark\:bg-purple-900\/40 .text-purple-700.dark\:text-purple-300 {
+  color: #7c3aed !important; /* purple-700 - darker */
+}
+
+html.light .bg-blue-50.dark\:bg-blue-900\/40 .text-blue-700.dark\:text-blue-300,
+html[data-theme="light"] .bg-blue-50.dark\:bg-blue-900\/40 .text-blue-700.dark\:text-blue-300 {
+  color: #1d4ed8 !important; /* blue-700 - darker */
+}
+
+/* Force proper colors for ModelDropdown badges in light mode */
+/* Reasoning badge in light mode */
+html.light .bg-purple-100 .text-purple-800,
+html[data-theme="light"] .bg-purple-100 .text-purple-800 {
+  color: #5b21b6 !important; /* purple-800 - darker */
+}
+
+html.light .bg-purple-100,
+html[data-theme="light"] .bg-purple-100 {
+  background-color: #f3e8ff !important; /* purple-100 */
+}
+
+html.light .border-purple-300,
+html[data-theme="light"] .border-purple-300 {
+  border-color: #c084fc !important; /* purple-300 */
+}
+
+/* Web search badge in light mode */
+html.light .bg-blue-100 .text-blue-800,
+html[data-theme="light"] .bg-blue-100 .text-blue-800 {
+  color: #1e40af !important; /* blue-800 - darker */
+}
+
+html.light .bg-blue-100,
+html[data-theme="light"] .bg-blue-100 {
+  background-color: #dbeafe !important; /* blue-100 */
+}
+
+html.light .border-blue-300,
+html[data-theme="light"] .border-blue-300 {
+  border-color: #93c5fd !important; /* blue-300 */
+}
+
+/* Force proper colors for send button in light mode */
+/* Send button background in light mode */
+html.light .bg-blue-600,
+html[data-theme="light"] .bg-blue-600 {
+  background-color: #2563eb !important; /* blue-600 */
+}
+
+html.light .hover\:bg-blue-700:hover,
+html[data-theme="light"] .hover\:bg-blue-700:hover {
+  background-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Send button border in light mode */
+html.light .border-blue-700,
+html[data-theme="light"] .border-blue-700 {
+  border-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Send button disabled state in light mode */
+html.light .disabled\:bg-gray-400:disabled,
+html[data-theme="light"] .disabled\:bg-gray-400:disabled {
+  background-color: #9ca3af !important; /* gray-400 */
+}
+
+html.light .disabled\:text-gray-200:disabled,
+html[data-theme="light"] .disabled\:text-gray-200:disabled {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Send button text color in light mode */
+html.light .text-white,
+html[data-theme="light"] .text-white {
+  color: #ffffff !important; /* white */
+}
+
+/* Force proper colors for new ModelDropdown badges in light mode */
+/* Updated reasoning badge in light mode */
+html.light .bg-purple-200 .text-purple-900,
+html[data-theme="light"] .bg-purple-200 .text-purple-900 {
+  color: #581c87 !important; /* purple-900 - much darker */
+}
+
+html.light .bg-purple-200,
+html[data-theme="light"] .bg-purple-200 {
+  background-color: #e9d5ff !important; /* purple-200 */
+}
+
+html.light .border-purple-400,
+html[data-theme="light"] .border-purple-400 {
+  border-color: #a855f7 !important; /* purple-400 */
+}
+
+/* Updated web search badge in light mode */
+html.light .bg-blue-200 .text-blue-900,
+html[data-theme="light"] .bg-blue-200 .text-blue-900 {
+  color: #1e3a8a !important; /* blue-900 - much darker */
+}
+
+html.light .bg-blue-200,
+html[data-theme="light"] .bg-blue-200 {
+  background-color: #bfdbfe !important; /* blue-200 */
+}
+
+html.light .border-blue-400,
+html[data-theme="light"] .border-blue-400 {
+  border-color: #60a5fa !important; /* blue-400 */
+}
+
+/* Force proper colors for ChatInputModern buttons in light mode */
+/* Reasoning button active state in light mode */
+html.light .bg-blue-600.text-white,
+html[data-theme="light"] .bg-blue-600.text-white {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important; /* white */
+}
+
+html.light .border-blue-600,
+html[data-theme="light"] .border-blue-600 {
+  border-color: #2563eb !important; /* blue-600 */
+}
+
+/* Web search button active state in light mode */
+html.light .bg-green-600.text-white,
+html[data-theme="light"] .bg-green-600.text-white {
+  background-color: #16a34a !important; /* green-600 */
+  color: #ffffff !important; /* white */
+}
+
+html.light .border-green-600,
+html[data-theme="light"] .border-green-600 {
+  border-color: #16a34a !important; /* green-600 */
+}
+
+/* Force proper colors for AboutPage in light mode */
+/* AboutPage background in light mode */
+html.light .about-help-page,
+html[data-theme="light"] .about-help-page {
+  background: linear-gradient(to bottom right, #ffffff, #f9fafb, #ffffff) !important;
+}
+
+/* AboutPage background accents in light mode */
+html.light .about-help-page .from-blue-200\/30,
+html[data-theme="light"] .about-help-page .from-blue-200\/30 {
+  background-color: rgba(191, 219, 254, 0.3) !important; /* blue-200/30 */
+}
+
+html.light .about-help-page .to-purple-200\/30,
+html[data-theme="light"] .about-help-page .to-purple-200\/30 {
+  background-color: rgba(233, 213, 255, 0.3) !important; /* purple-200/30 */
+}
+
+html.light .about-help-page .from-purple-200\/30,
+html[data-theme="light"] .about-help-page .from-purple-200\/30 {
+  background-color: rgba(233, 213, 255, 0.3) !important; /* purple-200/30 */
+}
+
+html.light .about-help-page .to-pink-200\/30,
+html[data-theme="light"] .about-help-page .to-pink-200\/30 {
+  background-color: rgba(251, 207, 232, 0.3) !important; /* pink-200/30 */
+}
+
+/* Force proper colors for send button disabled state */
+/* Send button disabled border in light mode */
+html.light .disabled\:border-gray-400:disabled,
+html[data-theme="light"] .disabled\:border-gray-400:disabled {
+  border-color: #9ca3af !important; /* gray-400 */
+}
+
+/* Send button disabled state in dark mode */
+html.dark .disabled\:border-gray-400:disabled,
+html[data-theme="dark"] .disabled\:border-gray-400:disabled {
+  border-color: #6b7280 !important; /* gray-500 */
+}
+
+/* Force proper colors for disabled button states */
+html.light .disabled\:bg-gray-400:disabled,
+html[data-theme="light"] .disabled\:bg-gray-400:disabled {
+  background-color: #9ca3af !important; /* gray-400 */
+}
+
+html.light .disabled\:text-gray-200:disabled,
+html[data-theme="light"] .disabled\:text-gray-200:disabled {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+html.dark .disabled\:bg-gray-400:disabled,
+html[data-theme="dark"] .disabled\:bg-gray-400:disabled {
+  background-color: #6b7280 !important; /* gray-500 */
+}
+
+html.dark .disabled\:text-gray-200:disabled,
+html[data-theme="dark"] .disabled\:text-gray-200:disabled {
+  color: #e5e7eb !important; /* gray-200 */
+}
+
+/* Force proper colors for disabled ChatInputModern buttons */
+/* Disabled reasoning and web search buttons */
+html.light .bg-gray-100.text-gray-400.border-gray-200.cursor-not-allowed.opacity-50,
+html[data-theme="light"] .bg-gray-100.text-gray-400.border-gray-200.cursor-not-allowed.opacity-50 {
+  background-color: #f3f4f6 !important; /* gray-100 */
+  color: #9ca3af !important; /* gray-400 */
+  border-color: #d1d5db !important; /* gray-300 */
+  opacity: 0.5 !important;
+}
+
+html.dark .bg-gray-800.text-gray-500.border-gray-700.cursor-not-allowed.opacity-50,
+html[data-theme="dark"] .bg-gray-800.text-gray-500.border-gray-700.cursor-not-allowed.opacity-50 {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: #6b7280 !important; /* gray-500 */
+  border-color: #374151 !important; /* gray-700 */
+  opacity: 0.5 !important;
+}
+
+/* Force proper colors for ChatInputModern buttons - ONLY 2 states: active and inactive */
+/* No hover, focus, or any other states - just toggle between active and inactive */
+
+/* Override index.css rules for ModelDropdown badges in light mode */
+/* Force proper colors for reasoning and web search badges in light mode with higher specificity */
+html.light .model-dropdown-content .bg-purple-200,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200 {
+  background-color: #e9d5ff !important; /* purple-200 */
+}
+
+html.light .model-dropdown-content .text-purple-900,
+html[data-theme="light"] .model-dropdown-content .text-purple-900 {
+  color: #581c87 !important; /* purple-900 */
+}
+
+html.light .model-dropdown-content .border-purple-400,
+html[data-theme="light"] .model-dropdown-content .border-purple-400 {
+  border-color: #a855f7 !important; /* purple-400 */
+}
+
+html.light .model-dropdown-content .bg-blue-200,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200 {
+  background-color: #bfdbfe !important; /* blue-200 */
+}
+
+html.light .model-dropdown-content .text-blue-900,
+html[data-theme="light"] .model-dropdown-content .text-blue-900 {
+  color: #1e3a8a !important; /* blue-900 */
+}
+
+html.light .model-dropdown-content .border-blue-400,
+html[data-theme="light"] .model-dropdown-content .border-blue-400 {
+  border-color: #60a5fa !important; /* blue-400 */
+}
+
+/* Force override for any conflicting styles from index.css */
+html.light .model-dropdown-content *,
+html[data-theme="light"] .model-dropdown-content * {
+  color: inherit !important;
+}
+
+html.light .model-dropdown-content .bg-purple-200 *,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200 * {
+  color: #581c87 !important; /* purple-900 */
+}
+
+html.light .model-dropdown-content .bg-blue-200 *,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200 * {
+  background-color: #bfdbfe !important; /* blue-200 */
+}
+
+/* ULTRA STRONG OVERRIDES - These should override ANY conflicting styles */
+/* Force ModelDropdown badge colors with maximum specificity */
+html.light .model-dropdown-content .bg-purple-200.text-purple-900,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200.text-purple-900,
+html.light .model-dropdown-content .bg-purple-200 .text-purple-900,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200 .text-purple-900 {
+  background-color: #e9d5ff !important; /* purple-200 */
+  color: #581c87 !important; /* purple-900 */
+}
+
+html.light .model-dropdown-content .bg-blue-200.text-blue-900,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200.text-blue-900,
+html.light .model-dropdown-content .bg-blue-200 .text-blue-900,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200 .text-blue-900 {
+  background-color: #bfdbfe !important; /* blue-200 */
+  color: #1e3a8a !important; /* blue-900 */
+}
+
+/* Force ChatInputModern button colors with maximum specificity */
+html.light .reasoning-button.bg-purple-600.text-white,
+html[data-theme="light"] .reasoning-button.bg-purple-600.text-white,
+html.light .reasoning-button.bg-purple-600 .text-white,
+html[data-theme="light"] .reasoning-button.bg-purple-600 .text-white {
+  background-color: #9333ea !important; /* purple-600 */
+  color: #ffffff !important; /* white */
+  border-color: #9333ea !important; /* purple-600 */
+}
+
+html.light .websearch-button.bg-blue-600.text-white,
+html[data-theme="light"] .websearch-button.bg-blue-600.text-white,
+html.light .websearch-button.bg-blue-600 .text-white,
+html[data-theme="light"] .websearch-button.bg-blue-600 .text-white {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important; /* white */
+  border-color: #2563eb !important; /* blue-600 */
+}
+
+/* Override any remaining index.css rules */
+html.light .model-dropdown-content .bg-purple-200,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200,
+html.light .model-dropdown-content .bg-purple-200 *,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200 * {
+  background-color: #e9d5ff !important; /* purple-200 */
+}
+
+html.light .model-dropdown-content .bg-blue-200,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200,
+html.light .model-dropdown-content .bg-blue-200 *,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200 * {
+  background-color: #bfdbfe !important; /* blue-200 */
+}
+
+html.light .model-dropdown-content .bg-purple-200.text-purple-900,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200.text-purple-900,
+html.light .model-dropdown-content .bg-purple-200 .text-purple-900,
+html[data-theme="light"] .model-dropdown-content .bg-purple-200 .text-purple-900 {
+  background-color: #e9d5ff !important; /* purple-200 */
+  color: #581c87 !important; /* purple-900 */
+}
+
+html.light .model-dropdown-content .bg-blue-200.text-blue-900,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200.text-blue-900,
+html.light .model-dropdown-content .bg-blue-200 .text-blue-900,
+html[data-theme="light"] .model-dropdown-content .bg-blue-200 .text-blue-900 {
+  background-color: #bfdbfe !important; /* blue-200 */
+  color: #1e3a8a !important; /* blue-900 */
+}
+
+/* Force ChatInputModern button colors for all states */
+/* Dark mode active states */
+html.dark .reasoning-button.bg-purple-700,
+html[data-theme="dark"] .reasoning-button.bg-purple-700 {
+  background-color: #7c3aed !important; /* purple-700 */
+  color: #ffffff !important; /* white */
+  border-color: #7c3aed !important; /* purple-700 */
+}
+
+html.dark .websearch-button.bg-blue-700,
+html[data-theme="dark"] .websearch-button.bg-blue-700 {
+  background-color: #1d4ed8 !important; /* blue-700 */
+  color: #ffffff !important; /* white */
+  border-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Light mode active states */
+html.light .reasoning-button.bg-purple-600,
+html[data-theme="light"] .reasoning-button.bg-purple-600 {
+  background-color: #9333ea !important; /* purple-600 */
+  color: #ffffff !important; /* white */
+  border-color: #9333ea !important; /* purple-600 */
+}
+
+html.light .websearch-button.bg-blue-600,
+html[data-theme="light"] .websearch-button.bg-blue-600 {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important; /* white */
+  border-color: #2563eb !important; /* blue-600 */
+}
+
+/* Force immediate state changes - override any touch/focus states */
+html.light .reasoning-button.bg-purple-600:focus,
+html[data-theme="light"] .reasoning-button.bg-purple-600:focus,
+html.light .reasoning-button.bg-purple-600:active,
+html[data-theme="light"] .reasoning-button.bg-purple-600:active,
+html.light .reasoning-button.bg-purple-600:focus-visible,
+html[data-theme="light"] .reasoning-button.bg-purple-600:focus-visible {
+  background-color: #9333ea !important; /* purple-600 */
+  color: #ffffff !important; /* white */
+  border-color: #9333ea !important; /* purple-600 */
+}
+
+html.light .websearch-button.bg-blue-600:focus,
+html[data-theme="light"] .websearch-button.bg-blue-600:focus,
+html.light .websearch-button.bg-blue-600:active,
+html[data-theme="light"] .websearch-button.bg-blue-600:active,
+html.light .websearch-button.bg-blue-600:focus-visible,
+html[data-theme="light"] .websearch-button.bg-blue-600:focus-visible {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important; /* white */
+  border-color: #2563eb !important; /* blue-600 */
+}
+
+html.dark .reasoning-button.bg-purple-700:focus,
+html[data-theme="dark"] .reasoning-button.bg-purple-700:focus,
+html.dark .reasoning-button.bg-purple-700:active,
+html[data-theme="dark"] .reasoning-button.bg-purple-700:active,
+html.dark .reasoning-button.bg-purple-700:focus-visible,
+html[data-theme="dark"] .reasoning-button.bg-purple-700:focus-visible {
+  background-color: #7c3aed !important; /* purple-700 */
+  color: #ffffff !important; /* white */
+  border-color: #7c3aed !important; /* purple-700 */
+}
+
+html.dark .websearch-button.bg-blue-700:focus,
+html[data-theme="dark"] .websearch-button.bg-blue-700:focus,
+html.dark .websearch-button.bg-blue-700:active,
+html[data-theme="dark"] .websearch-button.bg-blue-700:active,
+html.dark .websearch-button.bg-blue-700:focus-visible,
+html[data-theme="dark"] .websearch-button.bg-blue-700:focus-visible {
+  background-color: #1d4ed8 !important; /* blue-700 */
+  color: #ffffff !important; /* white */
+  border-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Inactive state colors */
+html.light .reasoning-button:not(.bg-purple-600):not(.bg-gray-100),
+html[data-theme="light"] .reasoning-button:not(.bg-purple-600):not(.bg-gray-100) {
+  background-color: #ffffff !important; /* white */
+  color: #374151 !important; /* gray-700 */
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reasoning-button:not(.bg-purple-700):not(.bg-gray-800),
+html[data-theme="dark"] .reasoning-button:not(.bg-purple-700):not(.bg-gray-800) {
+  background-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+html.light .websearch-button:not(.bg-blue-600):not(.bg-gray-100),
+html[data-theme="light"] .websearch-button:not(.bg-blue-600):not(.bg-gray-100) {
+  background-color: #ffffff !important; /* white */
+  color: #374151 !important; /* gray-700 */
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .websearch-button:not(.bg-blue-700):not(.bg-gray-800),
+html[data-theme="dark"] .websearch-button:not(.bg-blue-700):not(.bg-gray-800) {
+  background-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+/* Force inactive state colors even during touch/focus */
+html.light .reasoning-button:not(.bg-purple-600):not(.bg-gray-100):focus,
+html[data-theme="light"] .reasoning-button:not(.bg-purple-600):not(.bg-gray-100):focus,
+html.light .reasoning-button:not(.bg-purple-600):not(.bg-gray-100):active,
+html[data-theme="light"] .reasoning-button:not(.bg-purple-600):not(.bg-gray-100):active,
+html.light .reasoning-button:not(.bg-purple-600):not(.bg-gray-100):focus-visible,
+html[data-theme="light"] .reasoning-button:not(.bg-purple-600):not(.bg-gray-100):focus-visible {
+  background-color: #ffffff !important; /* white */
+  color: #374151 !important; /* gray-700 */
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .reasoning-button:not(.bg-purple-700):not(.bg-gray-800):focus,
+html[data-theme="dark"] .reasoning-button:not(.bg-purple-700):not(.bg-gray-800):focus,
+html.dark .reasoning-button:not(.bg-purple-700):not(.bg-gray-800):active,
+html[data-theme="dark"] .reasoning-button:not(.bg-purple-700):not(.bg-gray-800):active,
+html.dark .reasoning-button:not(.bg-purple-700):not(.bg-gray-800):focus-visible,
+html[data-theme="dark"] .reasoning-button:not(.bg-purple-700):not(.bg-gray-800):focus-visible {
+  background-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+html.light .websearch-button:not(.bg-blue-600):not(.bg-gray-100):focus,
+html[data-theme="light"] .websearch-button:not(.bg-blue-600):not(.bg-gray-100):focus,
+html.light .websearch-button:not(.bg-blue-600):not(.bg-gray-100):active,
+html[data-theme="light"] .websearch-button:not(.bg-blue-600):not(.bg-gray-100):active,
+html.light .websearch-button:not(.bg-blue-600):not(.bg-gray-100):focus-visible,
+html[data-theme="light"] .websearch-button:not(.bg-blue-600):not(.bg-gray-100):focus-visible {
+  background-color: #ffffff !important; /* white */
+  color: #374151 !important; /* gray-700 */
+  border-color: #d1d5db !important; /* gray-300 */
+}
+
+html.dark .websearch-button:not(.bg-blue-700):not(.bg-gray-800):focus,
+html[data-theme="dark"] .websearch-button:not(.bg-blue-700):not(.bg-gray-800):focus,
+html.dark .websearch-button:not(.bg-blue-700):not(.bg-gray-800):active,
+html[data-theme="dark"] .websearch-button:not(.bg-blue-700):not(.bg-gray-800):active,
+html.dark .websearch-button:not(.bg-blue-700):not(.bg-gray-800):focus-visible,
+html[data-theme="dark"] .websearch-button:not(.bg-blue-700):not(.bg-gray-800):focus-visible {
+  background-color: #374151 !important; /* gray-700 */
+  color: #d1d5db !important; /* gray-300 */
+  border-color: #4b5563 !important; /* gray-600 */
+}
+
+/* Disabled state colors */
+html.light .reasoning-button.bg-gray-100.cursor-not-allowed.opacity-50,
+html[data-theme="light"] .reasoning-button.bg-gray-100.cursor-not-allowed.opacity-50,
+html.light .websearch-button.bg-gray-100.cursor-not-allowed.opacity-50,
+html[data-theme="light"] .websearch-button.bg-gray-100.cursor-not-allowed.opacity-50 {
+  background-color: #f3f4f6 !important; /* gray-100 */
+  color: #9ca3af !important; /* gray-400 */
+  border-color: #d1d5db !important; /* gray-300 */
+  opacity: 0.5 !important;
+}
+
+html.dark .reasoning-button.bg-gray-800.cursor-not-allowed.opacity-50,
+html[data-theme="dark"] .reasoning-button.bg-gray-800.cursor-not-allowed.opacity-50,
+html.dark .websearch-button.bg-gray-800.cursor-not-allowed.opacity-50,
+html[data-theme="dark"] .websearch-button.bg-gray-800.cursor-not-allowed.opacity-50 {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: #6b7280 !important; /* gray-500 */
+  border-color: #374151 !important; /* gray-700 */
+  opacity: 0.5 !important;
+}
+
+/* ULTRA STRONG OVERRIDES - Override ANY index.css rules */
+/* Force button colors with maximum specificity and !important */
+html.light .reasoning-button.bg-purple-600,
+html[data-theme="light"] .reasoning-button.bg-purple-600,
+html.light .reasoning-button.bg-purple-600 *,
+html[data-theme="light"] .reasoning-button.bg-purple-600 * {
+  background-color: #9333ea !important; /* purple-600 */
+  color: #ffffff !important; /* white */
+  border-color: #9333ea !important; /* purple-600 */
+}
+
+html.light .websearch-button.bg-blue-600,
+html[data-theme="light"] .websearch-button.bg-blue-600,
+html.light .websearch-button.bg-blue-600 *,
+html[data-theme="light"] .websearch-button.bg-blue-600 * {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important; /* white */
+  border-color: #2563eb !important; /* blue-600 */
+}
+
+html.dark .reasoning-button.bg-purple-700,
+html[data-theme="dark"] .reasoning-button.bg-purple-700,
+html.dark .reasoning-button.bg-purple-700 *,
+html[data-theme="dark"] .reasoning-button.bg-purple-700 * {
+  background-color: #7c3aed !important; /* purple-700 */
+  color: #ffffff !important; /* white */
+  border-color: #7c3aed !important; /* purple-700 */
+}
+
+html.dark .websearch-button.bg-blue-700,
+html[data-theme="dark"] .websearch-button.bg-blue-700,
+html.dark .websearch-button.bg-blue-700 *,
+html[data-theme="dark"] .websearch-button.bg-blue-700 * {
+  background-color: #1d4ed8 !important; /* blue-700 */
+  color: #ffffff !important; /* white */
+  border-color: #1d4ed8 !important; /* blue-700 */
+}
+
+/* Override any touch/focus/active states from index.css */
+html.light .reasoning-button.bg-purple-600:hover,
+html[data-theme="light"] .reasoning-button.bg-purple-600:hover,
+html.light .reasoning-button.bg-purple-600:focus,
+html[data-theme="light"] .reasoning-button.bg-purple-600:focus,
+html.light .reasoning-button.bg-purple-600:active,
+html[data-theme="light"] .reasoning-button.bg-purple-600:active,
+html.light .reasoning-button.bg-purple-600:focus-visible,
+html[data-theme="light"] .reasoning-button.bg-purple-600:focus-visible {
+  background-color: #9333ea !important; /* purple-600 */
+  color: #ffffff !important; /* white */
+  border-color: #9333ea !important; /* purple-600 */
+}
+
+html.light .websearch-button.bg-blue-600:hover,
+html[data-theme="light"] .websearch-button.bg-blue-600:hover,
+html.light .websearch-button.bg-blue-600:focus,
+html[data-theme="light"] .websearch-button.bg-blue-600:focus,
+html.light .websearch-button.bg-blue-600:active,
+html[data-theme="light"] .websearch-button.bg-blue-600:active,
+html.light .websearch-button.bg-blue-600:focus-visible,
+html[data-theme="light"] .websearch-button.bg-blue-600:focus-visible {
+  background-color: #2563eb !important; /* blue-600 */
+  color: #ffffff !important; /* white */
+  border-color: #2563eb !important; /* blue-600 */
+}

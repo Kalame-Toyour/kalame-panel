@@ -51,35 +51,43 @@ export async function initMobilePushRegistration() {
     // Step 2: Handle permissions only if needed
     if (needsPermissionRequest) {
       try {
-        // First check browser notification permission
-        if ('Notification' in window) {
-          const browserPermission = Notification.permission
-          console.log('[MobilePush] Browser notification permission:', browserPermission)
-          
-          if (browserPermission === 'granted') {
-            console.log('[MobilePush] Browser permission already granted, proceeding with push setup')
-          } else if (browserPermission === 'denied') {
-            console.warn('[MobilePush] Browser notification permission denied, cannot proceed')
-            return
-          } else {
-            console.log('[MobilePush] Browser permission status:', browserPermission + ', will request via Capacitor')
-          }
-        }
-
-        // Check Capacitor push notification permissions
-        const perm = await PushNotifications.checkPermissions()
-        console.log('[MobilePush] Capacitor push permission status:', perm.receive)
+        // Check if permission was already granted via our custom dialog
+        const permissionStatus = localStorage.getItem('kariz_notification_permission')
+        console.log('[MobilePush] Local permission status:', permissionStatus)
         
-        if (perm.receive === 'granted') {
-          console.log('[MobilePush] Capacitor permission already granted')
+        if (permissionStatus === 'granted') {
+          console.log('[MobilePush] Permission already granted via custom dialog, proceeding with push setup')
         } else {
-          console.log('[MobilePush] Capacitor permission not granted, requesting...')
-          const req = await PushNotifications.requestPermissions()
-          console.log('[MobilePush] Capacitor permission request result:', req.receive)
+          // First check browser notification permission
+          if ('Notification' in window) {
+            const browserPermission = Notification.permission
+            console.log('[MobilePush] Browser notification permission:', browserPermission)
+            
+            if (browserPermission === 'granted') {
+              console.log('[MobilePush] Browser permission already granted, proceeding with push setup')
+            } else if (browserPermission === 'denied') {
+              console.warn('[MobilePush] Browser notification permission denied, cannot proceed')
+              return
+            } else {
+              console.log('[MobilePush] Browser permission status:', browserPermission + ', will request via Capacitor')
+            }
+          }
+
+          // Check Capacitor push notification permissions
+          const perm = await PushNotifications.checkPermissions()
+          console.log('[MobilePush] Capacitor push permission status:', perm.receive)
           
-          if (req.receive !== 'granted') {
-            console.warn('[MobilePush] Capacitor notification permission denied by user')
-            return
+          if (perm.receive === 'granted') {
+            console.log('[MobilePush] Capacitor permission already granted')
+          } else {
+            console.log('[MobilePush] Capacitor permission not granted, requesting...')
+            const req = await PushNotifications.requestPermissions()
+            console.log('[MobilePush] Capacitor permission request result:', req.receive)
+            
+            if (req.receive !== 'granted') {
+              console.warn('[MobilePush] Capacitor notification permission denied by user')
+              return
+            }
           }
         }
       } catch (e) {

@@ -35,11 +35,17 @@ import { initMobilePushRegistration } from './bootstrap/push';
 import NotificationPermissionDialog from './components/NotificationPermissionDialog';
 import { backButtonHandler } from './utils/backButtonHandler';
 import { webViewCrashPrevention } from './utils/webViewCrashPrevention';
+import { initializeMobileTheme, detectMobileThemeCapabilities } from './utils/mobileThemeUtils';
+import { notificationPermissionManager } from './utils/notificationPermissionManager';
 
 // Import WebView optimizations
 import './styles/webview-optimizations.css';
 // Import keyboard handling styles
 import './styles/keyboard-handling.css';
+// Import safe area support
+import './styles/safe-area.css';
+// Import mobile dark mode fixes
+import './styles/mobile-dark-mode-fixes.css';
 
 // WebView optimization constants for better Chromium performance
 const WEBVIEW_OPTIMIZATIONS = {
@@ -223,7 +229,7 @@ const ReasoningIndicator = ({
     <div className="mb-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/30 overflow-hidden w-full max-w-full">
       {/* Header */}
       <div 
-        className="flex items-center justify-between p-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors duration-200"
+        className="flex items-center justify-between p-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
         onClick={handleToggle}
       >
         <div className="flex items-center gap-2">
@@ -233,9 +239,9 @@ const ReasoningIndicator = ({
           </span>
           {!isComplete && (
             <div className="flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" />
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '150ms' }} />
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '300ms' }} />
+              <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
+              <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
+              <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
             </div>
           )}
         </div>
@@ -270,7 +276,7 @@ const ReasoningIndicator = ({
                   <em className="italic break-words">{children}</em>
                 ),
                 code: ({ children }) => (
-                  <code className="bg-blue-100 dark:bg-blue-900/40 px-1 py-0.5 rounded text-xs font-mono break-words">
+                  <code className="bg-blue-100 dark:bg-blue-900/40 px-1 py-0.5 rounded text-xs font-mono break-words text-left font-semibold border border-blue-300 dark:border-blue-700" dir="ltr">
                     {children}
                   </code>
                 ),
@@ -312,35 +318,53 @@ const MainAppContent: React.FC = () => {
   // Function to refresh sidebar chat history
   const refreshSidebarChatHistoryHandler = useCallback(() => {
     console.log('[App] Refreshing sidebar chat history');
+    // Force a re-render by updating the refresh counter
     setRefreshSidebarChatHistory(prev => prev + 1);
+    
+    // Also trigger a direct refresh after a short delay to ensure it works
+    setTimeout(() => {
+      console.log('[App] Forcing additional sidebar refresh');
+      setRefreshSidebarChatHistory(prev => prev + 1);
+    }, 100);
   }, []);
   const { showToast } = useToast();
   
-  // Set toast function for useAuth
+  // Set toast function for useAuth - use ref to prevent unnecessary re-renders
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
+  
   useEffect(() => {
-    setToastFunction(showToast);
-  }, [showToast]);
+    setToastFunction(showToastRef.current);
+  }, []); // Empty dependency array - only run once on mount
 
-  // Refresh auth state on component mount and after login
+  // Initialize mobile theme detection
+  useEffect(() => {
+    console.log('[App] Initializing mobile theme detection...');
+    const capabilities = detectMobileThemeCapabilities();
+    
+    if (capabilities.isMobile) {
+      console.log('[App] Mobile device detected, initializing theme...');
+      initializeMobileTheme();
+    }
+  }, []);
+
+  // Create a stable reference to refreshAuthState to prevent infinite loops
+  const refreshAuthStateRef = useRef(refreshAuthState);
+  refreshAuthStateRef.current = refreshAuthState;
+
+  // Refresh auth state on component mount only (not periodically)
   useEffect(() => {
     // Force refresh auth state to ensure we have the latest user data
-    refreshAuthState();
-    
-    // Set up periodic refresh every 5 seconds to keep auth state in sync
-    const interval = setInterval(() => {
-      refreshAuthState();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [refreshAuthState]);
+    refreshAuthStateRef.current();
+  }, []); // Empty dependency array - only run once on mount
 
   // Force refresh auth state when navigating to chat route
   useEffect(() => {
     if (currentRoute === 'chat' && !user) {
       // If we're on chat route but no user, try to refresh auth state
-      refreshAuthState();
+      refreshAuthStateRef.current();
     }
-  }, [currentRoute, user, refreshAuthState]);
+  }, [currentRoute, user]); // Remove refreshAuthState from dependencies
 
   // Initialize mobile push registration when authenticated
   useEffect(() => {
@@ -379,87 +403,84 @@ const MainAppContent: React.FC = () => {
     return () => {}
   }, [user?.accessToken])
 
+  // Fallback: Check permission status periodically in case event system fails
+  useEffect(() => {
+    if (!user?.accessToken) return
+    
+    const checkPermissionStatus = async () => {
+      try {
+        const permissionStatus = localStorage.getItem('kariz_notification_permission')
+        if (permissionStatus === 'granted') {
+          console.log('[App] Fallback: Permission already granted, initializing push...')
+          const { initMobilePushRegistration } = await import('./bootstrap/push')
+          initMobilePushRegistration()
+            .then(() => {
+              console.log('[App] Fallback: Push notification setup completed')
+              // showToastRef.current('نوتیفیکیشن فعال شد', 'success')
+            })
+            .catch((error) => {
+              console.error('[App] Fallback: Push notification setup failed:', error)
+            })
+        }
+      } catch (error) {
+        console.error('[App] Fallback: Error checking permission status:', error)
+      }
+    }
+    
+    // Check after 3 seconds as a fallback
+    const fallbackTimer = setTimeout(checkPermissionStatus, 3000)
+    
+    return () => clearTimeout(fallbackTimer)
+  }, [user?.accessToken])
+
+  // Listen for notification permission granted events
+  useEffect(() => {
+    const handlePermissionGranted = async (event: CustomEvent) => {
+      console.log('[App] Notification permission granted event received:', event.detail)
+      
+      if (event.detail === 'granted' && user?.accessToken) {
+        console.log('[App] Permission granted, initializing push notifications...')
+        
+        // Initialize push notifications
+        try {
+          const { initMobilePushRegistration } = await import('./bootstrap/push')
+          initMobilePushRegistration()
+            .then(() => {
+              console.log('[App] Push notification setup completed after permission grant')
+              // showToastRef.current('نوتیفیکیشن فعال شد', 'success')
+            })
+            .catch((error) => {
+              console.error('[App] Push notification setup failed after permission grant:', error)
+              showToastRef.current('خطا در فعال‌سازی نوتیفیکیشن', 'error')
+            })
+        } catch (error) {
+          console.error('[App] Error importing push module after permission grant:', error)
+          showToastRef.current('خطا در فعال‌سازی نوتیفیکیشن', 'error')
+        }
+      }
+    }
+
+    // Add event listener for permission granted
+    window.addEventListener('notificationPermissionGranted', handlePermissionGranted as unknown as EventListener)
+    
+    // Also check for the global function as a fallback
+    if ((window as any).onNotificationPermissionResult) {
+      console.log('[App] Global permission handler already exists')
+    }
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('notificationPermissionGranted', handlePermissionGranted as unknown as EventListener)
+    }
+  }, [user?.accessToken]) // Remove showToast from dependencies
+
   // Function to check if we should show notification permission dialog
   const checkShouldShowNotificationDialog = async (): Promise<boolean> => {
     try {
-      // Check if permission was already granted
-      const permissionStatus = localStorage.getItem('kariz_notification_permission')
-      if (permissionStatus === 'granted') {
-        console.log('[App] Notification permission already granted, no need to show dialog')
-        return false
-      }
-
-      // Check Android version
-      const androidVersion = await checkAndroidVersion()
-      console.log('[App] Android version detected:', androidVersion)
-      
-      // For Android 13+ (API 33+), we need to show permission dialog
-      if (androidVersion >= 13) {
-        console.log('[App] Android 13+ detected, showing permission dialog for POST_NOTIFICATIONS')
-        
-        // Check current browser notification permission
-        if ('Notification' in window) {
-          const browserPermission = Notification.permission
-          console.log('[App] Browser notification permission:', browserPermission)
-          
-          // If browser permission is already granted, no need to show dialog
-          if (browserPermission === 'granted') {
-            console.log('[App] Browser permission already granted, no need to show dialog')
-            localStorage.setItem('kariz_notification_permission', 'granted')
-            return false
-          }
-          
-          // If browser permission is denied, check if we should show again
-          if (browserPermission === 'denied') {
-            const deniedCount = parseInt(localStorage.getItem('kariz_notification_denied_count') || '0')
-            const visitCount = parseInt(localStorage.getItem('kariz_visit_count') || '0') + 1
-            localStorage.setItem('kariz_visit_count', visitCount.toString())
-            
-            // Show dialog every 3 visits for denied permissions
-            if (visitCount % 3 === 0) {
-              console.log('[App] Permission denied, showing dialog again (visit #' + visitCount + ')')
-              return true
-            } else {
-              console.log('[App] Permission denied, not showing dialog yet (visit #' + visitCount + ')')
-              return false
-            }
-          }
-          
-          // For 'default' or 'unknown' status, show dialog
-          console.log('[App] Permission status is', browserPermission + ', showing dialog')
-          return true
-        }
-        
-        // If Notification API not available, show dialog
-        console.log('[App] Notification API not available, showing dialog')
-        return true
-      }
-      
-      // For Android < 13, no need for permission dialog
-      if (androidVersion > 0) {
-        console.log('[App] Android <13 detected, no need for permission dialog')
-        return false
-      }
-
-      // If we can't detect Android version, check if permission was denied before
-      if (permissionStatus === 'denied') {
-        const deniedCount = parseInt(localStorage.getItem('kariz_notification_denied_count') || '0')
-        const visitCount = parseInt(localStorage.getItem('kariz_visit_count') || '0') + 1
-        localStorage.setItem('kariz_visit_count', visitCount.toString())
-        
-        // Show dialog every 5 visits for denied permissions
-        if (visitCount % 5 === 0) {
-          console.log('[App] Permission denied, showing dialog again (visit #' + visitCount + ')')
-          return true
-        } else {
-          console.log('[App] Permission denied, not showing dialog yet (visit #' + visitCount + ')')
-          return false
-        }
-      }
-
-      // First time user or unknown status, show dialog
-      console.log('[App] First time or unknown status, showing permission dialog')
-      return true
+      // Use the notification permission manager to check if we need to show dialog
+      const needsDialog = await notificationPermissionManager.needsPermissionDialog()
+      console.log('[App] Notification permission manager says needs dialog:', needsDialog)
+      return needsDialog
     } catch (error) {
       console.error('[App] Error checking notification dialog status:', error)
       // Fallback: show dialog
@@ -638,7 +659,7 @@ const MainAppContent: React.FC = () => {
         console.log('[App] At root, showing exit message');
         if (backPressCount === 0) {
           setBackPressCount(1);
-          showToast('برای خروج از برنامه دوباره دکمه back را بزنید', 'warning');
+          showToastRef.current('برای خروج از برنامه دوباره دکمه back را بزنید', 'warning');
           setTimeout(() => {
             setBackPressCount(0);
           }, 4000);
@@ -663,7 +684,7 @@ const MainAppContent: React.FC = () => {
     return () => {
       backButtonHandler.cleanup();
     };
-  }, [backPressCount, showToast, canGoBack, goBack, isAtRoot]);
+  }, [backPressCount, canGoBack, goBack, isAtRoot]); // Remove showToast from dependencies
 
   // Get chat system with current chat ID
   const {
@@ -737,7 +758,7 @@ const MainAppContent: React.FC = () => {
 
       if (!accessToken) {
         console.error('No access token available from any source');
-        showToast('خطا در احراز هویت. لطفا دوباره وارد شوید.', 'error');
+        showToastRef.current('خطا در احراز هویت. لطفا دوباره وارد شوید.', 'error');
         return;
       }
 
@@ -1015,18 +1036,27 @@ const MainAppContent: React.FC = () => {
           setPendingMessage(sendText);
           setInputText('');
           
-          // Then refresh sidebar chat history after a longer delay to ensure state is updated
-          setTimeout(() => {
-            console.log('[App] Refreshing sidebar after chat creation, newChatId:', newChatId);
-            refreshSidebarChatHistoryHandler();
-          }, 1000); // Longer delay to ensure state is fully updated
+          // Enhanced sidebar refresh sequence for new chat
+          console.log('[App] Starting enhanced sidebar refresh sequence for new chat:', newChatId);
+          
+          // Immediate refresh to update state
+          refreshSidebarChatHistoryHandler();
+          
+          // Multiple delayed refreshes to ensure backend data is available
+          const refreshDelays = [500, 1000, 2000, 3000];
+          refreshDelays.forEach((delay, index) => {
+            setTimeout(() => {
+              console.log(`[App] Refresh ${index + 1} for new chat (${delay}ms):`, newChatId);
+              refreshSidebarChatHistoryHandler();
+            }, delay);
+          });
         } else {
           console.error('createChat API failed', response);
-          showToast('خطا در ایجاد چت جدید', 'error');
+          showToastRef.current('خطا در ایجاد چت جدید', 'error');
         }
       } catch (err) {
         console.error('Error creating chat:', err);
-        showToast('خطا در ایجاد چت جدید', 'error');
+        showToastRef.current('خطا در ایجاد چت جدید', 'error');
       } finally {
         setIsCreatingChat(false);
       }
@@ -1046,7 +1076,7 @@ const MainAppContent: React.FC = () => {
         refreshSidebarChatHistoryHandler();
       }, 300);
     }
-  }, [user, inputText, currentChatId, selectedModel, modelTypeParam, webSearchActive, reasoningActive, baseHandleSend, setInputText, showToast, refreshSidebarChatHistoryHandler]);
+  }, [user, inputText, currentChatId, selectedModel, modelTypeParam, webSearchActive, reasoningActive, baseHandleSend, setInputText, refreshSidebarChatHistoryHandler]); // Remove showToast from dependencies
 
   // Handle pending message after chat creation
   useEffect(() => {
@@ -1094,7 +1124,7 @@ const MainAppContent: React.FC = () => {
       })
         .catch((error) => {
           console.error('Error sending pending message:', error);
-          showToast('خطا در ارسال پیام', 'error');
+          showToastRef.current('خطا در ارسال پیام', 'error');
         })
         .finally(() => {
           setPendingMessage(null);
@@ -1106,7 +1136,7 @@ const MainAppContent: React.FC = () => {
           }, 300);
         });
     }
-  }, [pendingMessage, currentChatId, isCreatingChat, isLoading, isStreaming, baseHandleSend, modelTypeParam, selectedModel, webSearchActive, reasoningActive, user, showToast, refreshSidebarChatHistoryHandler]);
+  }, [pendingMessage, currentChatId, isCreatingChat, isLoading, isStreaming, baseHandleSend, modelTypeParam, selectedModel, webSearchActive, reasoningActive, user, refreshSidebarChatHistoryHandler]); // Remove showToast from dependencies
 
   // Auto-reset success state after showing success animation
   useEffect(() => {
@@ -1122,40 +1152,78 @@ const MainAppContent: React.FC = () => {
     return () => {};
   }, [chatCreatedSuccessfully, isCreatingChat]);
 
-  // Refresh sidebar when currentChatId changes (especially after creating new chat)
+  // Enhanced refresh sidebar when currentChatId changes (especially after creating new chat)
   useEffect(() => {
     if (currentChatId && chatCreatedSuccessfully && !isCreatingChat) {
       console.log('[App] Current chat ID changed, refreshing sidebar for new chat:', currentChatId);
-      // Add a small delay to ensure the chat is fully loaded
-      const timer = setTimeout(() => {
-        refreshSidebarChatHistoryHandler();
-      }, 800);
       
-      return () => clearTimeout(timer);
+      // First refresh: immediate to ensure state is updated
+      refreshSidebarChatHistoryHandler();
+      
+      // Multiple refreshes with different delays to ensure the chat is fully loaded
+      const refreshDelays = [800, 1500, 2500, 3500];
+      const timers = refreshDelays.map((delay, index) => 
+        setTimeout(() => {
+          console.log(`[App] Refresh ${index + 1} for new chat (${delay}ms):`, currentChatId);
+          refreshSidebarChatHistoryHandler();
+        }, delay)
+      );
+      
+      return () => {
+        timers.forEach(timer => clearTimeout(timer));
+      };
     }
     
     // Return empty cleanup function when conditions are not met
     return () => {};
   }, [currentChatId, chatCreatedSuccessfully, isCreatingChat, refreshSidebarChatHistoryHandler]);
 
-  // Additional refresh after success animation to ensure new chat is visible
+  // Additional refresh after success animation to ensure new chat is visible and active
   useEffect(() => {
     if (chatCreatedSuccessfully && !isCreatingChat && currentChatId) {
-      console.log('[App] Chat created successfully, scheduling final sidebar refresh for:', currentChatId);
-      // Final refresh after success animation to ensure new chat is in the list
-      const timer = setTimeout(() => {
-        console.log('[App] Final sidebar refresh for new chat:', currentChatId);
-        refreshSidebarChatHistoryHandler();
-      }, 2000); // After success animation completes
+      console.log('[App] Chat created successfully, scheduling comprehensive sidebar refresh for:', currentChatId);
       
-      return () => clearTimeout(timer);
+      // Comprehensive refresh sequence to ensure new chat is properly displayed and active
+      const refreshSequence = [
+        { delay: 1000, label: 'Immediate refresh' },
+        { delay: 2000, label: 'Short delay refresh' },
+        { delay: 4000, label: 'After animation refresh' },
+        { delay: 6000, label: 'Final confirmation refresh' }
+      ];
+      
+      const timers = refreshSequence.map(({ delay, label }) => 
+        setTimeout(() => {
+          console.log(`[App] ${label} for new chat:`, currentChatId);
+          refreshSidebarChatHistoryHandler();
+        }, delay)
+      );
+      
+      return () => {
+        timers.forEach(timer => clearTimeout(timer));
+      };
     }
     
     // Return empty cleanup function when conditions are not met
     return () => {};
   }, [chatCreatedSuccessfully, isCreatingChat, currentChatId, refreshSidebarChatHistoryHandler]);
 
-  // Scroll management
+  // Additional effect to ensure sidebar is refreshed when currentChatId changes
+  useEffect(() => {
+    if (currentChatId && !isCreatingChat) {
+      console.log('[App] Current chat ID changed, ensuring sidebar is up to date:', currentChatId);
+      
+      // Refresh sidebar to ensure the new chat is visible and active
+      const timer = setTimeout(() => {
+        console.log('[App] Refreshing sidebar for current chat change:', currentChatId);
+        refreshSidebarChatHistoryHandler();
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // Return empty cleanup function when conditions are not met
+    return () => {};
+  }, [currentChatId, isCreatingChat, refreshSidebarChatHistoryHandler]);
 
   // Scroll management
   useEffect(() => {
@@ -1323,9 +1391,9 @@ const MainAppContent: React.FC = () => {
   const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      showToast('متن کپی شد', 'success');
+      showToastRef.current('متن کپی شد', 'success');
     } catch (err) {
-      showToast('خطا در کپی کردن متن', 'error');
+      showToastRef.current('خطا در کپی کردن متن', 'error');
     }
   };
 
@@ -1338,12 +1406,12 @@ const MainAppContent: React.FC = () => {
       if (response.success) {
         setLikedMessages(prev => ({ ...prev, [messageId]: true }));
         setDislikedMessages(prev => ({ ...prev, [messageId]: false }));
-        showToast('پاسخ شما با موفقیت ثبت شد', 'success');
+        showToastRef.current('پاسخ شما با موفقیت ثبت شد', 'success');
       } else {
-        showToast('خطا در ثبت بازخورد', 'error');
+        showToastRef.current('خطا در ثبت بازخورد', 'error');
       }
     } catch (error) {
-      showToast('خطا در ثبت بازخورد', 'error');
+      showToastRef.current('خطا در ثبت بازخورد', 'error');
     } finally {
       setIsLikeLoading(false);
     }
@@ -1364,14 +1432,14 @@ const MainAppContent: React.FC = () => {
       if (response.success) {
         setDislikedMessages(prev => ({ ...prev, [currentFeedbackMessageId]: true }));
         setLikedMessages(prev => ({ ...prev, [currentFeedbackMessageId]: false }));
-        showToast('بازخورد شما ثبت شد', 'success');
+        showToastRef.current('بازخورد شما ثبت شد', 'success');
         setFeedbackDialogOpen(false);
       } else {
-        showToast('خطا در ثبت بازخورد', 'error');
+        showToastRef.current('خطا در ثبت بازخورد', 'error');
         throw new Error('خطا در ثبت بازخورد');
       }
     } catch (error) {
-      showToast('خطا در ثبت بازخورد', 'error');
+      showToastRef.current('خطا در ثبت بازخورد', 'error');
       throw error;
     } finally {
       setIsDislikeLoading(false);
@@ -1459,17 +1527,11 @@ const MainAppContent: React.FC = () => {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       style={{
-        // Use visualViewport API to reposition entire app when keyboard opens
+        // Simple viewport handling
         position: 'relative',
-        // When keyboard is visible, move the entire app up by keyboard height
-        transform: isKeyboardVisible ? `translateY(-${keyboardHeight}px)` : 'translateY(0)',
-        // Ensure smooth transitions
-        transition: 'transform 0.3s ease-in-out',
-        // Ensure proper viewport handling
         width: '100vw',
         height: '100vh',
-        // Adjust height when keyboard is visible to prevent overflow
-        minHeight: isKeyboardVisible ? `${window.innerHeight - keyboardHeight}px` : '100vh'
+        minHeight: '100vh'
       }}
     >
       
@@ -1515,7 +1577,7 @@ const MainAppContent: React.FC = () => {
             alt="logo"
             className={`w-9 mx-1 ${WEBVIEW_OPTIMIZATIONS.REDUCED_ANIMATIONS ? 'animate-pulse' : 'animate-[spin_2s_linear_infinite_paused]'} rounded-2xl transition-all ${WEBVIEW_OPTIMIZATIONS.TRANSITION_DURATION} ${WEBVIEW_OPTIMIZATIONS.REDUCED_ANIMATIONS ? '' : 'hover:rotate-[360deg] hover:scale-110 hover:animate-[spin_7s_linear_infinite_running]'} ${WEBVIEW_OPTIMIZATIONS.SIMPLIFIED_SHADOWS ? '' : 'hover:shadow-lg'} dark:brightness-90`}
           />
-          <div className="absolute inset-0 animate-pulse rounded-2xl bg-green-500/20" />
+          <div className="absolute inset-0 animate-pulse rounded-2xl bg-green-500/20 dark:bg-gray-500/20" />
         </div>
 
         {/* Right side - Profile or Settings */}
@@ -1676,7 +1738,7 @@ const MainAppContent: React.FC = () => {
                       <OptimizedImage 
                         src="/kalamelogo.png" 
                         alt="Logo" 
-                        className="size-12 rounded-full object-contain relative z-10"
+                        className="size-12 object-contain relative z-10"
                       />
                     </div>
                     <h2 className="text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">چطور می تونم کمکت کنم؟</h2>
@@ -1697,10 +1759,10 @@ const MainAppContent: React.FC = () => {
                 {/* Messages */}
                 {messages.map(msg => (
                   <div key={msg.id} className={`mb-4 flex ${msg.sender === 'user' ? 'justify-start' : 'justify-start'}`}>
-                    <div className={`max-w-full lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
+                    <div className={`max-w-full lg:max-w-md px-4 py-3 shadow-sm ${
                       msg.sender === 'user' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+                        ? 'bg-blue-600 text-white rounded-t-2xl rounded-bl-2xl' 
+                        : 'bg-white text-gray-800 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 rounded-t-2xl rounded-br-2xl'
                     }`}>
                       {/* Enhanced Markdown rendering for AI messages */}
                       {msg.sender === 'ai' ? (
@@ -1713,7 +1775,30 @@ const MainAppContent: React.FC = () => {
                             />
                           )}
                           
-                          <div className="prose prose-sm overflow-hidden dark:prose-invert max-w-none">
+                          <div className={`prose prose-base overflow-hidden dark:prose-invert
+                            prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                            prose-p:text-gray-700 dark:prose-p:text-gray-300
+                            prose-strong:text-gray-900 dark:prose-strong:text-gray-100
+                            prose-em:text-gray-700 dark:prose-em:text-gray-300
+                            prose-code:text-blue-600 dark:prose-code:text-blue-400
+                            prose-pre:bg-gray-50 dark:prose-pre:bg-gray-800
+                            prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-700
+                            prose-pre:text-left prose-pre:dir-ltr
+                            prose-blockquote:border-l-blue-500 dark:prose-blockquote:border-l-blue-400
+                            prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300
+                            prose-ul:text-gray-700 dark:prose-ul:text-gray-300
+                            prose-ol:text-gray-700 dark:prose-ol:text-gray-300
+                            prose-li:text-gray-700 dark:prose-li:text-gray-300
+                            prose-table:text-gray-700 dark:prose-table:text-gray-300
+                            prose-th:text-gray-900 dark:prose-th:text-gray-100
+                            prose-td:text-gray-700 dark:prose-td:text-gray-300
+                            prose-hr:border-gray-300 dark:prose-hr:border-gray-600
+                            prose-a:text-blue-600 dark:prose-a:text-blue-400
+                            prose-a:no-underline hover:prose-a:underline
+                            [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                            [&_pre]:text-left [&_pre]:dir-ltr [&_code]:text-left [&_code]:dir-ltr
+                            [&_pre]:font-mono [&_pre]:text-sm [&_pre]:leading-relaxed
+                            w-full max-w-full`}>
                             <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             rehypePlugins={[rehypeHighlight, rehypeRaw]}
@@ -1723,25 +1808,25 @@ const MainAppContent: React.FC = () => {
                                 const isInline = !match
                                 return !isInline ? (
                                   <div className="w-full overflow-x-auto">
-                                    <pre className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 w-full max-w-full overflow-x-auto whitespace-pre-wrap break-words">
-                                      <code className={`${className} block w-full overflow-x-auto`} {...props}>
+                                    <pre className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 w-full max-w-full overflow-x-auto whitespace-pre-wrap break-words text-left font-mono text-sm shadow-sm" dir="ltr">
+                                      <code className={`${className} block w-full overflow-x-auto text-left text-gray-800 dark:text-gray-200 leading-relaxed`} {...props}>
                                         {children}
                                       </code>
                                     </pre>
                                   </div>
                                 ) : (
-                                  <code className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-sm font-mono break-words" {...props}>
+                                  <code className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-sm font-mono break-words text-left font-semibold border border-blue-200 dark:border-blue-800" dir="ltr" {...props}>
                                     {children}
                                   </code>
                                 )
                               },
-                              table: ({ children, ...props }) => (
-                                <div className="w-full overflow-x-auto my-2">
-                                  <table className="w-full min-w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100" {...props}>
-                                    {children}
-                                  </table>
-                                </div>
-                              ),
+                                                             table: ({ children, ...props }) => (
+                                 <div className="w-full overflow-x-auto my-2">
+                                   <table className="w-full min-w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 text-left" dir="ltr" {...props}>
+                                     {children}
+                                   </table>
+                                 </div>
+                               ),
                               thead: ({ children }) => (
                                 <thead className="bg-blue-100 dark:bg-blue-900">
                                   {children}
@@ -1757,21 +1842,21 @@ const MainAppContent: React.FC = () => {
                                   {children}
                                 </tr>
                               ),
-                              th: ({ children }) => (
-                                <th className="border text-center border-gray-300 dark:border-gray-600 px-4 py-3 bg-blue-50 dark:bg-gray-900 font-semibold">
-                                  {children}
-                                </th>
-                              ),
+                                 th: ({ children }) => (
+                                  <th className="border text-left border-gray-300 dark:border-gray-600 px-4 py-3 bg-blue-50 dark:bg-blue-700 font-semibold">
+                                    {children}
+                                  </th>
+                                ),
                               td: ({ children }) => (
-                                <td className="px-3 py-2 text-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                                <td className="px-3 py-2 text-left border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                                   {children}
                                 </td>
                               ),
-                              blockquote: ({ children }) => (
-                                <blockquote className="border-l-4 border-blue-500 dark:border-blue-400 pl-4 py-3 my-4 bg-blue-50 dark:bg-gray-900 rounded-r-lg break-words overflow-hidden">
-                                  {children}
-                                </blockquote>
-                              ),
+                                 blockquote: ({ children }) => (
+                                  <blockquote className="border-l-4 border-blue-500 dark:border-blue-400 pl-4 pr-1 py-3 my-4 bg-blue-900/10 rounded-r-lg break-words overflow-hidden">
+                                    {children}
+                                  </blockquote>
+                                ),
                               ul: ({ children }) => (
                                 <ul className="list-disc list-inside space-y-2 my-4 break-words overflow-hidden">
                                   {children}
@@ -1845,7 +1930,7 @@ const MainAppContent: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                        <p className="text-sm text-white dark:text-white leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                       )}
                       {msg.isStreaming && (
                         <div className="mt-2 flex items-center gap-2">
@@ -1936,11 +2021,11 @@ const MainAppContent: React.FC = () => {
         </div>
       </div>
 
-      {/* ChatInput Container - Fixed at bottom since app is repositioned */}
+      {/* ChatInput Container - Fixed at bottom */}
       <div 
         className="fixed bottom-0 w-full z-20 px-2 bg-transparent"
         style={{
-          // Fixed positioning at bottom since app is repositioned above keyboard
+          // Fixed positioning at bottom
           position: 'fixed',
           left: 0,
           right: 0,
@@ -1970,9 +2055,7 @@ const MainAppContent: React.FC = () => {
             width: '100%',
             maxWidth: '100%',
             // Prevent overflow
-            overflow: 'visible',
-            // Ensure proper positioning above keyboard
-            transform: 'translateZ(0)'
+            overflow: 'visible'
           }}
         >
           {streamingError && (
@@ -2004,8 +2087,6 @@ const MainAppContent: React.FC = () => {
             selectedModel={selectedModel}
             setWebSearchActive={setWebSearchActive}
             setReasoningActive={setReasoningActive}
-            isKeyboardVisible={isKeyboardVisible}
-            keyboardHeight={keyboardHeight}
           />
         </div>
       </div>
@@ -2026,10 +2107,20 @@ const MainAppContent: React.FC = () => {
           setDislikedMessages({});
           setChatCreatedSuccessfully(false);
           
-          // Refresh sidebar chat history to ensure it's up to date
-          setTimeout(() => {
-            refreshSidebarChatHistoryHandler();
-          }, 100);
+          // Enhanced sidebar refresh sequence for new chat preparation
+          console.log('[App] Starting enhanced sidebar refresh sequence for new chat preparation');
+          
+          // Immediate refresh to clear any previous state
+          refreshSidebarChatHistoryHandler();
+          
+          // Multiple delayed refreshes to ensure sidebar is properly updated
+          const refreshDelays = [300, 600, 1000];
+          refreshDelays.forEach((delay, index) => {
+            setTimeout(() => {
+              console.log(`[App] Refresh ${index + 1} for new chat preparation (${delay}ms)`);
+              refreshSidebarChatHistoryHandler();
+            }, delay);
+          });
         }}
         currentChatId={currentChatId}
         refreshChatHistory={refreshSidebarChatHistoryHandler}
@@ -2053,11 +2144,11 @@ const MainAppContent: React.FC = () => {
           initMobilePushRegistration()
             .then(() => {
               console.log('[App] Push notification setup completed')
-              showToast('نوتیفیکیشن فعال شد', 'success')
+              // showToastRef.current('نوتیفیکیشن فعال شد', 'success')
             })
             .catch((error) => {
               console.error('[App] Push notification setup failed:', error)
-              showToast('خطا در فعال‌سازی نوتیفیکیشن', 'error')
+              showToastRef.current('خطا در فعال‌سازی نوتیفیکیشن', 'error')
             })
         }}
       />

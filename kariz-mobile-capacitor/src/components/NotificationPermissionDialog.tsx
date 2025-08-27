@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Bell, X, CheckCircle, AlertCircle, Settings } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
+import { notificationPermissionManager, type NotificationPermissionInfo } from '../utils/notificationPermissionManager'
 
 interface NotificationPermissionDialogProps {
   isVisible: boolean
@@ -13,127 +14,116 @@ export default function NotificationPermissionDialog({
   onClose,
   onPermissionGranted
 }: NotificationPermissionDialogProps) {
-  const [permissionStatus, setPermissionStatus] = useState<'unknown' | 'granted' | 'denied' | 'default'>('unknown')
+  const [permissionInfo, setPermissionInfo] = useState<NotificationPermissionInfo>({
+    status: 'unknown',
+    platform: 'unknown',
+    androidVersion: 0,
+    canRequest: false,
+    needsDialog: false
+  })
   const [isRequesting, setIsRequesting] = useState(false)
-  const [androidVersion, setAndroidVersion] = useState<number>(0)
 
   useEffect(() => {
     if (isVisible) {
-      checkPermissionStatus()
-      checkAndroidVersion()
+      checkPermissionInfo()
     }
   }, [isVisible])
 
-  const checkAndroidVersion = async () => {
+  const checkPermissionInfo = async () => {
     try {
-      if (Capacitor?.isNativePlatform?.()) {
-        // Check if Device plugin is available
-        if (Capacitor.isPluginAvailable('Device')) {
-          const { Device } = await import('@capacitor/device')
-          const deviceInfo = await Device.getInfo()
-          const version = parseInt(deviceInfo.osVersion || '0')
-          setAndroidVersion(version)
-          console.log('[NotificationDialog] Android version detected:', version)
-        } else {
-          // Fallback: try to detect Android version from user agent
-          const userAgent = navigator.userAgent
-          const androidMatch = userAgent.match(/Android\s+(\d+)/)
-          if (androidMatch && androidMatch[1]) {
-            const version = parseInt(androidMatch[1])
-            setAndroidVersion(version)
-            console.log('[NotificationDialog] Android version from user agent:', version)
-          }
-        }
+      const info = await notificationPermissionManager.getPermissionInfo()
+      setPermissionInfo(info)
+      console.log('[NotificationDialog] Permission info:', info)
+      
+      // If permission is already granted, call the callback
+      if (info.status === 'granted') {
+        localStorage.setItem('kariz_notification_permission', 'granted')
+        onPermissionGranted()
+        setTimeout(() => {
+          onClose()
+        }, 2000)
       }
     } catch (error) {
-      console.error('[NotificationDialog] Error detecting Android version:', error)
-    }
-  }
-
-  const checkPermissionStatus = async () => {
-    try {
-      if ('Notification' in window) {
-        const currentPermission = Notification.permission
-        console.log('[NotificationDialog] Current notification permission:', currentPermission)
-        setPermissionStatus(currentPermission)
-        
-        // If permission is already granted, call the callback
-        if (currentPermission === 'granted') {
-          localStorage.setItem('kariz_notification_permission', 'granted')
-          onPermissionGranted()
-          setTimeout(() => {
-            onClose()
-          }, 2000)
-        }
-      }
-    } catch (error) {
-      console.error('[NotificationDialog] Error checking notification permission:', error)
+      console.error('[NotificationDialog] Error checking permission info:', error)
     }
   }
 
   const requestPermission = async () => {
-    if (!('Notification' in window)) {
-      console.warn('[NotificationDialog] Notifications not supported in this browser')
+    if (!permissionInfo.canRequest) {
+      console.warn('[NotificationDialog] Cannot request permission')
       return
     }
 
     setIsRequesting(true)
     try {
       console.log('[NotificationDialog] Requesting notification permission...')
-      const permission = await Notification.requestPermission()
-      console.log('[NotificationDialog] Permission request result:', permission)
-      setPermissionStatus(permission)
+      const result = await notificationPermissionManager.requestPermission()
+      console.log('[NotificationDialog] Permission request result:', result)
       
-      if (permission === 'granted') {
-        // Save to localStorage that permission was granted
-        localStorage.setItem('kariz_notification_permission', 'granted')
-        console.log('[NotificationDialog] Permission granted, calling callback...')
+      if (result === 'granted') {
+        // Permission was granted, update local state
+        setPermissionInfo(prev => ({ ...prev, status: 'granted' }))
+        
+        // Call callback immediately for granted permission
         onPermissionGranted()
+        
+        // Close dialog after a short delay
         setTimeout(() => {
           onClose()
-        }, 2000)
-      } else if (permission === 'denied') {
-        // Save to localStorage that permission was denied
-        localStorage.setItem('kariz_notification_permission', 'denied')
-        // Increment denied count
-        const deniedCount = parseInt(localStorage.getItem('kariz_notification_denied_count') || '0') + 1
-        localStorage.setItem('kariz_notification_denied_count', deniedCount.toString())
-        console.log('[NotificationDialog] Permission denied, count:', deniedCount)
+        }, 1500)
+      } else {
+        // Permission was denied or default, update local state
+        setPermissionInfo(prev => ({ ...prev, status: result }))
       }
     } catch (error) {
-      console.error('[NotificationDialog] Error requesting notification permission:', error)
-      setPermissionStatus('denied')
-      // Save to localStorage that permission was denied
-      localStorage.setItem('kariz_notification_permission', 'denied')
-      // Increment denied count
-      const deniedCount = parseInt(localStorage.getItem('kariz_notification_denied_count') || '0') + 1
-      localStorage.setItem('kariz_notification_denied_count', deniedCount.toString())
+      console.error('[NotificationDialog] Error requesting permission:', error)
+      showToast('خطا در درخواست مجوز', 'error')
+      
+      // Add fallback: check if permission was actually granted despite the error
+      setTimeout(async () => {
+        try {
+          const currentStatus = await notificationPermissionManager.getCurrentPermissionStatus()
+          if (currentStatus === 'granted') {
+            console.log('[NotificationDialog] Fallback: Permission was actually granted')
+            setPermissionInfo(prev => ({ ...prev, status: 'granted' }))
+            onPermissionGranted()
+            setTimeout(() => onClose(), 1500)
+          }
+        } catch (fallbackError) {
+          console.error('[NotificationDialog] Fallback check failed:', fallbackError)
+        }
+      }, 2000)
     } finally {
       setIsRequesting(false)
     }
   }
 
   const openAndroidSettings = () => {
-    if (Capacitor.isNativePlatform()) {
-      // Show instructions to user
-      alert('برای فعال‌سازی نوتیفیکیشن:\n\n1. به تنظیمات گوشی بروید\n2. اپلیکیشن‌ها را انتخاب کنید\n3. کلمه را پیدا کنید\n4. نوتیفیکیشن‌ها را فعال کنید')
+    try {
+      notificationPermissionManager.openNotificationSettings()
+    } catch (error) {
+      console.error('[NotificationDialog] Error opening notification settings:', error)
+      showToast('خطا در باز کردن تنظیمات', 'error')
+    }
+  }
+
+  // Helper function to show toast (you can replace this with your toast system)
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    console.log(`[NotificationDialog] Toast (${type}):`, message)
+    // You can integrate this with your existing toast system
+    if (typeof window !== 'undefined' && (window as any).showToast) {
+      (window as any).showToast(message, type)
     }
   }
 
   // Determine if we should show the request permission button
   const shouldShowRequestButton = () => {
-    // For Android 13+, always show request button if permission is not granted
-    if (androidVersion >= 13) {
-      return permissionStatus !== 'granted'
-    }
-    
-    // For older Android versions, show button only for 'default' status
-    return permissionStatus === 'default'
+    return permissionInfo.canRequest && permissionInfo.status !== 'granted'
   }
 
   // Determine if we should show the Android settings button
   const shouldShowSettingsButton = () => {
-    return Capacitor.isNativePlatform() && permissionStatus === 'denied'
+    return permissionInfo.platform === 'native' && permissionInfo.status === 'denied'
   }
 
   if (!isVisible) return null
@@ -166,33 +156,33 @@ export default function NotificationPermissionDialog({
           برای دریافت پیام‌های مهم و به‌روزرسانی‌ها، لطفاً اجازه نمایش نوتیفیکیشن را بدهید
         </p>
 
-        {/* Android Version Info */}
-        {androidVersion > 0 && (
-          <div className="mb-4 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
-            <div className="text-xs text-blue-700 dark:text-blue-300 text-center">
-              اندروید {androidVersion} - {androidVersion >= 13 ? 'نیاز به مجوز POST_NOTIFICATIONS' : 'مجوز خودکار'}
-            </div>
+        {/* Platform and Android Version Info */}
+        {/* <div className="mb-4 p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
+          <div className="text-xs text-blue-700 dark:text-blue-300 text-center">
+            {permissionInfo.platform === 'native' ? 'اپلیکیشن اندروید' : 'مرورگر وب'} - 
+            {permissionInfo.androidVersion > 0 ? ` اندروید ${permissionInfo.androidVersion}` : ''} - 
+            {permissionInfo.androidVersion >= 13 ? 'نیاز به مجوز POST_NOTIFICATIONS' : 'مجوز خودکار'}
           </div>
-        )}
+        </div> */}
 
         {/* Permission Status */}
         <div className="mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
           <div className="flex items-center gap-2">
-            {permissionStatus === 'granted' ? (
+            {permissionInfo.status === 'granted' ? (
               <>
                 <CheckCircle size={16} className="text-green-500" />
                 <span className="text-sm text-green-700 dark:text-green-300">
                   نوتیفیکیشن فعال است
                 </span>
               </>
-            ) : permissionStatus === 'denied' ? (
+            ) : permissionInfo.status === 'denied' ? (
               <>
                 <AlertCircle size={16} className="text-red-500" />
                 <span className="text-sm text-red-700 dark:text-red-300">
                   نوتیفیکیشن مسدود شده است
                 </span>
               </>
-            ) : permissionStatus === 'default' ? (
+            ) : permissionInfo.status === 'default' ? (
               <>
                 <Bell size={16} className="text-blue-500" />
                 <span className="text-sm text-blue-700 dark:text-blue-300">
@@ -212,7 +202,7 @@ export default function NotificationPermissionDialog({
 
         {/* Action Buttons */}
         <div className="space-y-3">
-          {/* Request Permission Button - Show for Android 13+ or default status */}
+          {/* Request Permission Button */}
           {shouldShowRequestButton() && (
             <button
               onClick={requestPermission}
@@ -227,7 +217,7 @@ export default function NotificationPermissionDialog({
               ) : (
                 <>
                   <Bell size={16} />
-                  {androidVersion >= 13 ? 'درخواست مجوز نوتیفیکیشن' : 'دادن دسترسی'}
+                  {permissionInfo.platform === 'native' && permissionInfo.androidVersion >= 13 ? 'درخواست مجوز نوتیفیکیشن' : 'دادن دسترسی'}
                 </>
               )}
             </button>
@@ -245,7 +235,7 @@ export default function NotificationPermissionDialog({
           )}
 
           {/* Close Button for granted permission */}
-          {permissionStatus === 'granted' && (
+          {permissionInfo.status === 'granted' && (
             <button
               onClick={onClose}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
@@ -255,7 +245,7 @@ export default function NotificationPermissionDialog({
           )}
 
           {/* Skip Button for other cases */}
-          {permissionStatus !== 'granted' && !shouldShowRequestButton() && (
+          {permissionInfo.status !== 'granted' && !shouldShowRequestButton() && (
             <button
               onClick={onClose}
               className="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
@@ -275,12 +265,12 @@ export default function NotificationPermissionDialog({
           <div className="mt-4 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600">
             <div className="text-xs text-gray-600 dark:text-gray-400">
               <div>Debug Info:</div>
-              <div>Permission Status: {permissionStatus}</div>
-              <div>Android Version: {androidVersion}</div>
-              <div>Is Native: {Capacitor.isNativePlatform() ? 'Yes' : 'No'}</div>
-              <div>Browser Permission: {'Notification' in window ? Notification.permission : 'Not Available'}</div>
-              <div>Show Request Button: {shouldShowRequestButton() ? 'Yes' : 'No'}</div>
-              <div>Show Settings Button: {shouldShowSettingsButton() ? 'Yes' : 'No'}</div>
+              <div>Permission Status: {permissionInfo.status}</div>
+              <div>Platform: {permissionInfo.platform}</div>
+              <div>Android Version: {permissionInfo.androidVersion}</div>
+              <div>Can Request: {permissionInfo.canRequest ? 'Yes' : 'No'}</div>
+              <div>Needs Dialog: {permissionInfo.needsDialog ? 'Yes' : 'No'}</div>
+              <div>AndroidInterface Available: {(window as any).AndroidInterface ? 'Yes' : 'No'}</div>
             </div>
           </div>
         )}

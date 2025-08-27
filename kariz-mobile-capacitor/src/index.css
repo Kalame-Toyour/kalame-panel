@@ -80,6 +80,55 @@ html.dark body {
   color: #f9fafb !important;
 }
 
+/* Mobile-specific dark mode enforcement */
+@media (max-width: 768px) {
+  html.dark,
+  html[data-theme="dark"] {
+    color-scheme: dark !important;
+  }
+  
+  html.dark body,
+  html[data-theme="dark"] body {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
+  }
+  
+  /* Force dark mode for WebView compatibility */
+  html.dark .model-dropdown-button,
+  html[data-theme="dark"] .model-dropdown-button {
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+  }
+  
+  html.dark .model-dropdown-content,
+  html[data-theme="dark"] .model-dropdown-content {
+    background-color: #0f172a !important;
+    border-color: #475569 !important;
+  }
+  
+  /* Force dark mode for sidebar components */
+  html.dark .sidebar-main,
+  html[data-theme="dark"] .sidebar-main {
+    background-color: rgba(17, 24, 39, 0.95) !important;
+  }
+  
+  html.dark .sidebar-theme-toggle,
+  html[data-theme="dark"] .sidebar-theme-toggle {
+    background-color: transparent !important;
+  }
+}
+
+/* System dark mode preference enforcement */
+/* This forces dark mode when the system prefers dark, regardless of app theme */
+@media (prefers-color-scheme: dark) {
+  /* Only apply these rules when the app is in dark mode */
+  html.dark .sticky.top-0.z-30.backdrop-blur-md.bg-white.dark\\:bg-gray-900 {
+    background-color: #111827 !important; /* gray-900 */
+    border-color: #374151 !important; /* gray-700 */
+  }
+}
+
 /* Custom animations */
 @keyframes progress {
   0% {
@@ -1192,6 +1241,134 @@ html.dark .profile-theme-toggle:hover {
   background: rgba(55, 65, 81, 0.3) !important;
 }
 
+/* Logo background styling for dark mode sidebar */
+html.dark .sidebar-logo-container {
+  background-color: rgba(107, 114, 128, 0.93) !important; /* Lighter gray */
+  background: rgba(107, 114, 128, 0.93) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.25rem !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(156, 163, 175, 0.2) !important; /* Light gray border */
+  /* Ensure exact same size as light mode */
+  width: 2.5rem !important; /* w-9 + padding = 2.25rem + 0.5rem */
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-width: 2.5rem !important;
+  max-height: 2.5rem !important;
+  transform: none !important;
+  scale: 1 !important;
+  box-sizing: border-box !important;
+}
+
+html.dark .sidebar-logo-container:hover {
+  background-color: rgba(156, 163, 175, 0.95) !important; /* Even lighter gray on hover */
+  background: rgba(156, 163, 175, 0.95) !important;
+  border-color: rgba(156, 163, 175, 0.3) !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* Specific styling for logo container in sidebar - maintain same size */
+html.dark div[class*="relative flex items-center justify-center"] {
+  background-color: rgba(107, 114, 128, 0.93) !important; /* Lighter gray */
+  background: rgba(107, 114, 128, 0.93) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.25rem !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(156, 163, 175, 0.2) !important; /* Light gray border */
+  /* Ensure exact same size as light mode */
+  width: 2.5rem !important; /* w-9 + padding = 2.25rem + 0.5rem */
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-width: 2.5rem !important;
+  max-height: 2.5rem !important;
+  transform: none !important;
+  scale: 1 !important;
+  box-sizing: border-box !important;
+}
+
+html.dark div[class*="relative flex items-center justify-center"]:hover {
+  background-color: rgba(156, 163, 175, 0.95) !important; /* Even lighter gray on hover */
+  background: rgba(156, 163, 175, 0.95) !important;
+  border-color: rgba(156, 163, 175, 0.3) !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* Enhanced logo background styling for dark mode */
+html.dark .logo-background {
+  background-color: rgba(107, 114, 128, 0.93) !important; /* Lighter gray */
+  background: rgba(107, 114, 128, 0.93) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.25rem !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(156, 163, 175, 0.2) !important; /* Light gray border */
+  transition: all 0.3s ease !important;
+  /* Ensure exact same size as light mode */
+  width: 2.5rem !important; /* w-9 + padding = 2.25rem + 0.5rem */
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-width: 2.5rem !important;
+  max-height: 2.5rem !important;
+  transform: none !important;
+  scale: 1 !important;
+  box-sizing: border-box !important;
+}
+
+html.dark .logo-background:hover {
+  background-color: rgba(156, 163, 175, 0.95) !important; /* Even lighter gray on hover */
+  background: rgba(156, 163, 175, 0.95) !important;
+  border-color: rgba(156, 163, 175, 0.3) !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* Override the green pulse background in dark mode for better visibility */
+html.dark .animate-pulse.rounded-2xl.bg-green-500\/20 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .animate-pulse.rounded-2xl.dark\:bg-gray-500\/20 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure logo image maintains its size in dark mode */
+html.dark .logo-container img,
+html.dark .logo-container svg,
+html.dark .logo-container [class*="w-9"],
+html.dark div[class*="relative flex items-center justify-center"] img,
+html.dark div[class*="relative flex items-center justify-center"] svg,
+html.dark div[class*="relative flex items-center justify-center"] [class*="w-9"] {
+  width: 2rem !important; /* w-9 = 2.25rem */
+  height: 2rem !important;
+  min-width: 2rem !important;
+  min-height: 2rem !important;
+  max-width: 2rem !important;
+  max-height: 2rem !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* Ensure logo container doesn't expand beyond its content */
+html.dark .logo-container,
+html.dark div[class*="relative flex items-center justify-center"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2.25rem !important; /* Exact size: logo (2rem) + padding (0.5rem) */
+  height: 2.25rem !important;
+  min-width: 2.25rem !important;
+  min-height: 2.25rem !important;
+  max-width: 2.25rem !important;
+  max-height: 2.25rem !important;
+  box-sizing: border-box !important;
+}
+
 /* Remove backgrounds from all icon buttons in dark mode */
 html.dark button[class*="rounded-lg p-2"]:not([class*="bg-"]):not([class*="hover:bg-"]) {
   background-color: transparent !important;
@@ -1334,6 +1511,44 @@ svg,
 [class*="icon"] {
   display: block !important;
   flex-shrink: 0 !important;
+}
+
+/* Logo container styling for both light and dark modes */
+.logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+/* Light mode logo container */
+.logo-container {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.logo-container:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Dark mode logo container - enhanced styling */
+html.dark .logo-container {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.dark .logo-container:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Remove any remaining focus rings that might interfere */

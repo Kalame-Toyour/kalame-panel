@@ -18,8 +18,6 @@ interface ChatInputModernProps {
   selectedModel?: LanguageModel | null;
   setWebSearchActive?: (value: boolean) => void;
   setReasoningActive?: (value: boolean) => void;
-  isKeyboardVisible?: boolean;
-  keyboardHeight?: number;
 }
 
 function ChatInputModern({
@@ -34,8 +32,6 @@ function ChatInputModern({
   selectedModel,
   setWebSearchActive,
   setReasoningActive,
-  isKeyboardVisible = false,
-  keyboardHeight = 0,
 }: ChatInputModernProps) {
   // Local state for input text to avoid conflicts
   const [localInputText, setLocalInputText] = useState(inputText || '');
@@ -45,11 +41,7 @@ function ChatInputModern({
   const [textareaHeight, setTextareaHeight] = useState(20);
   const { navigate } = useRouter();
   const { user } = useAuth();
-  const { isVisible: hookIsKeyboardVisible, height: hookKeyboardHeight, scrollToInput } = useKeyboard();
-
-  // Use props if provided, otherwise fall back to hook values
-  const finalIsKeyboardVisible = isKeyboardVisible !== undefined ? isKeyboardVisible : hookIsKeyboardVisible;
-  const finalKeyboardHeight = keyboardHeight !== undefined ? keyboardHeight : hookKeyboardHeight;
+  const { scrollToInput } = useKeyboard();
 
   // Check if current model supports reasoning and web search
   const supportsReasoning = selectedModel?.features?.supportsReasoning || false;
@@ -211,36 +203,25 @@ function ChatInputModern({
       className="w-full" 
       dir="rtl"
       style={{
-        // Simple positioning since app is repositioned
-        position: 'relative',
-        // Use flexbox for proper layout
+        // Simple layout without keyboard handling
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
         justifyContent: 'flex-end',
-        // Ensure the container adapts to available space
         width: '100%',
-        maxWidth: '100%',
-        // Add smooth transitions
-        transition: 'all 0.3s ease-in-out'
+        maxWidth: '100%'
       }}
     >
       {/* Wrapper with background and border */}
       <div 
-        className="w-full rounded-2xl mb-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-1 flex flex-col gap-2 relative transition-shadow duration-200"
+        className="w-full rounded-2xl mb-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-1 flex flex-col gap-2 relative transition-shadow duration-200"
         style={{
-          // Ensure proper positioning and visibility
+          // Simple styling without keyboard handling
           position: 'relative',
           zIndex: 10,
-          // Use flexbox for proper content layout
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'stretch',
-          // Ensure the container doesn't cause layout issues
-          minHeight: 'auto',
-          maxHeight: 'none',
-          // Add smooth transitions
-          transition: 'all 0.3s ease-in-out'
+          alignItems: 'stretch'
         }}
       >
         {/* Input Section */}
@@ -342,7 +323,7 @@ function ChatInputModern({
           {/* Send Button for mobile */}
             <button
               type="button"
-              className="rounded-full w-10 h-10 mt-2 bg-black text-white shadow-lg hover:bg-blue-900 hover:text-blue-200 focus:outline-none focus:ring-4 focus:ring-blue-400 disabled:opacity-60 transition-all border-2 border-blue-900 flex items-center justify-center"
+              className="rounded-full w-10 h-10 mt-2 bg-blue-600 text-white disabled:opacity-60 disabled:bg-gray-400 disabled:text-gray-200  transition-all border-2 border-blue-700 disabled:border-gray-400 flex items-center justify-center"
               onClick={handleSendMessage}
               disabled={isLoading || localInputText.trim().length === 0}
               aria-label="ارسال پیام"
@@ -352,50 +333,45 @@ function ChatInputModern({
           
         </div>
         {/* Options Row */}
-        <div className="flex w-full items-center gap-2 mt-0 mb-0 flex-row flex-nowrap justify-start">
+        <div className="flex w-full items-center gap-2 mt-0 mb-0 flex-row  justify-start">
           {/* Reasoning Toggle */}
-          <button
-            type="button"
-            className={`rounded-full px-2 py-1 flex items-center gap-1 font-bold transition-all group border reasoning-button ${
+          <div
+            className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all duration-200 group border ${
               reasoning 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-blue-300 dark:border-blue-600' 
+                ? 'bg-purple-600 text-white dark:bg-purple-700 dark:text-white border-purple-600 dark:border-purple-700' 
                 : supportsReasoning
-                  ? 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 border-gray-300 dark:border-gray-600'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                  ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50'
             } text-xs min-w-[0]`}
             onClick={handleReasoningToggle}
-            disabled={!supportsReasoning}
             title={supportsReasoning ? 'استدلال هوشمند' : 'این مدل از استدلال پشتیبانی نمی‌کند'}
           >
             <Zap size={14} className="mr-1" />
             <span>استدلال</span>
-          </button>
+          </div>
           {/* Web Search Toggle */}
-          <button
-            type="button"
-            className={`rounded-full px-2 py-1 flex items-center gap-1 font-bold transition-all group border websearch-button ${
+          <div
+            className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all duration-200 group border ${
               webSearch 
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-blue-300 dark:border-blue-600' 
+                ? 'bg-blue-600 text-white dark:bg-blue-700 dark:text-white border-blue-600 dark:border-blue-700' 
                 : supportsWebSearch
-                  ? 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 border-gray-300 dark:border-gray-600'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                  ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50'
             } text-xs min-w-[0]`}
             onClick={handleWebSearchToggle}
-            disabled={!supportsWebSearch}
             title={supportsWebSearch ? 'جست‌وجو در وب' : 'این مدل از جست‌وجو در وب پشتیبانی نمی‌کند'}
           >
             <Globe size={14} className="mr-1" />
             <span>جست‌و‌جو</span>
-          </button>
+          </div>
           {/* Image Generation Button */}
-          <button
-            type="button"
-            className="rounded-full px-2 py-1 flex items-center gap-1 font-bold transition-all group bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400 text-xs min-w-[0] border border-gray-300 dark:border-gray-600"
+          <div
+            className="rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all group bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs min-w-[0] border border-gray-300 dark:border-gray-600"
             onClick={handleImageGenerationClick}
           >
             <ImageIcon size={14} className="mr-1" />
             <span>تولید تصویر</span>
-          </button>
+          </div>
           {file && (
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 ml-2">
               <span className="truncate max-w-[120px] text-xs text-blue-700 dark:text-blue-300">{file.name}</span>

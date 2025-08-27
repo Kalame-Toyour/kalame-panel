@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 
 // Import toast functionality
@@ -59,48 +59,34 @@ export function useAuth() {
     isAuthenticated: false,
   });
 
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const storedUser = localStorage.getItem('kariz_user');
-        if (storedUser) {
-          const user: User = JSON.parse(storedUser);
-          const now = Date.now();
-          
-          if (user.expiresAt && user.expiresAt > now) {
-            setAuthState({
-              user,
-              isLoading: false,
-              isAuthenticated: true,
-            });
-          } else {
-            // Token expired, remove from localStorage
-            localStorage.removeItem('kariz_user');
-            setAuthState({
-              user: null,
-              isLoading: false,
-              isAuthenticated: false,
-            });
-          }
+  // Memoize the auth state check function to prevent unnecessary re-renders
+  const checkAuthStatus = useCallback(() => {
+    try {
+      const storedUser = localStorage.getItem('kariz_user');
+      if (storedUser) {
+        const user: User = JSON.parse(storedUser);
+        const now = Date.now();
+        
+        if (user.expiresAt && user.expiresAt > now) {
+          return { user, isLoading: false, isAuthenticated: true };
         } else {
-          setAuthState({
-            user: null,
-            isLoading: false,
-            isAuthenticated: false,
-          });
+          // Token expired, remove from localStorage
+          localStorage.removeItem('kariz_user');
+          return { user: null, isLoading: false, isAuthenticated: false };
         }
-      } catch (error) {
-        console.error('❌ Error checking auth status:', error);
-        setAuthState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
+      } else {
+        return { user: null, isLoading: false, isAuthenticated: false };
       }
-    };
-
-    checkAuthStatus();
+    } catch (error) {
+      console.error('❌ Error checking auth status:', error);
+      return { user: null, isLoading: false, isAuthenticated: false };
+    }
   }, []);
+
+  useEffect(() => {
+    const authStatus = checkAuthStatus();
+    setAuthState(authStatus);
+  }, [checkAuthStatus]);
 
   const login = async (
     phoneOrEmail: string, 
@@ -181,48 +167,12 @@ export function useAuth() {
     }
   };
 
-  const refreshAuthState = () => {
-    try {
-      const storedUser = localStorage.getItem('kariz_user');
-      if (storedUser) {
-        const user: User = JSON.parse(storedUser);
-        const now = Date.now();
-        
-        if (user.expiresAt && user.expiresAt > now) {
-          setAuthState({
-            user,
-            isLoading: false,
-            isAuthenticated: true,
-          });
-          return true;
-        } else {
-          // Token expired, remove from localStorage
-          localStorage.removeItem('kariz_user');
-          setAuthState({
-            user: null,
-            isLoading: false,
-            isAuthenticated: false,
-          });
-          return false;
-        }
-      } else {
-        setAuthState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ Error refreshing auth state:', error);
-      setAuthState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
-      return false;
-    }
-  };
+  // Memoize refreshAuthState to prevent infinite loops
+  const refreshAuthState = useCallback(() => {
+    const authStatus = checkAuthStatus();
+    setAuthState(authStatus);
+    return authStatus.isAuthenticated;
+  }, [checkAuthStatus]);
 
   const logout = async (): Promise<void> => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
@@ -261,37 +211,10 @@ export function useAuth() {
     }
   };
 
-  const refreshUserState = () => {
-    const storedUser = localStorage.getItem('kariz_user');
-    if (storedUser) {
-      try {
-        const user: User = JSON.parse(storedUser);
-        const now = Date.now();
-        
-        if (user.expiresAt && user.expiresAt > now) {
-          setAuthState({
-            user,
-            isLoading: false,
-            isAuthenticated: true,
-          });
-        } else {
-          localStorage.removeItem('kariz_user');
-          setAuthState({
-            user: null,
-            isLoading: false,
-            isAuthenticated: false,
-          });
-        }
-      } catch (error) {
-        console.error('Error refreshing user state:', error);
-        setAuthState({
-          user: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
-      }
-    }
-  };
+  const refreshUserState = useCallback(() => {
+    const authStatus = checkAuthStatus();
+    setAuthState(authStatus);
+  }, [checkAuthStatus]);
 
   return {
     ...authState,

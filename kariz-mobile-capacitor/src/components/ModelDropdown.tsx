@@ -122,7 +122,7 @@ export function ModelDropdown({
     <div ref={dropdownRef} className={`relative flex justify-center items-center w-full model-dropdown-container ${className || ''}`}>
       <button
         type="button"
-        className={`rounded-full px-2 py-1 md:py-2 flex items-center gap-2 font-bold min-w-[160px] md:min-w-[160px] w-full whitespace-nowrap bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/30 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400 transition-all model-dropdown-button`}
+        className={`rounded-full px-2 md:py-1 flex items-center gap-2 font-bold min-w-[160px] md:min-w-[160px] w-full whitespace-nowrap bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/30 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400 transition-all model-dropdown-button`}
         onClick={() => setShowDropdown(v => !v)}
         aria-label="انتخاب مدل هوش مصنوعی"
       >
@@ -146,7 +146,7 @@ export function ModelDropdown({
       
       {showDropdown && (
         <div
-          className="absolute z-[250] rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 shadow-2xl model-dropdown-content"
+          className="absolute z-[250] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 shadow-2xl model-dropdown-content"
           style={{ minWidth: '280px' }}
         >
             <div className="px-3 md:px-4 py-3 border-b border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
@@ -193,13 +193,13 @@ export function ModelDropdown({
                             {mode === 'text' && (
                               <div className="mt-1 flex items-center justify-start gap-2 w-full flex-wrap">
                                 {model.features?.supportsReasoning && (
-                                  <span className="flex items-center gap-1 px-1 py-0.5 bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded text-xs font-medium border border-purple-200 dark:border-purple-700">
+                                  <span className="flex items-center gap-1 px-1 py-0.5 bg-purple-200 dark:bg-purple-900/40 text-purple-900 dark:text-purple-300 rounded text-xs font-medium border border-purple-400 dark:border-purple-700">
                                     <Brain size={10} />
                                     <span className="text-[10px]">استدلال</span>
                                   </span>
                                 )}
                                 {model.features?.supportsWebSearch && (
-                                  <span className="flex items-center gap-1 px-1 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-xs font-medium border border-blue-200 dark:border-blue-700">
+                                  <span className="flex items-center gap-1 px-1 py-0.5 bg-blue-200 dark:bg-blue-900/40 text-blue-900 dark:text-blue-300 rounded text-xs font-medium border border-blue-400 dark:border-blue-700">
                                     <Search size={10} />
                                     <span className="text-[10px]">جست‌وجو</span>
                                   </span>
