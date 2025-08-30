@@ -5,6 +5,7 @@ import { useRouter } from '../contexts/RouterContext';
 import { useAuth } from '../hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { keyboardInputFix } from '../utils/keyboardInputFix';
 
 interface ChatInputModernProps {
   inputText: string;
@@ -67,56 +68,44 @@ function ChatInputModern({
     }
   }, [inputText, localInputText]);
 
-
-
-  // Monitor textarea value changes using MutationObserver
+  // Simplified input handling - remove complex observers that can interfere with input methods
   useEffect(() => {
     if (!inputRef.current) return;
     
     const textarea = inputRef.current;
     
-    // Create a MutationObserver to watch for value changes
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
-          const newValue = textarea.value;
-          console.log('MutationObserver detected value change:', newValue);
-          if (newValue !== localInputText) {
-            setLocalInputText(newValue);
-            setInputText(newValue);
-          }
-        }
-      });
-    });
-    
-    // Start observing
-    observer.observe(textarea, {
-      attributes: true,
-      attributeFilter: ['value']
-    });
-    
-    // Also set up a periodic check for value changes
+    // Simple periodic sync as fallback only
     const interval = setInterval(() => {
       if (textarea.value !== localInputText) {
-        console.log('Periodic check detected value change:', textarea.value, '->', localInputText);
         setLocalInputText(textarea.value);
         setInputText(textarea.value);
       }
-    }, 100);
+    }, 500); // Less frequent to avoid interference
     
     return () => {
-      observer.disconnect();
       clearInterval(interval);
     };
   }, [localInputText, inputRef]);
 
-  // Force update textarea value when localInputText changes
+  // Register textarea with keyboard input fix and force update textarea value when localInputText changes
   useEffect(() => {
-    if (inputRef.current && inputRef.current.value !== localInputText) {
-      console.log('Forcing textarea value update:', localInputText);
-      inputRef.current.value = localInputText;
+    if (inputRef.current) {
+      // Register with keyboard input fix for enhanced handling
+      keyboardInputFix.registerInput(inputRef.current);
+      
+      // Force update textarea value
+      if (inputRef.current.value !== localInputText) {
+        console.log('Forcing textarea value update:', localInputText);
+        inputRef.current.value = localInputText;
+      }
     }
-  }, [localInputText]);
+    
+    return () => {
+      if (inputRef.current) {
+        keyboardInputFix.unregisterInput(inputRef.current);
+      }
+    };
+  }, [localInputText, inputRef]);
 
   // Reset capabilities when model changes
   useEffect(() => {
@@ -169,8 +158,9 @@ function ChatInputModern({
   function handleRemoveFile() { setFile(null) }
   
   function handleKeyPress(e: React.KeyboardEvent) {
-    // Stop propagation so global listeners (e.g., app back handler) never see Backspace while typing
-    if (e.key === 'Backspace') e.stopPropagation()
+    // Prevent all keyboard events from bubbling to avoid conflicts with back button handler
+    e.stopPropagation();
+    
     if (e.key === 'Enter' && !e.shiftKey && !isLoading && localInputText.trim().length > 0) {
       e.preventDefault()
       handleSendMessage()
@@ -229,50 +219,28 @@ function ChatInputModern({
           {/* Textarea */}
           <textarea
             ref={inputRef}
-            defaultValue={localInputText}
-            onBeforeInput={() => {
-              // Handle before input if needed
-            }}
+            value={localInputText}
             onChange={(e) => {
               const newValue = e.target.value;
               setLocalInputText(newValue);
               setInputText(newValue);
             }}
             onKeyDown={handleKeyPress}
-            onKeyPress={() => {
-              // Handle key press if needed
-            }}
-            onKeyUp={() => {
-              // Handle key up if needed
-            }}
             onInput={(e) => {
+              // Fallback for input method editors and some mobile keyboards
               const target = e.target as HTMLTextAreaElement;
               const newValue = target.value;
-              setLocalInputText(newValue);
-              setInputText(newValue);
-            }}
-            onCompositionStart={() => {
-              // Handle composition start if needed
-            }}
-            onCompositionUpdate={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              const newValue = target.value;
-              setLocalInputText(newValue);
-              setInputText(newValue);
+              if (newValue !== localInputText) {
+                setLocalInputText(newValue);
+                setInputText(newValue);
+              }
             }}
             onCompositionEnd={(e) => {
+              // Handle composition for languages like Chinese, Japanese, Korean
               const target = e.target as HTMLTextAreaElement;
               const newValue = target.value;
               setLocalInputText(newValue);
               setInputText(newValue);
-            }}
-            onBlur={(e) => {
-              // Sync on blur to ensure final state
-              const target = e.target as HTMLTextAreaElement;
-              if (target.value !== localInputText) {
-                setLocalInputText(target.value);
-                setInputText(target.value);
-              }
             }}
             onFocus={() => {
               // Handle focus for mobile keyboard
@@ -284,18 +252,6 @@ function ChatInputModern({
                   }
                 }, 300);
               }
-            }}
-            onPaste={(e) => {
-              const pastedText = e.clipboardData.getData('text');
-              const newValue = localInputText + pastedText;
-              setLocalInputText(newValue);
-              setInputText(newValue);
-            }}
-            onCut={() => {
-              console.log('Cut event');
-            }}
-            onSelect={() => {
-              console.log('Select event');
             }}
             placeholder="پیام خود را بنویسید..."
             className="flex-1 resize-none border-none outline-none bg-transparent pb-3 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 text-sm leading-relaxed overflow-y-auto font-sans"

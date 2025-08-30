@@ -6,24 +6,85 @@ interface Props { onGranted?: () => void }
 
 export default function PromptNotificationPermission({ onGranted }: Props) {
   const [shouldShow, setShouldShow] = useState(false)
+  const [isSecureContext, setIsSecureContext] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    
+    // Check if we're in a secure context (HTTPS or localhost)
+    const isSecure = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost'
+    setIsSecureContext(isSecure)
+    
+    // Only show if notifications are supported, in secure context, and not dismissed
     const dismissed = localStorage.getItem('notif_prompt_dismissed') === '1'
-    if (Notification && Notification.permission === 'default' && !dismissed) setShouldShow(true)
+    if (Notification && Notification.permission === 'default' && !dismissed && isSecure) {
+      setShouldShow(true)
+    }
+    
+    // Log notification support status for debugging
+    console.log('Notification support check:', {
+      hasNotification: !!Notification,
+      permission: Notification?.permission,
+      isSecureContext: isSecure,
+      dismissed,
+      protocol: window.location.protocol,
+      hostname: window.location.hostname
+    })
   }, [])
 
   if (!shouldShow) return null
 
   async function handleAllowClick() {
+    console.log('Notification permission request initiated')
+    
     try {
+      // Check if Notification API is available
+      if (!('Notification' in window)) {
+        console.error('Notifications not supported in this browser')
+        alert('متأسفانه مرورگر شما از اعلان‌ها پشتیبانی نمی‌کند')
+        return
+      }
+      
+      // Check if we're in a secure context
+      if (!isSecureContext) {
+        console.error('Notifications require HTTPS or localhost')
+        alert('برای فعال‌سازی اعلان‌ها، سایت باید از HTTPS استفاده کند')
+        return
+      }
+      
+      console.log('Requesting notification permission...')
       const perm = await Notification.requestPermission()
+      console.log('Permission result:', perm)
+      
       if (perm === 'granted') {
+        console.log('Notification permission granted')
         localStorage.setItem('notif_prompt_dismissed', '1')
         setShouldShow(false)
         onGranted?.()
+        
+        // Test notification to confirm it works
+        try {
+          new Notification('اعلان‌ها فعال شد!', {
+            body: 'شما اکنون اعلان‌های مهم را دریافت خواهید کرد.',
+            icon: '/kalame-logo.png',
+            tag: 'permission-granted'
+          })
+        } catch (testError) {
+          console.error('Test notification failed:', testError)
+        }
+      } else if (perm === 'denied') {
+        console.log('Notification permission denied')
+        localStorage.setItem('notif_prompt_dismissed', '1')
+        setShouldShow(false)
+        alert('اعلان‌ها مسدود شده‌اند. می‌توانید از تنظیمات مرورگر آن‌ها را فعال کنید.')
+      } else {
+        console.log('Notification permission dismissed')
+        // Don't mark as dismissed if user just closed the dialog
       }
-    } catch {}
+    } catch (error) {
+      console.error('Error requesting notification permission:', error)
+      alert('خطا در درخواست مجوز اعلان‌ها. لطفاً دوباره تلاش کنید.')
+    }
   }
 
   function handleLater() {

@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 export class BackButtonHandler {
   private static instance: BackButtonHandler;
   private isInitialized = false;
+  private onBackPressCallback: (() => void) | null = null;
 
   private constructor() {}
 
@@ -24,24 +25,12 @@ export class BackButtonHandler {
   public init(onBackPress: () => void): void {
     if (this.isInitialized) return;
     
+    this.onBackPressCallback = onBackPress;
+    
     if (Capacitor.isNativePlatform()) {
-      // Only listen for hardware back button events
-      // DO NOT intercept keyboard backspace or browser back button
-      document.addEventListener('keydown', (e) => {
-        // Only handle hardware back button (Escape key on some devices)
-        // DO NOT handle Backspace key as it interferes with text input
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          onBackPress();
-        }
-        // Remove Backspace handling - let the app handle it normally
-      });
-
-      // DO NOT intercept popstate - let the app handle browser navigation
-      // window.addEventListener('popstate', (e) => {
-      //   e.preventDefault();
-      //   onBackPress();
-      // });
+      // Use native Android back button handling via window events
+      document.addEventListener('backbutton', this.handleBackButton, false);
+      (window as any).addEventListener?.('backbutton', this.handleBackButton, false);
 
       this.isInitialized = true;
       console.log('[BackButtonHandler] Initialized successfully - only handling hardware back button');
@@ -52,7 +41,20 @@ export class BackButtonHandler {
    * Cleanup
    */
   public cleanup(): void {
+    if (Capacitor.isNativePlatform()) {
+      // Remove event listeners
+      document.removeEventListener('backbutton', this.handleBackButton, false);
+      (window as any).removeEventListener?.('backbutton', this.handleBackButton, false);
+    }
     this.isInitialized = false;
+  }
+
+  private handleBackButton = (e: Event) => {
+    console.log('[BackButtonHandler] Hardware back button pressed');
+    e.preventDefault();
+    if (this.onBackPressCallback) {
+      this.onBackPressCallback();
+    }
   }
 }
 

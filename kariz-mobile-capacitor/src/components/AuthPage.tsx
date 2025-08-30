@@ -9,6 +9,7 @@ import { useToast } from './ui/Toast';
 import { api } from '../utils/api';
 import smsRetriever from '../utils/smsRetriever';
 import { Capacitor } from '@capacitor/core';
+import { keyboardInputFix } from '../utils/keyboardInputFix';
 
 type SignupFormData = {
   phone: string;
@@ -150,11 +151,25 @@ export default function AuthPage() {
     }
   }, [smsRetrieverStatus, isSmsRetrieverActive, step, loginWithCode, usePassword]);
 
-  // Handle key press events (similar to ChatInputModern)
+  // Handle key press events with enhanced keyboard support
   function handleKeyPress(e: React.KeyboardEvent) {
-    // Stop propagation so global listeners (e.g., app back handler) never see Backspace while typing
-    if (e.key === 'Backspace') e.stopPropagation()
+    // Prevent all keyboard events from bubbling to avoid conflicts with back button handler
+    e.stopPropagation();
   }
+
+  // Register input elements with keyboard input fix
+  useEffect(() => {
+    // Register verification code input when it becomes available
+    if (verificationCodeRef.current) {
+      keyboardInputFix.registerInput(verificationCodeRef.current);
+    }
+    
+    return () => {
+      if (verificationCodeRef.current) {
+        keyboardInputFix.unregisterInput(verificationCodeRef.current);
+      }
+    };
+  }, [step, verificationCodeRef]);
 
   // SMS Retriever effect
   useEffect(() => {
