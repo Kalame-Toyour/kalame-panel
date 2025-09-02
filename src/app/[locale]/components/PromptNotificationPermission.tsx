@@ -4,32 +4,82 @@ import React, { useEffect, useState } from 'react'
 
 interface Props { onGranted?: () => void }
 
+// Safe notification helpers to prevent ReferenceError
+function isNotificationSupported(): boolean {
+  try {
+    return typeof window !== 'undefined' && typeof window.Notification !== 'undefined'
+  } catch {
+    return false
+  }
+}
+
+function getNotificationPermission(): NotificationPermission | 'default' {
+  try {
+    if (!isNotificationSupported()) return 'default'
+    return (window as any).Notification?.permission || 'default'
+  } catch {
+    return 'default'
+  }
+}
+
+function requestNotificationPermission(): Promise<NotificationPermission> {
+  try {
+    if (!isNotificationSupported()) {
+      return Promise.resolve('denied' as NotificationPermission)
+    }
+    const NotificationClass = (window as any).Notification
+    return NotificationClass?.requestPermission() || Promise.resolve('denied' as NotificationPermission)
+  } catch {
+    return Promise.resolve('denied' as NotificationPermission)
+  }
+}
+
+function createSafeNotification(title: string, options?: NotificationOptions): boolean {
+  try {
+    if (!isNotificationSupported() || getNotificationPermission() !== 'granted') {
+      return false
+    }
+    const NotificationClass = (window as any).Notification
+    if (NotificationClass) {
+      new NotificationClass(title, options)
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 export default function PromptNotificationPermission({ onGranted }: Props) {
   const [shouldShow, setShouldShow] = useState(false)
   const [isSecureContext, setIsSecureContext] = useState(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    // Check if we're in a secure context (HTTPS or localhost)
-    const isSecure = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost'
-    setIsSecureContext(isSecure)
-    
-    // Only show if notifications are supported, in secure context, and not dismissed
-    const dismissed = localStorage.getItem('notif_prompt_dismissed') === '1'
-    if (Notification && Notification.permission === 'default' && !dismissed && isSecure) {
-      setShouldShow(true)
+    try {
+      if (typeof window === 'undefined') return
+      
+      // Check if we're in a secure context (HTTPS or localhost)
+      const isSecure = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost'
+      setIsSecureContext(isSecure)
+      
+      // Only show if notifications are supported, in secure context, and not dismissed
+      const dismissed = localStorage.getItem('notif_prompt_dismissed') === '1'
+      if (isNotificationSupported() && getNotificationPermission() === 'default' && !dismissed && isSecure) {
+        setShouldShow(true)
+      }
+      
+      // Log notification support status for debugging
+      console.log('Notification support check:', {
+        hasNotification: isNotificationSupported(),
+        permission: getNotificationPermission(),
+        isSecureContext: isSecure,
+        dismissed,
+        protocol: window.location.protocol,
+        hostname: window.location.hostname
+      })
+    } catch (error) {
+      console.warn('[NotificationPrompt] Error during initialization:', error)
     }
-    
-    // Log notification support status for debugging
-    console.log('Notification support check:', {
-      hasNotification: !!Notification,
-      permission: Notification?.permission,
-      isSecureContext: isSecure,
-      dismissed,
-      protocol: window.location.protocol,
-      hostname: window.location.hostname
-    })
   }, [])
 
   if (!shouldShow) return null
@@ -39,7 +89,7 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
     
     try {
       // Check if Notification API is available
-      if (!('Notification' in window)) {
+      if (!isNotificationSupported()) {
         console.error('Notifications not supported in this browser')
         alert('متأسفانه مرورگر شما از اعلان‌ها پشتیبانی نمی‌کند')
         return
@@ -53,7 +103,7 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
       }
       
       console.log('Requesting notification permission...')
-      const perm = await Notification.requestPermission()
+      const perm = await requestNotificationPermission()
       console.log('Permission result:', perm)
       
       if (perm === 'granted') {
@@ -63,14 +113,14 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
         onGranted?.()
         
         // Test notification to confirm it works
-        try {
-          new Notification('اعلان‌ها فعال شد!', {
-            body: 'شما اکنون اعلان‌های مهم را دریافت خواهید کرد.',
-            icon: '/kalame-logo.png',
-            tag: 'permission-granted'
-          })
-        } catch (testError) {
-          console.error('Test notification failed:', testError)
+        const notificationCreated = createSafeNotification('اعلان‌ها فعال شد!', {
+          body: 'شما اکنون اعلان‌های مهم را دریافت خواهید کرد.',
+          icon: '/kalame-logo.png',
+          tag: 'permission-granted'
+        })
+        
+        if (!notificationCreated) {
+          console.warn('Test notification could not be created')
         }
       } else if (perm === 'denied') {
         console.log('Notification permission denied')

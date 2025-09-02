@@ -18,40 +18,60 @@ function getFirebaseConfig() {
   return config
 }
 
-// Safe helper functions for feature detection
+// Safe helper functions for feature detection with complete isolation
 function isNotificationSupported(): boolean {
-  return typeof window !== 'undefined' && 'Notification' in window
+  try {
+    return typeof window !== 'undefined' && typeof window.Notification !== 'undefined'
+  } catch {
+    return false
+  }
 }
 
 function getNotificationPermission(): NotificationPermission | 'default' {
-  return isNotificationSupported() ? Notification.permission : 'default'
+  try {
+    if (!isNotificationSupported()) return 'default'
+    return (window as any).Notification?.permission || 'default'
+  } catch {
+    return 'default'
+  }
 }
 
 function isServiceWorkerSupported(): boolean {
-  return typeof window !== 'undefined' && 'serviceWorker' in navigator
+  try {
+    return typeof window !== 'undefined' && 'serviceWorker' in navigator
+  } catch {
+    return false
+  }
 }
 
 function isFCMEnvironmentSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    isServiceWorkerSupported() &&
-    isNotificationSupported()
-  )
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      isServiceWorkerSupported() &&
+      isNotificationSupported()
+    )
+  } catch {
+    return false
+  }
 }
 
 export default function InitFirebasePush() {
   const { isAuthenticated } = useAuth()
+  
   useEffect(() => {
     let mounted = true
+    
     async function init() {
+      // Critical safety wrapper - MUST NOT crash the app
       try {
-        // Early browser environment checks
+        // Additional safety wrapper for entire FCM initialization
         if (typeof window === 'undefined') {
-          console.log('[FCM] Running in server environment, skipping')
+          console.log('[FCM] Server-side rendering, skipping FCM initialization')
           return
         }
 
-        // Check if FCM environment is supported at all
+        // Ultra-safe environment validation
         if (!isFCMEnvironmentSupported()) {
           console.log('[FCM] Environment not supported - missing serviceWorker or Notification APIs')
           return
@@ -143,8 +163,13 @@ export default function InitFirebasePush() {
             console.warn('[FCM] SW showNotification failed, fallback to page Notification', e)
             try {
               if (isNotificationSupported() && getNotificationPermission() === 'granted') {
-                new Notification(title, options)
-                console.log('[FCM] notification shown via page Notification (fallback)')
+                const NotificationConstructor = (window as any).Notification
+                if (NotificationConstructor) {
+                  new NotificationConstructor(title, options)
+                  console.log('[FCM] notification shown via page Notification (fallback)')
+                } else {
+                  showInlineBanner(title, body)
+                }
               } else {
                 showInlineBanner(title, body)
               }
@@ -169,11 +194,24 @@ export default function InitFirebasePush() {
             setTimeout(() => { wrapper.remove() }, 4000)
           } catch {}
         }
-      } catch (e) {
-        console.error('InitFirebasePush error', e)
+      } catch (error) {
+        // Silently fail - FCM errors should NEVER crash the app
+        console.warn('[FCM] Initialization failed silently - app continues normally:', error)
+        
+        // Clean up any pending tokens if initialization failed
+        try {
+          localStorage.removeItem('pending_web_push_token')
+        } catch {}
       }
     }
-    init()
+
+    // Safe initialization wrapper
+    try {
+      init()
+    } catch (error) {
+      console.warn('[FCM] Critical error during init() call - app continues normally:', error)
+    }
+
     // If user logs in later, flush pending token immediately on focus
     const onFocus = async () => {
       const token = localStorage.getItem('pending_web_push_token')
@@ -200,12 +238,25 @@ export default function InitFirebasePush() {
         if (resp.ok) localStorage.removeItem('pending_web_push_token')
       } catch {}
     }
-    window.addEventListener('focus', onFocus)
-    return () => { mounted = false }
+    // Safe event listener setup
+    try {
+      window.addEventListener('focus', onFocus)
+    } catch (error) {
+      console.warn('[FCM] Failed to add focus listener:', error)
+    }
+
+    return () => { 
+      mounted = false
+      try {
+        window.removeEventListener('focus', onFocus)
+      } catch {}
+    }
   }, [isAuthenticated])
 
   // Try flush pending token on auth changes by polling periodically (simple approach)
   useEffect(() => {
+    // Wrap entire polling effect in safety
+    try {
     const id = setInterval(async () => {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
@@ -231,7 +282,15 @@ export default function InitFirebasePush() {
         if (resp.ok) localStorage.removeItem('pending_web_push_token')
       } catch {}
     }, 5000)
-    return () => clearInterval(id)
+    return () => {
+      try {
+        clearInterval(id)
+      } catch {}
+    }
+    } catch (error) {
+      console.warn('[FCM] Failed to set up polling effect:', error)
+      return () => {} // Safe no-op cleanup
+    }
   }, [isAuthenticated])
 
   return null

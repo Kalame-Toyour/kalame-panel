@@ -6,6 +6,7 @@ import InitFirebasePush from './InitFirebasePush'
 import PromptNotificationPermission from './PromptNotificationPermission'
 import { ThemeProvider } from './ThemeProvider';
 import { Toaster } from 'react-hot-toast';
+import { FCMErrorBoundary } from './ErrorBoundary';
 
 type ProvidersProps = {
   children: React.ReactNode;
@@ -16,8 +17,10 @@ export default function Providers({ children }: ProvidersProps) {
     <SessionProvider>
       <LoadingProvider>
         <ThemeProvider defaultTheme="light" storageKey="theme">
-          <PromptNotificationPermission />
-          <InitFirebasePush />
+          <FCMErrorBoundary>
+            <PromptNotificationPermission />
+            <InitFirebasePush />
+          </FCMErrorBoundary>
           {children}
           <Toaster position="top-center" toastOptions={{
             style: { fontFamily: 'inherit', fontSize: 16, borderRadius: 12 },
