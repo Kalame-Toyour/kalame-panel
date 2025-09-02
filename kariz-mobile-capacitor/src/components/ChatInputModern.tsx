@@ -5,7 +5,6 @@ import { useRouter } from '../contexts/RouterContext';
 import { useAuth } from '../hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { keyboardInputFix } from '../utils/keyboardInputFix';
 
 interface ChatInputModernProps {
   inputText: string;
@@ -34,7 +33,6 @@ function ChatInputModern({
   setWebSearchActive,
   setReasoningActive,
 }: ChatInputModernProps) {
-  // Local state for input text to avoid conflicts
   const [localInputText, setLocalInputText] = useState(inputText || '');
   const [reasoning, setReasoning] = useState(reasoningActive);
   const [webSearch, setWebSearch] = useState(webSearchActive);
@@ -44,68 +42,93 @@ function ChatInputModern({
   const { user } = useAuth();
   const { scrollToInput } = useKeyboard();
 
-  // Check if current model supports reasoning and web search
   const supportsReasoning = selectedModel?.features?.supportsReasoning || false;
   const supportsWebSearch = selectedModel?.features?.supportsWebSearch || false;
 
   useEffect(() => {
-    setReasoning(reasoningActive)
-  }, [reasoningActive])
+    setReasoning(reasoningActive);
+  }, [reasoningActive]);
+  
   useEffect(() => {
-    setWebSearch(webSearchActive)
-  }, [webSearchActive])
+    setWebSearch(webSearchActive);
+  }, [webSearchActive]);
 
-  // Monitor input text changes for debugging
-  useEffect(() => {
-    console.log('ChatInputModern - inputText changed:', inputText, 'Length:', inputText?.length || 0);
-  }, [inputText]);
-
-  // Sync local input text with prop (but only when it's actually different)
+  // Sync with parent component
   useEffect(() => {
     if (inputText !== localInputText) {
-      console.log('Syncing local state with prop:', inputText, '->', localInputText);
       setLocalInputText(inputText || '');
     }
-  }, [inputText, localInputText]);
+  }, [inputText]);
 
-  // Simplified input handling - remove complex observers that can interfere with input methods
+  // SWIFTKEY FIX: Simplified approach using only DOM polling
   useEffect(() => {
     if (!inputRef.current) return;
     
     const textarea = inputRef.current;
+    let lastValue = textarea.value;
     
-    // Simple periodic sync as fallback only
-    const interval = setInterval(() => {
-      if (textarea.value !== localInputText) {
-        setLocalInputText(textarea.value);
-        setInputText(textarea.value);
+    // Continuous monitoring for SwiftKey compatibility
+    const pollForChanges = () => {
+      const currentValue = textarea.value;
+      
+      if (currentValue !== lastValue) {
+        console.log('[SwiftKey Poll] Change detected:', {
+          old: lastValue, 
+          new: currentValue,
+          length: currentValue.length
+        });
+        
+        lastValue = currentValue;
+        setLocalInputText(currentValue);
+        setInputText(currentValue);
       }
-    }, 500); // Less frequent to avoid interference
+    };
+    
+    // Poll every 30ms for responsive SwiftKey support
+    const pollInterval = setInterval(pollForChanges, 30);
+    
+    // Also check on any activity
+    const activityEvents = ['keydown', 'keyup', 'input', 'textInput', 'beforeinput'];
+    
+    const handleActivity = () => {
+      // Check after a brief delay to catch SwiftKey changes
+      setTimeout(pollForChanges, 0);
+      setTimeout(pollForChanges, 10);
+      setTimeout(pollForChanges, 50);
+    };
+    
+    activityEvents.forEach(event => {
+      textarea.addEventListener(event, handleActivity, { passive: true });
+    });
     
     return () => {
-      clearInterval(interval);
+      clearInterval(pollInterval);
+      activityEvents.forEach(event => {
+        textarea.removeEventListener(event, handleActivity);
+      });
     };
-  }, [localInputText, inputRef]);
+  }, [setInputText]);
 
-  // Register textarea with keyboard input fix and force update textarea value when localInputText changes
+  // Auto-resize textarea
   useEffect(() => {
     if (inputRef.current) {
-      // Register with keyboard input fix for enhanced handling
-      keyboardInputFix.registerInput(inputRef.current);
+      const textarea = inputRef.current;
+      textarea.style.height = 'auto';
+      const scrollHeight = textarea.scrollHeight;
+      const lineHeight = 20;
+      const maxHeight = lineHeight * 4;
       
-      // Force update textarea value
-      if (inputRef.current.value !== localInputText) {
-        console.log('Forcing textarea value update:', localInputText);
-        inputRef.current.value = localInputText;
+      const newHeight = Math.min(scrollHeight, maxHeight);
+      setTextareaHeight(newHeight);
+      textarea.style.height = `${newHeight}px`;
+      
+      if (scrollHeight > maxHeight) {
+        textarea.style.overflowY = 'auto';
+      } else {
+        textarea.style.overflowY = 'hidden';
       }
     }
-    
-    return () => {
-      if (inputRef.current) {
-        keyboardInputFix.unregisterInput(inputRef.current);
-      }
-    };
-  }, [localInputText, inputRef]);
+  }, [localInputText]);
 
   // Reset capabilities when model changes
   useEffect(() => {
@@ -116,28 +139,6 @@ function ChatInputModern({
       setWebSearch(false);
     }
   }, [selectedModel, supportsReasoning, supportsWebSearch]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (inputRef.current) {
-      const textarea = inputRef.current;
-      textarea.style.height = 'auto';
-      const scrollHeight = textarea.scrollHeight;
-      const lineHeight = 20; // Approximate line height
-      const maxHeight = lineHeight * 4; // Max 4 lines
-      
-      const newHeight = Math.min(scrollHeight, maxHeight);
-      setTextareaHeight(newHeight);
-      textarea.style.height = `${newHeight}px`;
-      
-      // Add scroll if content exceeds max height
-      if (scrollHeight > maxHeight) {
-        textarea.style.overflowY = 'auto';
-      } else {
-        textarea.style.overflowY = 'hidden';
-      }
-    }
-  }, [localInputText, inputRef]);
 
   function handleReasoningToggle() { 
     if (supportsReasoning) {
@@ -155,15 +156,16 @@ function ChatInputModern({
     }
   }
   
-  function handleRemoveFile() { setFile(null) }
+  function handleRemoveFile() { 
+    setFile(null);
+  }
   
   function handleKeyPress(e: React.KeyboardEvent) {
-    // Prevent all keyboard events from bubbling to avoid conflicts with back button handler
     e.stopPropagation();
     
     if (e.key === 'Enter' && !e.shiftKey && !isLoading && localInputText.trim().length > 0) {
-      e.preventDefault()
-      handleSendMessage()
+      e.preventDefault();
+      handleSendMessage();
     }
   }
 
@@ -176,16 +178,20 @@ function ChatInputModern({
   }
 
   function handleImageGenerationClick() {
-    // Check if user is authenticated
     if (!user || !user.accessToken) {
-      // Show auth notification
       if (onShowAuthNotification) {
         onShowAuthNotification();
       }
     } else {
-      // Navigate to image generation page
       navigate('image');
     }
+  }
+
+  // MINIMAL React change handler
+  function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    // Let the polling system handle updates - this is just for immediate React sync
+    const newValue = e.target.value;
+    setLocalInputText(newValue);
   }
 
   return (
@@ -193,7 +199,6 @@ function ChatInputModern({
       className="w-full" 
       dir="rtl"
       style={{
-        // Simple layout without keyboard handling
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
@@ -202,11 +207,9 @@ function ChatInputModern({
         maxWidth: '100%'
       }}
     >
-      {/* Wrapper with background and border */}
       <div 
         className="w-full rounded-2xl mb-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-1 flex flex-col gap-2 relative transition-shadow duration-200"
         style={{
-          // Simple styling without keyboard handling
           position: 'relative',
           zIndex: 10,
           display: 'flex',
@@ -214,38 +217,15 @@ function ChatInputModern({
           alignItems: 'stretch'
         }}
       >
-        {/* Input Section */}
         <div className="w-full flex gap-2 mb-0 relative items-end">
-          {/* Textarea */}
+          {/* SwiftKey optimized textarea */}
           <textarea
             ref={inputRef}
             value={localInputText}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setLocalInputText(newValue);
-              setInputText(newValue);
-            }}
+            onChange={handleInputChange}
             onKeyDown={handleKeyPress}
-            onInput={(e) => {
-              // Fallback for input method editors and some mobile keyboards
-              const target = e.target as HTMLTextAreaElement;
-              const newValue = target.value;
-              if (newValue !== localInputText) {
-                setLocalInputText(newValue);
-                setInputText(newValue);
-              }
-            }}
-            onCompositionEnd={(e) => {
-              // Handle composition for languages like Chinese, Japanese, Korean
-              const target = e.target as HTMLTextAreaElement;
-              const newValue = target.value;
-              setLocalInputText(newValue);
-              setInputText(newValue);
-            }}
             onFocus={() => {
-              // Handle focus for mobile keyboard
               if (Capacitor.isNativePlatform()) {
-                // Scroll to input when focused using our custom hook
                 setTimeout(() => {
                   if (inputRef.current) {
                     scrollToInput(inputRef.current);
@@ -260,8 +240,8 @@ function ChatInputModern({
               textAlign: 'right',
               height: `${textareaHeight}px`,
               minHeight: '20px',
-              maxHeight: '80px', // 4 lines * 20px
-              unicodeBidi: 'embed',
+              maxHeight: '80px',
+              unicodeBidi: 'plaintext',
               wordBreak: 'normal',
               whiteSpace: 'pre-wrap',
               fontFamily: 'inherit',
@@ -270,27 +250,28 @@ function ChatInputModern({
             }}
             disabled={isLoading}
             rows={1}
-            dir="rtl"
-            lang="fa"
+            dir="auto"
+            inputMode="text"
+            enterKeyHint="send"
+            // SwiftKey specific optimizations
             autoComplete="off"
-            autoCorrect="off"
-            spellCheck="false"
+            autoCorrect="on"
+            spellCheck="true"
+            autoCapitalize="off"
           />
-          {/* Send Button for mobile */}
-            <button
-              type="button"
-              className="rounded-full w-10 h-10 mt-2 bg-blue-600 text-white disabled:opacity-60 disabled:bg-gray-400 disabled:text-gray-200  transition-all border-2 border-blue-700 disabled:border-gray-400 flex items-center justify-center"
-              onClick={handleSendMessage}
-              disabled={isLoading || localInputText.trim().length === 0}
-              aria-label="ارسال پیام"
-            >
-              <Send size={18} />
-            </button>
           
+          <button
+            type="button"
+            className="rounded-full w-10 h-10 mt-2 bg-blue-600 text-white disabled:opacity-60 disabled:bg-gray-400 disabled:text-gray-200 transition-all border-2 border-blue-700 disabled:border-gray-400 flex items-center justify-center"
+            onClick={handleSendMessage}
+            disabled={isLoading || localInputText.trim().length === 0}
+            aria-label="ارسال پیام"
+          >
+            <Send size={18} />
+          </button>
         </div>
-        {/* Options Row */}
-        <div className="flex w-full items-center gap-2 mt-0 mb-0 flex-row  justify-start">
-          {/* Reasoning Toggle */}
+        
+        <div className="flex w-full items-center gap-2 mt-0 mb-0 flex-row justify-start">
           <div
             className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all duration-200 group border ${
               reasoning 
@@ -305,7 +286,7 @@ function ChatInputModern({
             <Zap size={14} className="mr-1" />
             <span>استدلال</span>
           </div>
-          {/* Web Search Toggle */}
+          
           <div
             className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all duration-200 group border ${
               webSearch 
@@ -320,7 +301,7 @@ function ChatInputModern({
             <Globe size={14} className="mr-1" />
             <span>جست‌و‌جو</span>
           </div>
-          {/* Image Generation Button */}
+          
           <div
             className="rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all group bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs min-w-[0] border border-gray-300 dark:border-gray-600"
             onClick={handleImageGenerationClick}
@@ -328,6 +309,7 @@ function ChatInputModern({
             <ImageIcon size={14} className="mr-1" />
             <span>تولید تصویر</span>
           </div>
+          
           {file && (
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 ml-2">
               <span className="truncate max-w-[120px] text-xs text-blue-700 dark:text-blue-300">{file.name}</span>
@@ -339,7 +321,7 @@ function ChatInputModern({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default ChatInputModern; 
+export default ChatInputModern;

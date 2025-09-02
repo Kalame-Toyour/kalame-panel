@@ -18,19 +18,48 @@ function getFirebaseConfig() {
   return config
 }
 
+// Safe helper functions for feature detection
+function isNotificationSupported(): boolean {
+  return typeof window !== 'undefined' && 'Notification' in window
+}
+
+function getNotificationPermission(): NotificationPermission | 'default' {
+  return isNotificationSupported() ? Notification.permission : 'default'
+}
+
+function isServiceWorkerSupported(): boolean {
+  return typeof window !== 'undefined' && 'serviceWorker' in navigator
+}
+
+function isFCMEnvironmentSupported(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    isServiceWorkerSupported() &&
+    isNotificationSupported()
+  )
+}
+
 export default function InitFirebasePush() {
   const { isAuthenticated } = useAuth()
   useEffect(() => {
     let mounted = true
     async function init() {
       try {
-        if (typeof window === 'undefined') return
-        if (!('serviceWorker' in navigator)) {
-          console.warn('[FCM] serviceWorker not supported')
+        // Early browser environment checks
+        if (typeof window === 'undefined') {
+          console.log('[FCM] Running in server environment, skipping')
           return
         }
+
+        // Check if FCM environment is supported at all
+        if (!isFCMEnvironmentSupported()) {
+          console.log('[FCM] Environment not supported - missing serviceWorker or Notification APIs')
+          return
+        }
+
+        // Check Firebase messaging support
         if (!(await isSupported())) {
-          console.warn('[FCM] messaging is not supported in this browser')
+          console.log('[FCM] Firebase messaging is not supported in this browser')
           return
         }
 
@@ -43,10 +72,14 @@ export default function InitFirebasePush() {
         const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
         console.log('[FCM] SW registered:', reg.scope)
 
-        // Permission gate
-        console.log('[FCM] Notification.permission:', Notification.permission)
+        // Permission gate - now safely checking
+        const notificationPermission = getNotificationPermission()
+        console.log('[FCM] Notification.permission:', notificationPermission)
         // Do NOT request permission here to satisfy user-gesture requirement.
-        if (Notification.permission !== 'granted') return
+        if (notificationPermission !== 'granted') {
+          console.log('[FCM] Notification permission not granted, skipping token registration')
+          return
+        }
 
         // IMPORTANT: Ensure userVisibleOnly=true via default FCM options; VAPID used when provided
         const token = await getToken(
@@ -74,7 +107,7 @@ export default function InitFirebasePush() {
               languages: navigator.languages,
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               tzOffsetMin: new Date().getTimezoneOffset(),
-              permission: Notification.permission,
+              permission: getNotificationPermission(),
               screen: { w: window.screen?.width, h: window.screen?.height, dpr: window.devicePixelRatio },
               swScope: reg.scope
             }
@@ -109,7 +142,7 @@ export default function InitFirebasePush() {
           } catch (e) {
             console.warn('[FCM] SW showNotification failed, fallback to page Notification', e)
             try {
-              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              if (isNotificationSupported() && getNotificationPermission() === 'granted') {
                 new Notification(title, options)
                 console.log('[FCM] notification shown via page Notification (fallback)')
               } else {
@@ -145,6 +178,11 @@ export default function InitFirebasePush() {
     const onFocus = async () => {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
+      // Only proceed if we still have FCM support
+      if (!isFCMEnvironmentSupported()) {
+        localStorage.removeItem('pending_web_push_token')
+        return
+      }
       try {
         const body = {
           platform: 'web', provider: 'fcm', token,
@@ -154,7 +192,7 @@ export default function InitFirebasePush() {
             languages: navigator.languages,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             tzOffsetMin: new Date().getTimezoneOffset(),
-            permission: Notification.permission,
+            permission: getNotificationPermission(),
             screen: { w: window.screen?.width, h: window.screen?.height, dpr: window.devicePixelRatio }
           }
         }
@@ -171,6 +209,11 @@ export default function InitFirebasePush() {
     const id = setInterval(async () => {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
+      // Only proceed if we still have FCM support
+      if (!isFCMEnvironmentSupported()) {
+        localStorage.removeItem('pending_web_push_token')
+        return
+      }
       try {
         const body = {
           platform: 'web', provider: 'fcm', token,
@@ -180,7 +223,7 @@ export default function InitFirebasePush() {
             languages: navigator.languages,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             tzOffsetMin: new Date().getTimezoneOffset(),
-            permission: Notification.permission,
+            permission: getNotificationPermission(),
             screen: { w: window.screen?.width, h: window.screen?.height, dpr: window.devicePixelRatio }
           }
         }

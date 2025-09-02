@@ -37,7 +37,6 @@ import { backButtonHandler } from './utils/backButtonHandler';
 import { webViewCrashPrevention } from './utils/webViewCrashPrevention';
 import { initializeMobileTheme, detectMobileThemeCapabilities } from './utils/mobileThemeUtils';
 import { notificationPermissionManager } from './utils/notificationPermissionManager';
-import { keyboardInputFix } from './utils/keyboardInputFix';
 
 // Import WebView optimizations
 import './styles/webview-optimizations.css';
@@ -561,16 +560,14 @@ const MainAppContent: React.FC = () => {
     setDragDistance(0);
   };
 
-  // Initialize WebView crash prevention and keyboard input fixes
+  // Initialize WebView crash prevention
   useEffect(() => {
     if (Capacitor?.isNativePlatform?.()) {
       webViewCrashPrevention.init();
-      keyboardInputFix.init();
       
       // Cleanup on unmount
       return () => {
         webViewCrashPrevention.cleanup();
-        keyboardInputFix.cleanup();
       };
     }
     

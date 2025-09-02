@@ -9,7 +9,6 @@ import { useToast } from './ui/Toast';
 import { api } from '../utils/api';
 import smsRetriever from '../utils/smsRetriever';
 import { Capacitor } from '@capacitor/core';
-import { keyboardInputFix } from '../utils/keyboardInputFix';
 
 type SignupFormData = {
   phone: string;
@@ -157,19 +156,7 @@ export default function AuthPage() {
     e.stopPropagation();
   }
 
-  // Register input elements with keyboard input fix
-  useEffect(() => {
-    // Register verification code input when it becomes available
-    if (verificationCodeRef.current) {
-      keyboardInputFix.registerInput(verificationCodeRef.current);
-    }
-    
-    return () => {
-      if (verificationCodeRef.current) {
-        keyboardInputFix.unregisterInput(verificationCodeRef.current);
-      }
-    };
-  }, [step, verificationCodeRef]);
+
 
   // SMS Retriever effect
   useEffect(() => {
