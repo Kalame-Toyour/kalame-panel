@@ -11,6 +11,7 @@ import {
   ImageIcon,
   BookText,
   LogIn,
+  CreditCard,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -23,6 +24,7 @@ import ChatHistorySidebar from '../Chat/ChatHistorySidebar';
 import { useTheme } from '../ThemeProvider';
 import fetchWithAuth from '../utils/fetchWithAuth';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isUserPremium } from '@/utils/premiumUtils';
 
 type ProfileModalProps = {
   isOpen: boolean;
@@ -309,10 +311,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                       alt="آواتار کاربر"
                       className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
                     />
-                    <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate max-w-[120px]">{user.name}</span>
+                    <div className="flex flex-col flex-1 min-w-0 text-right">
+                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">{user.name}</span>
+                      <span className={`text-xs truncate ${
+                        isUserPremium(user) 
+                          ? 'text-amber-600 dark:text-amber-400 font-semibold' 
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {isUserPremium(user) ? 'اکانت پرمیوم' : 'اکانت رایگان'}
+                      </span>
+                    </div>
                   </button>
                   {profileMenuOpen && (
                     <div ref={profileMenuRef} className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl py-3 px-0 min-w-[210px] animate-fade-in flex flex-col gap-1 mx-4">
+                      <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); onClose(); router.push(`/${locale}/transactions`) }}>
+                        <CreditCard size={18} className="text-purple-500" />
+                        لیست تراکنش‌ها
+                      </button>
                       <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); onClose(); router.push(`/${locale}/about`) }}>
                         <BookText size={18} className="text-blue-500" />
                         درباره ما

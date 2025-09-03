@@ -1,6 +1,9 @@
 import { User, Zap } from 'lucide-react';
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
+import PremiumUpgrade from '../PremiumUpgrade';
+import { isUserPremium } from '@/utils/premiumUtils';
 
 type MobileHeaderProps = {
   toggleProfile: () => void;
@@ -16,9 +19,13 @@ type ExtendedUser = {
   };
 };
 
+
+
 const MobileHeader: React.FC<MobileHeaderProps> = ({ toggleProfile }) => {
   const { user } = useAuth();
   const extendedUser = user as unknown as ExtendedUser;
+  const searchParams = useSearchParams();
+  const chatId = searchParams.get('chat');
 
   const defaultTokens = {
     dailyTokensRemaining: extendedUser?.subscription?.tier === 'pro' ? 100 : 5,
@@ -38,36 +45,26 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ toggleProfile }) => {
         <User size={30} />
       </button>
 
-      {/* Token Usage Display */}
-      {/* <div className="flex flex-1 items-center justify-center px-4">
-        <div className="relative mx-2 inline-flex items-center rounded-full bg-amber-100 p-3 dark:bg-amber-900/40">
-          <div className="relative z-10 flex items-center gap-1.5">
-            <Zap className="text-amber-500 dark:text-amber-300" size={14} />
-            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-              {tokensUsed}
-              {' / '}
-              {tokens.dailyTokensTotal}
-            </span>
-          </div>
-          <div className="absolute inset-0 rounded-full">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 opacity-20 transition-all duration-500 dark:from-amber-600 dark:to-amber-400"
-              style={{ width: `${percentage}%` }}
+      {/* Premium Upgrade Box - Mobile Center - Show only when no chat is active */}
+      <div className="flex-1 flex justify-center px-2">
+        {user && !isUserPremium(user as any) && !chatId ? (
+          <PremiumUpgrade variant="mobile" className="max-w-xs" />
+        ) : (
+          /* Logo with Animation - Show when user is premium, not logged in, or chat is active */
+          <div className="relative">
+            <img
+              src="/kalame-logo.png"
+              alt="logo"
+              className="w-9 mx-1 animate-[spin_2s_linear_infinite_paused] rounded-2xl transition-all duration-700 hover:rotate-[360deg] hover:scale-110 hover:animate-[spin_7s_linear_infinite_running]
+                hover:shadow-lg dark:brightness-90"
             />
+            <div className="absolute inset-0 animate-pulse rounded-2xl bg-green-500/20" />
           </div>
-        </div>
-      </div> */}
-
-      {/* Logo with Animation */}
-      <div className="relative">
-        <img
-          src="/kalame-logo.png"
-          alt="logo"
-          className="w-9 mx-1 animate-[spin_2s_linear_infinite_paused] rounded-2xl transition-all duration-700 hover:rotate-[360deg] hover:scale-110 hover:animate-[spin_7s_linear_infinite_running]
-            hover:shadow-lg dark:brightness-90"
-        />
-        <div className="absolute inset-0 animate-pulse rounded-2xl bg-green-500/20" />
+        )}
       </div>
+
+      {/* Right spacer to balance layout */}
+      <div className="w-[54px]" />
     </div>
   );
 };

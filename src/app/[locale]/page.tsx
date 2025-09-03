@@ -12,6 +12,7 @@ import ChatMessageContainer from './components/Chat/ChatMessage/ChatMessageConta
 import ChatInputModern from './components/Chat/ChatInput/ChatInputModern';
 import { ModelDropdown } from './components/ModelDropdown';
 import AuthNotification from './components/AuthNotification';
+import PremiumUpgrade from './components/PremiumUpgrade';
 import fetchWithAuth from './components/utils/fetchWithAuth';
 import { useAuth } from './hooks/useAuth';
 import { useChat } from './hooks/useChat';
@@ -19,6 +20,7 @@ import { ModelProvider, useModel } from './contexts/ModelContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import type { LanguageModel } from './components/ModelDropdown'
 import { PromptSuggestions } from './components/PromptSuggestions'
+import { isUserPremium } from '@/utils/premiumUtils'
 
 // Interface for new API response structure
 interface ApiModel {
@@ -36,6 +38,8 @@ interface ApiModel {
   supports_web_search: number
   supports_reasoning: number
 }
+
+
 
 const MainPageContent: React.FC = () => {
   const { startLoading, stopLoading } = useLoading();
@@ -580,7 +584,7 @@ const MainPageContent: React.FC = () => {
       />
       {/* Sticky ModelDropdown at top of chat - Only show after models are loaded */}
       {!modelsLoading && models.length > 0 && (
-        <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md mx-auto md:mx-0 border-gray-100 dark:border-gray-800 flex items-center md:px-4 py-2 ">
+        <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md mx-auto md:mx-0 border-gray-100 dark:border-gray-800 flex items-center justify-between md:px-4 py-2 ">
           <ModelDropdown
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
@@ -589,6 +593,13 @@ const MainPageContent: React.FC = () => {
             className="w-[200px] md:w-[260px]"
             mode="text"
           />
+          
+          {/* Premium Upgrade Box - Desktop Only - Show only when no chat is active */}
+          {user && !isUserPremium(user as any) && !chatId && (
+            <div className="hidden md:block">
+              <PremiumUpgrade variant="desktop" className="w-32" />
+            </div>
+          )}
         </div>
       )}
       {/* Main content area with proper overflow handling */}

@@ -102,6 +102,10 @@ const config = {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
         },
+        'shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -111,6 +115,7 @@ const config = {
         'float-slow': 'float 6s ease-in-out infinite',
         'float-medium': 'float 5s ease-in-out infinite',
         'float-fast': 'float 4s ease-in-out infinite',
+        'shimmer': 'shimmer 2s ease-in-out infinite',
       },
       transitionProperty: {
         height: 'height',

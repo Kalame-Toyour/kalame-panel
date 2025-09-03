@@ -2,6 +2,10 @@ import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 import { AppConfig } from '@/utils/AppConfig'
 
+interface NetworkError extends Error {
+  code?: string;
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth()
@@ -67,19 +71,20 @@ export async function POST(request: Request) {
             // If successful, break out of retry loop
             break;
             
-          } catch (fetchError: any) {
+          } catch (fetchError: unknown) {
             retryCount++;
             console.error(`Attempt ${retryCount} failed:`, fetchError);
             
             if (retryCount >= MAX_RETRIES) {
               // All retries exhausted
-              if (fetchError.name === 'TimeoutError') {
+              const error = fetchError as Error;
+              if (error.name === 'TimeoutError') {
                 controller.enqueue(`data: ${JSON.stringify({
                   error: 'درخواست شما به دلیل کندی شبکه ناموفق بود. لطفاً دوباره تلاش کنید.',
                   errorType: 'timeout',
                   details: 'Network timeout after multiple retries'
                 })}\n\n`);
-              } else if (fetchError.code === 'UND_ERR_SOCKET') {
+              } else if ((error as NetworkError).code === 'UND_ERR_SOCKET') {
                 controller.enqueue(`data: ${JSON.stringify({
                   error: 'اتصال شبکه قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.',
                   errorType: 'network_error',
@@ -89,11 +94,10 @@ export async function POST(request: Request) {
                 controller.enqueue(`data: ${JSON.stringify({
                   error: 'خطا در اتصال به سرور. لطفاً دوباره تلاش کنید.',
                   errorType: 'connection_error',
-                  details: fetchError.message || 'Unknown connection error'
+                  details: error.message || 'Unknown connection error'
                 })}\n\n`);
               }
               controller.enqueue(`data: [DONE]\n\n`);
-              controller.close();
               return;
             }
             
@@ -112,7 +116,6 @@ export async function POST(request: Request) {
               status: response?.status || 'No status',
             })}\n\n`
           )
-          controller.close()
           return
         }
 
@@ -120,7 +123,6 @@ export async function POST(request: Request) {
         const reader = response.body?.getReader()
         if (!reader) {
           controller.enqueue(`data: ${JSON.stringify({ error: 'No response body' })}\n\n`)
-          controller.close()
           return
         }
 
@@ -138,7 +140,6 @@ export async function POST(request: Request) {
               details: 'Streaming failed after multiple retries'
             })}\n\n`);
             controller.enqueue(`data: [DONE]\n\n`);
-            controller.close();
             return false;
           }
 
@@ -186,11 +187,11 @@ export async function POST(request: Request) {
             } else {
               console.log(`Retry attempt ${streamingRetryCount} failed with status:`, continueResponse.status);
             }
-          } catch (retryError: any) {
+          } catch (retryError: unknown) {
             console.error(`Streaming retry ${streamingRetryCount} failed:`, retryError);
             
             // If it's a socket error, wait a bit longer before next retry
-            if (retryError.code === 'UND_ERR_SOCKET') {
+            if ((retryError as NetworkError).code === 'UND_ERR_SOCKET') {
               console.log('Socket error in retry, waiting longer before next attempt');
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * 3));
             }
@@ -279,8 +280,7 @@ export async function POST(request: Request) {
                         )
                       }
                       controller.enqueue(`data: [DONE]\n\n`)
-                      controller.close()
-                      return false;
+                      return false; // Don't close controller here, let finally block handle it
                     }
 
                     // اگر JSON response شامل credit_error است اما در شرط‌های بالا قرار نگرفت
@@ -295,8 +295,7 @@ export async function POST(request: Request) {
                         })}\n\n`
                       )
                       controller.enqueue(`data: [DONE]\n\n`)
-                      controller.close()
-                      return false;
+                      return false; // Don't close controller here, let finally block handle it
                     }
 
                     // Handle reasoning chunks
@@ -323,24 +322,25 @@ export async function POST(request: Request) {
                 }
               }
             }
-          } catch (streamError: any) {
+          } catch (streamError: unknown) {
             console.error('Error in streaming:', streamError)
             
             // Check if it's a timeout or network error that we can retry
-            if (streamError.name === 'TimeoutError' || 
-                streamError.code === 'UND_ERR_SOCKET' ||
-                streamError.message?.includes('timeout') ||
-                streamError.message?.includes('aborted') ||
-                streamError.message?.includes('terminated')) {
+            const error = streamError as NetworkError;
+            if (error.name === 'TimeoutError' || 
+                error.code === 'UND_ERR_SOCKET' ||
+                error.message?.includes('timeout') ||
+                error.message?.includes('aborted') ||
+                error.message?.includes('terminated')) {
               
               console.log('Streaming error detected, attempting retry...', {
-                errorCode: streamError.code,
-                errorName: streamError.name,
-                errorMessage: streamError.message
+                errorCode: error.code,
+                errorName: error.name,
+                errorMessage: error.message
               });
               
               // For socket errors, try to retry with a fresh connection
-              if (streamError.code === 'UND_ERR_SOCKET') {
+              if (error.code === 'UND_ERR_SOCKET') {
                 console.log('Socket error detected, will retry with fresh connection');
                 // Wait a bit longer for socket errors
                 await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * 2));
@@ -352,7 +352,7 @@ export async function POST(request: Request) {
               controller.enqueue(`data: ${JSON.stringify({ 
                 error: 'خطا در دریافت پاسخ. لطفاً دوباره تلاش کنید.',
                 errorType: 'stream_error',
-                details: streamError?.message || 'Streaming error'
+                details: error?.message || 'Streaming error'
               })}\n\n`)
               return false;
             }
@@ -362,20 +362,21 @@ export async function POST(request: Request) {
         try {
           // Start streaming with retry capability
           await continueStreaming(reader);
-        } catch (streamError: any) {
+        } catch (streamError: unknown) {
           console.error('Error in streaming:', streamError)
           
           // Classify the error for better handling
+          const error = streamError as NetworkError;
           let errorType = 'stream_error';
           let errorMessage = 'خطا در دریافت پاسخ. لطفاً دوباره تلاش کنید.';
           
-          if (streamError.code === 'UND_ERR_SOCKET') {
+          if (error.code === 'UND_ERR_SOCKET') {
             errorType = 'socket_error';
             errorMessage = 'اتصال شبکه قطع شد. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.';
-          } else if (streamError.name === 'TimeoutError') {
+          } else if (error.name === 'TimeoutError') {
             errorType = 'timeout_error';
             errorMessage = 'درخواست شما به دلیل کندی شبکه ناموفق بود. لطفاً دوباره تلاش کنید.';
-          } else if (streamError.message?.includes('aborted')) {
+          } else if (error.message?.includes('aborted')) {
             errorType = 'aborted_error';
             errorMessage = 'درخواست شما لغو شد. لطفاً دوباره تلاش کنید.';
           }
@@ -383,7 +384,7 @@ export async function POST(request: Request) {
           controller.enqueue(`data: ${JSON.stringify({ 
             error: errorMessage,
             errorType: errorType,
-            details: streamError?.message || 'Streaming error'
+            details: error?.message || 'Streaming error'
           })}\n\n`)
         } finally {
           controller.close()

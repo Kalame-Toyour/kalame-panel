@@ -125,6 +125,8 @@ const PhoneAuthFlow = () => {
           userId: data.needUserData?.ID,
           username: data.needUserData?.username,
           expireAt: data.needUserData?.expireAt,
+          premium: data.needUserData?.premium,
+          premiumExpireTime: data.needUserData?.premium_expiretime,
           redirect: false,
         });
         
@@ -215,6 +217,8 @@ const PhoneAuthFlow = () => {
           userId: data.needUserData.ID,
           username: data.needUserData.username,
           expireAt: data.needUserData.expireAt,
+          premium: data.needUserData.premium,
+          premiumExpireTime: data.needUserData.premium_expiretime,
           redirect: false,
         });
         
@@ -290,6 +294,8 @@ const PhoneAuthFlow = () => {
           userId: data.needUserData.ID,
           username: data.needUserData.username,
           expireAt: data.needUserData.expireAt,
+          premium: data.needUserData.premium,
+          premiumExpireTime: data.needUserData.premium_expiretime,
           redirect: false,
         });
         

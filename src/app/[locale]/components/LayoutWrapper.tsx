@@ -32,10 +32,11 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const isPricingPage = basePath.endsWith('/pricing');
   const isAboutPage = basePath.endsWith('/about');
   const isHelpPage = basePath.endsWith('/help');
+  const isTransactionsPage = basePath.endsWith('/transactions');
 
 
 
-  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage || isAboutPage || isHelpPage
+  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage || isAboutPage || isHelpPage || isTransactionsPage
     ? "flex flex-col min-h-screen"
     : "flex h-screen flex-col overflow-hidden";
 
@@ -86,7 +87,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
         {/* Main content area with dynamic margin and scrolling */}
         <div className={`
           flex-1
-          ${isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage || isAboutPage || isHelpPage ? '' : 'overflow-y-auto'}
+          ${isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage || isAboutPage || isHelpPage || isTransactionsPage ? '' : 'overflow-y-auto'}
           ${getContentMarginClass()}
           transition-all 
           duration-300 

@@ -19,7 +19,11 @@ const nextConfig = {
   serverExternalPackages: ['@electric-sql/pglite'],
   images: {
     domains: ['cdn.coingraam.com'],
+    formats: ['image/webp', 'image/avif'],
   },
+  compress: true,
+  generateEtags: true,
+  trailingSlash: false,
   
   webpack: (config, { isServer }) => {
     // Exclude mobile app files from server build
