@@ -7,6 +7,7 @@ import { useSidebar } from '@/contexts/SidebarContext';
 import { useAuthToken } from '../hooks/useAuthToken';
 import { useProfileModal } from '../hooks/useProfileModal';
 import MobileHeader from './Layout/MobileHeader';
+import SearchParamsWrapper from './SearchParamsWrapper';
 import Sidebar from './Layout/Sidebar';
 import ProfileModal from './Profile/ProfileModal';
 
@@ -67,22 +68,26 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
     <div className={rootDivClasses}>
       {/* Mobile Header - Fixed at top */}
       <div className="sticky top-0 z-10 w-full md:hidden">
-        <MobileHeader
-          toggleProfile={toggleProfile}
-        />
+        <SearchParamsWrapper fallback={<div className="h-16 bg-white dark:bg-gray-900"></div>}>
+          <MobileHeader
+            toggleProfile={toggleProfile}
+          />
+        </SearchParamsWrapper>
       </div>
 
       {/* Main content wrapper */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <Sidebar
-          isOpen={isSidebarOpen}
-          isCollapsed={isSidebarCollapsed}
-          isAuthenticated
-          toggleSidebar={toggleSidebar}
-          toggleProfile={toggleProfile}
-          toggleCollapse={toggleCollapse}
-        />
+        <SearchParamsWrapper fallback={<div className="w-20 bg-white dark:bg-gray-900"></div>}>
+          <Sidebar
+            isOpen={isSidebarOpen}
+            isCollapsed={isSidebarCollapsed}
+            isAuthenticated
+            toggleSidebar={toggleSidebar}
+            toggleProfile={toggleProfile}
+            toggleCollapse={toggleCollapse}
+          />
+        </SearchParamsWrapper>
 
         {/* Main content area with dynamic margin and scrolling */}
         <div className={`

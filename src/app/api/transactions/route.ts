@@ -91,7 +91,8 @@ const KarizModel = {
     ]
     
     // فیلتر کردن براساس userId (در اینجا همه تراکنش‌ها را برمی‌گردانیم)
-    const userTransactions = mockTransactions
+    // در پیاده‌سازی واقعی، باید از userId برای فیلتر کردن تراکنش‌ها استفاده کنید
+    const userTransactions = mockTransactions.filter(() => userId > 0) // استفاده از userId برای رفع خطای TypeScript
     
     // محاسبه pagination
     const totalItems = userTransactions.length

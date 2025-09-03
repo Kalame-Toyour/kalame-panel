@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { LoadingProvider } from '@/contexts/LoadingContext';
 import { SidebarProvider } from '@/contexts/SidebarContext';
@@ -20,7 +20,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <Providers>
             <DynamicBackground>
               <LayoutWrapper>
-                {children}
+                <Suspense fallback={<div>Loading...</div>}>
+                  {children}
+                </Suspense>
               </LayoutWrapper>
             </DynamicBackground>
           </Providers>

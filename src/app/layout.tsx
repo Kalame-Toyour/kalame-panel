@@ -1,5 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import StructuredData from './components/StructuredData'
 import GoogleTagManager from './components/GoogleTagManager'
 import GTMPageTracker from './components/GTMPageTracker'
@@ -104,7 +105,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
         {/* End Google Tag Manager (noscript) */}
         <GoogleTagManager />
-        <GTMPageTracker />
+        <Suspense fallback={null}>
+          <GTMPageTracker />
+        </Suspense>
         {children}
       </body>
     </html>
