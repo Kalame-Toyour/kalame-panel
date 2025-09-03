@@ -49,6 +49,12 @@ export async function POST(req: Request) {
 
     const data = await res.json().catch(() => ({}))
     console.log('[notif/register-device] backend status:', res.status)
+    
+    // Log successful registrations to help with debugging
+    if (res.status === 200) {
+      console.log('[notif/register-device] Device successfully registered')
+    }
+    
     return NextResponse.json(data, { status: res.status })
   } catch (e) {
     console.error('[notif/register-device] error:', e)

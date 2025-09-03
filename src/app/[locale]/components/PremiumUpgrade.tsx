@@ -14,7 +14,7 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
 
   const handleUpgradeClick = () => {
     // Navigate to premium upgrade page or show modal
-    router.push('/premium');
+    router.push('/pricing');
   };
 
   if (variant === 'mobile') {
@@ -22,7 +22,7 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`relative mx-1 my-0.5 overflow-hidden rounded-xl bg-white/10 dark:bg-gray-900/20 backdrop-blur-md border border-white/20 dark:border-gray-700/30 p-1.5 shadow-md transition-all duration-300 hover:bg-white/15 dark:hover:bg-gray-900/30 ${className}`}
+        className={`relative mx-1 my-0.5 overflow-hidden rounded-xl bg-white/10 dark:bg-gray-900/20 backdrop-blur-md border border-white/20 dark:border-gray-700/30 p-1 shadow-md transition-all duration-300 hover:bg-white/15 dark:hover:bg-gray-900/30 ${className}`}
         onClick={handleUpgradeClick}
       >
         {/* Glassmorphism background with gradient overlay */}

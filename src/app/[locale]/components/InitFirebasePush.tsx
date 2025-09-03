@@ -30,7 +30,7 @@ function isNotificationSupported(): boolean {
 function getNotificationPermission(): NotificationPermission | 'default' {
   try {
     if (!isNotificationSupported()) return 'default'
-    return (window as any).Notification?.permission || 'default'
+    return (window as Window & { Notification?: { permission: NotificationPermission } }).Notification?.permission || 'default'
   } catch {
     return 'default'
   }
@@ -61,8 +61,19 @@ export default function InitFirebasePush() {
   
   useEffect(() => {
     let mounted = true
+    let isInitializing = false
+    let hasRegistered = false
+    let initTimeout: NodeJS.Timeout | null = null
     
     async function init() {
+      // Prevent multiple simultaneous initializations
+      if (isInitializing) {
+        console.log('[FCM] Already initializing, skipping duplicate call')
+        return
+      }
+      
+      isInitializing = true
+      
       // Critical safety wrapper - MUST NOT crash the app
       try {
         // Additional safety wrapper for entire FCM initialization
@@ -116,6 +127,13 @@ export default function InitFirebasePush() {
           localStorage.setItem('pending_web_push_token', token)
           console.log('[FCM] user not authenticated; token saved for later')
         } else {
+          // Only register if we haven't already registered this token
+          const lastRegisteredToken = localStorage.getItem('last_registered_token')
+          if (lastRegisteredToken === token && hasRegistered) {
+            console.log('[FCM] Token already registered, skipping duplicate registration')
+            return
+          }
+          
           // Try registering to backend with additional device context
           const body = {
             platform: 'web',
@@ -139,7 +157,14 @@ export default function InitFirebasePush() {
             body: JSON.stringify(body)
           })
           console.log('[FCM] register-device status:', resp.status)
-          if (resp.status === 401) localStorage.setItem('pending_web_push_token', token)
+          if (resp.status === 401) {
+            localStorage.setItem('pending_web_push_token', token)
+          } else if (resp.ok) {
+            // Mark as successfully registered
+            localStorage.setItem('last_registered_token', token)
+            hasRegistered = true
+            console.log('[FCM] Token successfully registered')
+          }
         }
 
         // Foreground messages: explicitly show a notification
@@ -161,21 +186,21 @@ export default function InitFirebasePush() {
             console.log('[FCM] notification shown via SW (foreground)')
           } catch (e) {
             console.warn('[FCM] SW showNotification failed, fallback to page Notification', e)
-            try {
-              if (isNotificationSupported() && getNotificationPermission() === 'granted') {
-                const NotificationConstructor = (window as any).Notification
-                if (NotificationConstructor) {
-                  new NotificationConstructor(title, options)
-                  console.log('[FCM] notification shown via page Notification (fallback)')
+                          try {
+                if (isNotificationSupported() && getNotificationPermission() === 'granted') {
+                  const NotificationConstructor = (window as Window & { Notification?: typeof Notification }).Notification
+                  if (NotificationConstructor) {
+                    new NotificationConstructor(title, options)
+                    console.log('[FCM] notification shown via page Notification (fallback)')
+                  } else {
+                    showInlineBanner(title, body)
+                  }
                 } else {
                   showInlineBanner(title, body)
                 }
-              } else {
+              } catch {
                 showInlineBanner(title, body)
               }
-            } catch {
-              showInlineBanner(title, body)
-            }
           }
         })
 
@@ -202,20 +227,45 @@ export default function InitFirebasePush() {
         try {
           localStorage.removeItem('pending_web_push_token')
         } catch {}
+      } finally {
+        isInitializing = false
       }
     }
 
+    // Debounced initialization to prevent rapid re-initializations
+    const debouncedInit = () => {
+      if (initTimeout) {
+        clearTimeout(initTimeout)
+      }
+      initTimeout = setTimeout(() => {
+        try {
+          init()
+        } catch (error) {
+          console.warn('[FCM] Critical error during init() call - app continues normally:', error)
+        }
+      }, 100) // 100ms debounce
+    }
+    
     // Safe initialization wrapper
     try {
-      init()
+      debouncedInit()
     } catch (error) {
-      console.warn('[FCM] Critical error during init() call - app continues normally:', error)
+      console.warn('[FCM] Critical error during debouncedInit() call - app continues normally:', error)
     }
 
     // If user logs in later, flush pending token immediately on focus
     const onFocus = async () => {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
+      
+      // Check if this token was already registered
+      const lastRegisteredToken = localStorage.getItem('last_registered_token')
+      if (lastRegisteredToken === token) {
+        console.log('[FCM] Focus: Token already registered, removing pending token')
+        localStorage.removeItem('pending_web_push_token')
+        return
+      }
+      
       // Only proceed if we still have FCM support
       if (!isFCMEnvironmentSupported()) {
         localStorage.removeItem('pending_web_push_token')
@@ -235,7 +285,11 @@ export default function InitFirebasePush() {
           }
         }
         const resp = await fetch('/api/notifications/register-device', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        if (resp.ok) localStorage.removeItem('pending_web_push_token')
+        if (resp.ok) {
+          localStorage.removeItem('pending_web_push_token')
+          localStorage.setItem('last_registered_token', token)
+          console.log('[FCM] Focus: Token successfully registered')
+        }
       } catch {}
     }
     // Safe event listener setup
@@ -247,8 +301,21 @@ export default function InitFirebasePush() {
 
     return () => { 
       mounted = false
+      if (initTimeout) {
+        clearTimeout(initTimeout)
+      }
       try {
         window.removeEventListener('focus', onFocus)
+      } catch {}
+    }
+  }, [isAuthenticated])
+
+  // Clear registered token when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      try {
+        localStorage.removeItem('last_registered_token')
+        console.log('[FCM] User logged out, cleared registered token')
       } catch {}
     }
   }, [isAuthenticated])
@@ -260,6 +327,15 @@ export default function InitFirebasePush() {
     const id = setInterval(async () => {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
+      
+      // Check if this token was already registered
+      const lastRegisteredToken = localStorage.getItem('last_registered_token')
+      if (lastRegisteredToken === token) {
+        console.log('[FCM] Polling: Token already registered, removing pending token')
+        localStorage.removeItem('pending_web_push_token')
+        return
+      }
+      
       // Only proceed if we still have FCM support
       if (!isFCMEnvironmentSupported()) {
         localStorage.removeItem('pending_web_push_token')
@@ -279,9 +355,13 @@ export default function InitFirebasePush() {
           }
         }
         const resp = await fetch('/api/notifications/register-device', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        if (resp.ok) localStorage.removeItem('pending_web_push_token')
+        if (resp.ok) {
+          localStorage.removeItem('pending_web_push_token')
+          localStorage.setItem('last_registered_token', token)
+          console.log('[FCM] Polling: Token successfully registered')
+        }
       } catch {}
-    }, 5000)
+    }, 10000) // Increased interval to 10 seconds to reduce frequency
     return () => {
       try {
         clearInterval(id)
