@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Crown, Sparkles, Star, ArrowRight } from 'lucide-react';
+import { Check, Crown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocale } from 'next-intl';
 
@@ -9,9 +9,11 @@ import LanguageSwitcherModal from '../components/LanguageSwitcher';
 import { Tabs, TabsContent } from '../components/ui/tabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast'
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
 import PurchaseAuthNotification from '../components/PurchaseAuthNotification';
+import IPWarningBanner from '../components/IPWarningBanner';
+import { checkUserLocation, checkUserLocationFallback } from '../services/ipService';
 
 
 interface Package {
@@ -44,29 +46,13 @@ interface PackagesApiResponse {
   faq: FaqItem[]
 }
 
-const features = [
-
-  {
-    icon: Sparkles,
-    title: 'پردازش سریع‌تر',
-    description: 'اولویت بالا در پردازش درخواست‌ها'
-  },
-  {
-    icon: Star,
-    title: 'امکانات ویژه',
-    description: 'دسترسی به جدیدترین مدل‌ها و قابلیت‌های پیشرفته'
-  },
-  {
-    icon: Crown,
-    title: 'پشتیبانی اختصاصی',
-    description: 'پشتیبانی ۲۴ ساعته و مشاوره تخصصی'
-  }
-];
+// Features array removed as it's not being used in the current layout
 
 export default function PricingPage() {
   const locale = useLocale();
   const isRTL = locale === 'fa';
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [packages, setPackages] = useState<Package[] | null>(null);
@@ -76,6 +62,10 @@ export default function PricingPage() {
   const [hasError, setHasError] = useState(false);
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [showAuthNotification, setShowAuthNotification] = useState(false);
+  const [showIPWarning, setShowIPWarning] = useState(false);
+  const [userCountry, setUserCountry] = useState<string>('');
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+  const [isRecheckingIP, setIsRecheckingIP] = useState(false);
 
   useEffect(function fetchPackages() {
     let isMounted = true;
@@ -101,6 +91,48 @@ export default function PricingPage() {
     };
   }, []);
 
+  useEffect(function extractUserIdFromURL() {
+    const userId = searchParams.get('userId');
+    if (userId) {
+      console.log('Target userId found in URL:', userId);
+      setTargetUserId(userId);
+    }
+  }, [searchParams]);
+
+  useEffect(function checkUserIP() {
+    let isMounted = true;
+    
+    async function performIPCheck() {
+      try {
+        // Try primary service first
+        let result = await checkUserLocation();
+        
+        // If primary fails, try fallback
+        if (result.error) {
+          result = await checkUserLocationFallback();
+        }
+        
+        if (isMounted) {
+          setUserCountry(result.country || '');
+          if (!result.isFromIran) {
+            setShowIPWarning(true);
+          }
+        }
+      } catch (error) {
+        console.error('IP check failed:', error);
+        // Don't show warning if we can't check IP to avoid blocking legitimate users
+              } finally {
+          // IP check completed
+        }
+    }
+    
+    performIPCheck();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleAuthRedirect = () => {
     setShowAuthNotification(false);
     setTimeout(() => {
@@ -112,10 +144,40 @@ export default function PricingPage() {
     setShowAuthNotification(false);
   };
 
+  const handleCloseIPWarning = () => {
+    setShowIPWarning(false);
+  };
+
+  const handleRecheckIP = async () => {
+    setIsRecheckingIP(true);
+    try {
+      // Try primary service first
+      let result = await checkUserLocation();
+      
+      // If primary fails, try fallback
+      if (result.error) {
+        result = await checkUserLocationFallback();
+      }
+      
+      setUserCountry(result.country || '');
+      if (result.isFromIran) {
+        setShowIPWarning(false);
+        toast.success(isRTL ? 'موقعیت شما تأیید شد! حالا می‌توانید خرید کنید.' : 'Your location is confirmed! You can now make purchases.');
+      } else {
+        toast.error(isRTL ? 'هنوز از ایران دسترسی ندارید. لطفاً فیلترشکن را خاموش کنید.' : 'Still not accessing from Iran. Please turn off your VPN.');
+      }
+    } catch (error) {
+      console.error('IP recheck failed:', error);
+      toast.error(isRTL ? 'خطا در بررسی موقعیت' : 'Error checking location');
+    } finally {
+      setIsRecheckingIP(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <div className="absolute top-6 right-6 z-20">
+      {/* <div className="absolute top-6 right-6 z-20">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 mt-12 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors"
@@ -123,7 +185,7 @@ export default function PricingPage() {
           <ArrowRight className="size-4" />
           {isRTL ? 'بازگشت' : 'Back'}
         </button>
-      </div>
+      </div> */}
 
       <PurchaseAuthNotification 
         isVisible={showAuthNotification} 
@@ -131,7 +193,46 @@ export default function PricingPage() {
         onLogin={handleAuthRedirect}
       />
 
-      <div className="container mx-auto px-4 py-20">
+      <IPWarningBanner 
+        isVisible={showIPWarning} 
+        onClose={handleCloseIPWarning}
+        onRecheck={handleRecheckIP}
+        country={userCountry}
+        isRTL={isRTL}
+        isRechecking={isRecheckingIP}
+      />
+
+      <div className={`container mx-auto px-4 py-12 ${showIPWarning ? 'pt-24' : ''}`}>
+        {/* Target User Banner */}
+        {/* {targetUserId && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6 p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white text-center"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <div className="p-1.5 bg-white/20 rounded-lg">
+                <Crown className="size-4" />
+              </div>
+              <div className="text-center">
+                <div className="font-semibold">
+                  {isRTL 
+                    ? `در حال خرید برای کاربر: ${targetUserId}` 
+                    : `Purchasing for user: ${targetUserId}`
+                  }
+                </div>
+                <div className="text-xs text-white/80 mt-1">
+                  {isRTL 
+                    ? 'نیازی به ورود نیست - مستقیماً به درگاه پرداخت منتقل می‌شوید'
+                    : 'No login required - you will be redirected to payment gateway'
+                  }
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )} */}
+
         {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -156,7 +257,7 @@ export default function PricingPage() {
         </motion.div>
 
         {/* Features Grid */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -182,7 +283,7 @@ export default function PricingPage() {
               </p>
             </motion.div>
           ))}
-        </motion.div>
+        </motion.div> */}
 
         {/* Pricing Plans */}
         <motion.div
@@ -221,7 +322,7 @@ export default function PricingPage() {
                       idx === 1
                         ? 'border-amber-400 shadow-xl scale-105'
                         : 'border-gray-200 dark:border-gray-700 hover:border-amber-300'
-                    }`}
+                    } ${showIPWarning ? 'opacity-75' : ''}`}
                   >
                     {idx === 1 && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -245,9 +346,9 @@ export default function PricingPage() {
                         {pkg.price.toLocaleString('fa-IR')}
                         <span className="text-lg text-gray-600 dark:text-gray-400"> تومان</span>
                       </div>
-                      <div className="text-gray-600 dark:text-gray-400">
+                      {/* <div className="text-gray-600 dark:text-gray-400">
                         {pkg.token_number.toLocaleString('fa-IR')} {isRTL ? 'توکن' : 'tokens'}
-                      </div>
+                      </div> */}
                     </div>
 
                     <ul className="space-y-3 mb-6">
@@ -263,18 +364,24 @@ export default function PricingPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={async () => {
-                        // Check if user is logged in
-                        if (!user) {
+                        // Check if user is logged in (only required if no targetUserId)
+                        if (!user && !targetUserId) {
                           setShowAuthNotification(true);
                           return;
                         }
                         
                         setBuyingId(pkg.ID)
                         try {
+                          const requestBody: { packageID: number; userId?: string } = { packageID: pkg.ID }
+                          if (targetUserId) {
+                            requestBody.userId = targetUserId
+                            console.log('Sending payment request for userId:', targetUserId);
+                          }
+                          
                           const res = await fetch('/api/payment-request', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ packageID: pkg.ID })
+                            body: JSON.stringify(requestBody)
                           })
                           const data = await res.json()
                           if (res.ok && data.payment) {
@@ -288,9 +395,11 @@ export default function PricingPage() {
                           setBuyingId(null)
                         }
                       }}
-                      disabled={buyingId === pkg.ID}
+                      disabled={buyingId === pkg.ID || showIPWarning}
                       className={`w-full py-3 rounded-xl font-bold transition-all ${
-                        idx === 1
+                        showIPWarning
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 cursor-not-allowed'
+                          : idx === 1
                           ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
@@ -303,6 +412,10 @@ export default function PricingPage() {
                           </svg>
                           <span>{isRTL ? 'در حال انتقال به درگاه...' : 'Redirecting to payment...'}</span>
                         </div>
+                      ) : showIPWarning ? (
+                        isRTL ? 'لطفاً فیلترشکن را خاموش کنید' : 'Please turn off VPN'
+                      ) : targetUserId ? (
+                        isRTL ? 'خرید این پکیج' : 'Buy for User'
                       ) : (
                         isRTL ? 'خرید این پکیج' : 'Buy this package'
                       )}
