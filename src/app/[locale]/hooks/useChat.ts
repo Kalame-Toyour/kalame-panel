@@ -276,7 +276,12 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                 }
                 
                 if (parsed.error) {
-                  console.log('Error detected in parsed data:', parsed.error);
+                  console.log('Error detected in parsed data:', {
+                    error: parsed.error,
+                    errorType: parsed.errorType,
+                    remainingCredit: parsed.remainingCredit,
+                    buttonMessage: parsed.buttonMessage
+                  });
                   if (currentChatId === chatId && !isResetting) {
                     setIsStreaming(false);
                     setMessages(prev => prev.map(msg => msg.id === aiMessageId ? { 
@@ -286,6 +291,8 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                       isError: true, 
                       errorType: parsed.errorType || undefined, 
                       showRechargeButton: parsed.errorType === 'no_credit',
+                      rechargeButtonText: parsed.buttonMessage || 'خرید اشتراک پیشرفته',
+                      remainingCredit: parsed.remainingCredit,
                       isReasoningComplete: true
                     } : msg));
                   }

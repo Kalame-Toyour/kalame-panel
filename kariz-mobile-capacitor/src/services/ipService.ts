@@ -1,9 +1,10 @@
+// IP Location Services for Mobile App
 interface IPLocationResponse {
   country: string
   countryCode: string
   region: string
   city: string
-  isp: string
+  ip: string
 }
 
 interface IPInfoResponse {
@@ -11,15 +12,15 @@ interface IPInfoResponse {
   countryCode: string
   region: string
   city: string
-  org: string
+  ip: string
 }
 
 interface IPGeolocationResponse {
   country_name: string
   country_code: string
-  region: string
+  state_prov: string
   city: string
-  isp: string
+  ip: string
 }
 
 interface IPCheckResult {
@@ -39,7 +40,7 @@ export async function checkUserLocation(): Promise<IPCheckResult> {
     })
 
     if (!response.ok) {
-      // throw new Error('Failed to fetch location data')
+      // Return true to avoid blocking legitimate users
       return {
         isFromIran: true,
         country: 'IR',
@@ -84,7 +85,7 @@ export async function checkUserLocationFallback(): Promise<IPCheckResult> {
   } catch (error) {
     console.error('Error checking user location (fallback):', error)
     return {
-      isFromIran: true, // Default to true to avoid blocking legitimate users
+      isFromIran: true,
       error: 'Unable to verify location'
     }
   }
@@ -142,7 +143,7 @@ export async function checkUserLocationFourth(): Promise<IPCheckResult> {
   } catch (error) {
     console.error('Error checking user location (fourth):', error)
     return {
-      isFromIran: true, // Default to true to avoid blocking legitimate users
+      isFromIran: true,
       error: 'Unable to verify location'
     }
   }

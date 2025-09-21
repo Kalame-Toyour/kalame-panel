@@ -27,6 +27,8 @@ export type Message = {
   isError?: boolean;
   errorType?: string;
   showRechargeButton?: boolean;
+  rechargeButtonText?: string;
+  remainingCredit?: number;
   model?: string;
   // Reasoning support
   reasoningContent?: string;

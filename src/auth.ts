@@ -13,8 +13,7 @@ export type AuthUser = {
   expiresAt?: number;
   error?: string;
   credit?: number;
-  premium?: 'yes' | 'no';
-  premiumExpireTime?: string;
+  userType?: 'free' | 'promotion' | 'premium';
 };
 
 const config = {
@@ -44,8 +43,8 @@ const config = {
         userId: { label: 'User ID', type: 'text' },
         username: { label: 'Username', type: 'text' },
         expireAt: { label: 'Expire At', type: 'text' },
-        premium: { label: 'Premium', type: 'text' },
-        premiumExpireTime: { label: 'Premium Expire Time', type: 'text' },
+        userType: { label: 'User Type', type: 'text' },
+        credit: { label: 'Credit', type: 'text' },
       },
       async authorize(credentials): Promise<AuthUser | null> {
         if (!credentials) return null;
@@ -57,8 +56,8 @@ const config = {
           userId,
           username,
           expireAt,
-          premium,
-          premiumExpireTime,
+          userType,
+          credit,
         } = credentials as {
           phone?: string;
           password: string;
@@ -67,8 +66,8 @@ const config = {
           userId?: string | number;
           username?: string;
           expireAt?: string;
-          premium?: 'yes' | 'no';
-          premiumExpireTime?: string;
+          userType?: 'free' | 'promotion' | 'premium';
+          credit?: number;
         };
 
         // If we have tokens and user data, use them directly
@@ -80,8 +79,22 @@ const config = {
             refreshToken: refreshToken || '',
             image: undefined,
             expiresAt: expireAt ? new Date(expireAt).getTime() : Date.now() + 60 * 60 * 1000, // fallback: 1h
-            premium: premium || 'no',
-            premiumExpireTime: premiumExpireTime,
+            userType: userType || 'free',
+            credit: credit,
+          };
+        }
+
+        // If we have tokens but no password (session refresh), use them directly
+        if (accessToken && userId && username && !password) {
+          return {
+            id: userId.toString(),
+            name: username,
+            accessToken,
+            refreshToken: refreshToken || '',
+            image: undefined,
+            expiresAt: expireAt ? new Date(expireAt).getTime() : Date.now() + 60 * 60 * 1000,
+            userType: userType || 'free',
+            credit: credit,
           };
         }
 
@@ -106,8 +119,7 @@ const config = {
               image: undefined,
               expiresAt: data.needUserData.expireAt ? new Date(data.needUserData.expireAt).getTime() : Date.now() + 60 * 60 * 1000,
               credit: data.needUserData.credit,
-              premium: data.needUserData.premium || 'no',
-              premiumExpireTime: data.needUserData.premium_expiretime,
+              userType: data.needUserData.user_type || 'free',
             };
           }
 
@@ -134,8 +146,7 @@ const config = {
           expiresAt: authUser.expiresAt,
           error: undefined,
           credit: authUser.credit,
-          premium: authUser.premium,
-          premiumExpireTime: authUser.premiumExpireTime,
+          userType: authUser.userType,
         };
       }
 
@@ -172,16 +183,8 @@ const config = {
       };
     },
     async session({ session, token }) {
-      console.log('Session callback:', {
-        hasToken: !!token,
-        tokenId: token.id,
-        tokenName: token.name,
-        tokenError: token.error,
-        tokenExpiresAt: token.expiresAt ? new Date(token.expiresAt).toISOString() : 'No expiration',
-        timeLeft: token.expiresAt ? token.expiresAt - Date.now() : 'No expiration',
-      });
-      
-      return {
+
+      const sessionData = {
         ...session,
         user: {
           ...session.user,
@@ -192,17 +195,19 @@ const config = {
           image: token.picture as string | undefined,
           expiresAt: token.expiresAt as number,
           credit: token.credit as number | undefined,
-          premium: token.premium as 'yes' | 'no' | undefined,
-          premiumExpireTime: token.premiumExpireTime as string | undefined,
+          userType: token.userType as 'free' | 'promotion' | 'premium' | undefined,
         } as AuthUser,
         error: token.error as string | undefined,
       };
+
+      return sessionData;
     },
   },
   debug: process.env.NODE_ENV === 'development',
 } satisfies NextAuthConfig;
 
 export const { auth, handlers: { GET, POST }, signIn, signOut } = NextAuth(config);
+
 
 // Helper to refresh access token
 async function refreshAccessToken(token: Record<string, unknown>) {
@@ -242,8 +247,7 @@ async function refreshAccessToken(token: Record<string, unknown>) {
       expiresAt: newExpiresAt,
       error: undefined,
       credit: data.needUserData.credit,
-      premium: data.needUserData.premium ?? token.premium,
-      premiumExpireTime: data.needUserData.premium_expiretime ?? token.premiumExpireTime,
+      userType: data.needUserData.user_type ?? token.userType,
     }
   } catch (error) {
     console.error('Token refresh error:', error)

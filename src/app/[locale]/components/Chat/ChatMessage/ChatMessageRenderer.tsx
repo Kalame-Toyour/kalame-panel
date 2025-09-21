@@ -133,6 +133,45 @@ function trimAllExcessiveBlankLines(text: string): string {
   return cleaned;
 }
 
+// Enhanced Table Component
+const EnhancedTable = ({ children, ...props }: React.TableHTMLAttributes<HTMLTableElement>) => (
+  <div className="w-full overflow-x-auto my-4">
+    <table className="w-full min-w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100" {...props}>
+      {children}
+    </table>
+  </div>
+);
+
+const EnhancedTableHeader = ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+  <thead className="bg-blue-100 dark:bg-blue-900">
+    {children}
+  </thead>
+);
+
+const EnhancedTableBody = ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
+  <tbody>
+    {children}
+  </tbody>
+);
+
+const EnhancedTableRow = ({ children }: React.HTMLAttributes<HTMLTableRowElement>) => (
+  <tr className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+    {children}
+  </tr>
+);
+
+const EnhancedTableHeaderCell = ({ children }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+  <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 bg-blue-50 dark:bg-blue-700 font-semibold text-center break-words">
+    {children}
+  </th>
+);
+
+const EnhancedTableCell = ({ children }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+  <td className="px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-center break-words">
+    {children}
+  </td>
+);
+
 function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element {
   const router = useRouter();
   const locale = useLocale();
@@ -415,37 +454,12 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
                     </code>
                   )
                 },
-                table: ({ children, ...props }) => (
-                  <div className="w-full overflow-x-auto my-2">
-                    <table className="w-full min-w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100" {...props}>
-                      {children}
-                    </table>
-                  </div>
-                ),
-                thead: ({ children }) => (
-                  <thead className="bg-blue-100 dark:bg-blue-900">
-                    {children}
-                  </thead>
-                ),
-                tbody: ({ children }) => (
-                  <tbody>
-                    {children}
-                  </tbody>
-                ),
-                tr: ({ children }) => (
-                  <tr className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
-                    {children}
-                  </tr>
-                ),
-                th: ({ children }) => (
-                  <th className="border text-center border-gray-300 dark:border-gray-600 px-4 py-3 bg-blue-50 dark:bg-blue-700 font-semibold">
-                    {children}
-                  </th>
-                ),
-                td: ({ children }) => (
-                  <td className="px-3 py-2 text-center border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">                    {children}
-                  </td>
-                ),
+                table: ({ children, ...props }) => <EnhancedTable {...props}>{children}</EnhancedTable>,
+                thead: ({ children }) => <EnhancedTableHeader>{children}</EnhancedTableHeader>,
+                tbody: ({ children }) => <EnhancedTableBody>{children}</EnhancedTableBody>,
+                tr: ({ children }) => <EnhancedTableRow>{children}</EnhancedTableRow>,
+                th: ({ children }) => <EnhancedTableHeaderCell>{children}</EnhancedTableHeaderCell>,
+                td: ({ children }) => <EnhancedTableCell>{children}</EnhancedTableCell>,
                 blockquote: ({ children }) => (
                   <blockquote className="border-l-4 border-blue-500 dark:border-blue-400 pl-4 py-3 my-4 bg-blue-50 dark:bg-blue-900/10 rounded-r-lg break-words overflow-hidden">
                     {children}
@@ -531,7 +545,7 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
                   onClick={handleRechargeClick}
                   className="inline-block rounded-lg bg-blue-600 px-5 py-2 text-white font-bold shadow hover:bg-blue-700 transition-colors"
                 >
-                  شارژ حساب و ادامه مکالمه
+                  {message.rechargeButtonText || 'شارژ حساب و ادامه مکالمه'}
                 </button>
               </div>
             )}

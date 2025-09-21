@@ -15,12 +15,14 @@ import AuthNotification from './components/AuthNotification';
 import PremiumUpgrade from './components/PremiumUpgrade';
 import fetchWithAuth from './components/utils/fetchWithAuth';
 import { useAuth } from './hooks/useAuth';
+import { useUserInfo } from './hooks/useUserInfo';
 import { useChat } from './hooks/useChat';
 import { ModelProvider, useModel } from './contexts/ModelContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import type { LanguageModel } from './components/ModelDropdown'
 import { PromptSuggestions } from './components/PromptSuggestions'
 import { isUserPremium } from '@/utils/premiumUtils'
+import { useUserInfoContext } from './contexts/UserInfoContext'
 
 // Interface for new API response structure
 interface ApiModel {
@@ -37,6 +39,7 @@ interface ApiModel {
   supports_streaming: number
   supports_web_search: number
   supports_reasoning: number
+  access_level: 'full' | 'limited' | 'premium'
 }
 
 
@@ -48,8 +51,11 @@ const MainPageContent: React.FC = () => {
   const chatId = searchParams.get('chat');
   const startParam = searchParams.get('start');
   const { user } = useAuth();
+  const { localUserInfo } = useUserInfoContext();
+  const { updateUserInfo } = useUserInfo();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const userInfoUpdateRef = useRef<boolean>(false);
 
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -70,6 +76,25 @@ const MainPageContent: React.FC = () => {
     if (startParam) startRef.current = startParam;
   }, [startParam]);
 
+  // Update user info only once on page load (no periodic updates)
+  useEffect(() => {
+    if (!user?.id || userInfoUpdateRef.current) return;
+
+    userInfoUpdateRef.current = true;
+    
+    const updateUserInfoOnce = async () => {
+      try {
+        console.log('Updating user info on page load...');
+        await updateUserInfo(false); // Use cache if available, only fetch if needed
+        console.log('User info updated successfully on page load');
+      } catch (error) {
+        console.error('Failed to update user info on page load:', error);
+      }
+    };
+
+    updateUserInfoOnce();
+  }, [user?.id, updateUserInfo]); // Keep updateUserInfo in dependencies but use ref to prevent multiple calls
+
   useEffect(() => {
     window.addEventListener('beforeunload', startLoading);
     document.addEventListener('visibilitychange', () => {
@@ -85,6 +110,12 @@ const MainPageContent: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true
+    // Only fetch if models are not already loaded
+    if (models.length > 0) {
+      setModelsLoading(false)
+      return
+    }
+    
     // Fetch only text models on main chat page
     fetch('/api/language-models?type=text')
       .then(res => res.json())
@@ -103,6 +134,7 @@ const MainPageContent: React.FC = () => {
               tokenCost: model.token_cost,
               provider: model.provider,
               modelPath: model.model_path,
+              accessLevel: model.access_level,
               features: {
                 maxTokens: model.max_tokens,
                 contextLength: model.context_length,
@@ -146,7 +178,7 @@ const MainPageContent: React.FC = () => {
       })
       .finally(() => { if (isMounted) setModelsLoading(false) })
     return () => { isMounted = false }
-  }, [])
+  }, [models.length, selectedModel, setModels, setModelsLoading, setSelectedModel]) // Add dependencies back but check if models already loaded
 
   useEffect(() => {
     // Read params from query string
@@ -368,8 +400,17 @@ const MainPageContent: React.FC = () => {
        return;
      }
      const sendText = typeof text === 'string' ? text : inputText;
-       // Use params from query string if present
-  const modelTypeFinal = modelTypeParam || options?.modelType || selectedModel?.name || 'GPT-4';
+       // Use params from query string if present, then options, then selectedModel
+  const modelTypeFinal = modelTypeParam || options?.modelType || selectedModel?.shortName || selectedModel?.name || 'GPT-4';
+  
+  // Debug log to verify modelType selection
+  console.log('Model selection debug:', {
+    modelTypeParam,
+    optionsModelType: options?.modelType,
+    selectedModelShortName: selectedModel?.shortName,
+    selectedModelName: selectedModel?.name,
+    finalModelType: modelTypeFinal
+  });
      const webSearchFinal = typeof options?.webSearch === 'boolean' ? options.webSearch : webSearchActive;
      const reasoningFinal = typeof options?.reasoning === 'boolean' ? options.reasoning : reasoningActive;
      
@@ -595,7 +636,7 @@ const MainPageContent: React.FC = () => {
           />
           
           {/* Premium Upgrade Box - Desktop Only - Show only when no chat is active */}
-          {user && !isUserPremium(user as any) && !chatId && (
+          {user && localUserInfo && !isUserPremium(localUserInfo) && !chatId && (
             <div className="hidden md:block">
               <PremiumUpgrade variant="desktop" className="w-32" />
             </div>

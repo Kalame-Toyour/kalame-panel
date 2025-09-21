@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${session.user.accessToken}`
       },
       body: JSON.stringify(body),
+      // Set a longer timeout for image generation (5 minutes)
+      signal: AbortSignal.timeout(300000), // 5 minutes in milliseconds
     });
     
     console.log('External API Response Status:', response.status);
@@ -28,6 +30,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Generate Image Error:', error);
-    return NextResponse.json({ success: false, error: 'خطا در ارتباط با سرور.' }, { status: 500 });
+    
+    // Handle timeout errors specifically
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      return NextResponse.json({ 
+        success: false, 
+        errorType: 'timeout_error',
+        error: 'درخواست شما بیش از حد انتظار طول کشید. لطفاً دوباره تلاش کنید.',
+        message: 'درخواست شما بیش از حد انتظار طول کشید. لطفاً دوباره تلاش کنید.'
+      }, { status: 408 });
+    }
+    
+    // Handle abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json({ 
+        success: false, 
+        errorType: 'request_cancelled',
+        error: 'درخواست لغو شد.',
+        message: 'درخواست لغو شد.'
+      }, { status: 499 });
+    }
+    
+    return NextResponse.json({ 
+      success: false, 
+      errorType: 'server_error',
+      error: 'خطا در ارتباط با سرور.',
+      message: 'خطا در ارتباط با سرور.'
+    }, { status: 500 });
   }
 } 

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Generate Image Request Body:', body);
 
-    const response = await fetch(`${AppConfig.baseApiUrl}/generate-image`, {
+    const response = await fetch(`${AppConfig.baseApiUrl}/generate-image-replicate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

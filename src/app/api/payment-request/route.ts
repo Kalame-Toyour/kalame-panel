@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 
 export async function POST(req: NextRequest) {
     const session = await auth();
-    const { packageID, userId } = await req.json()
+    const { packageID, userId, discountCode, discountPercent, finalPrice, discountId } = await req.json()
     
     // Allow unauthenticated requests only if userId is provided (for gift purchases)
     if (!session?.user?.id && !userId) {
@@ -21,10 +21,30 @@ export async function POST(req: NextRequest) {
     }
     
     // Prepare request body
-    const requestBody: { packageID: number; userId?: string } = { packageID }
+    const requestBody: { 
+      packageID: number; 
+      userId?: string;
+      discountCode?: string;
+      discountPercent?: number;
+      finalPrice?: number;
+      discountId?: number;
+    } = { packageID }
+    
     if (userId) {
       requestBody.userId = userId
       console.log('Payment request for userId:', userId)
+    } else {
+      requestBody.userId = session?.user?.id
+      console.log('Payment request for userId:', session?.user?.id)
+    }
+    
+    if (discountCode) {
+      requestBody.discountCode = discountCode
+      requestBody.discountPercent = discountPercent
+      requestBody.finalPrice = finalPrice
+      requestBody.discountId = discountId
+
+      console.log('Payment request with discount:', { discountCode, discountPercent, finalPrice, discountId , packageID })
     }
     
     // Prepare headers - use session token if available, otherwise use a system token for gift purchases

@@ -38,11 +38,11 @@ export function Toast({ message, type, isVisible, onClose, duration = 4000 }: To
   const getStyles = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200';
+        return 'bg-green-50 border-green-200 text-green-800';
       case 'error':
-        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200';
+        return 'bg-red-50 border-red-200 text-red-800';
       case 'warning':
-        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200';
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
     }
   };
 
@@ -53,7 +53,7 @@ export function Toast({ message, type, isVisible, onClose, duration = 4000 }: To
         <p className="text-sm font-medium flex-1" dir="rtl">{message}</p>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+          className="p-1 hover:bg-black/10 rounded transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

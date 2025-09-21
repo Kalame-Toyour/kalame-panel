@@ -115,6 +115,12 @@ function ChatInputModern({
   function handleSendMessage() {
     if (!selectedModel) return;
     
+    console.log('ChatInputModern - Sending message with model:', {
+      selectedModelName: selectedModel.name,
+      selectedModelShortName: selectedModel.shortName,
+      modelType: selectedModel.shortName
+    });
+    
     handleSend(inputText, {
       modelType: selectedModel.shortName,
       webSearch,

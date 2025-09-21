@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import PremiumUpgrade from '../PremiumUpgrade';
 import { isUserPremium } from '@/utils/premiumUtils';
+import { useUserInfoContext } from '../../contexts/UserInfoContext';
 
 type MobileHeaderProps = {
   toggleProfile: () => void;
@@ -11,10 +12,11 @@ type MobileHeaderProps = {
 
 const MobileHeader: React.FC<MobileHeaderProps> = ({ toggleProfile }) => {
   const { user } = useAuth();
+  const { localUserInfo } = useUserInfoContext();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chat');
 
-  const showPremiumUpgrade = user && !isUserPremium(user) && !chatId;
+  const showPremiumUpgrade = user && localUserInfo && !isUserPremium(localUserInfo) && !chatId;
   const showLogo = !showPremiumUpgrade;
 
   return (

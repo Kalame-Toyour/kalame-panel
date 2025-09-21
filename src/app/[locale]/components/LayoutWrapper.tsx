@@ -34,10 +34,11 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
   const isAboutPage = basePath.endsWith('/about');
   const isHelpPage = basePath.endsWith('/help');
   const isTransactionsPage = basePath.endsWith('/transactions');
+  const isPrivacyPolicyPage = basePath.endsWith('/privacy-policy');
 
 
 
-  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage || isAboutPage || isHelpPage || isTransactionsPage
+  const rootDivClasses = isImagePage || isTextToVoicePage || isVoiceToTextPage || isPricingPage || isAboutPage || isHelpPage || isTransactionsPage || isPrivacyPolicyPage
     ? "flex flex-col min-h-screen"
     : "flex h-screen flex-col overflow-hidden";
 

@@ -109,6 +109,10 @@ export default function InitFirebasePush() {
         // Do NOT request permission here to satisfy user-gesture requirement.
         if (notificationPermission !== 'granted') {
           console.log('[FCM] Notification permission not granted, skipping token registration')
+          // If user is authenticated but permission is not granted, we should wait for permission
+          if (isAuthenticated) {
+            console.log('[FCM] User is authenticated but permission not granted - waiting for permission prompt')
+          }
           return
         }
 
@@ -258,6 +262,12 @@ export default function InitFirebasePush() {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
       
+      // Check if permission is granted before trying to register
+      if (getNotificationPermission() !== 'granted') {
+        console.log('[FCM] Focus: Permission not granted, keeping token pending')
+        return
+      }
+      
       // Check if this token was already registered
       const lastRegisteredToken = localStorage.getItem('last_registered_token')
       if (lastRegisteredToken === token) {
@@ -292,11 +302,49 @@ export default function InitFirebasePush() {
         }
       } catch {}
     }
+    // Listen for permission changes
+    const onPermissionChange = async () => {
+      const permission = getNotificationPermission()
+      console.log('[FCM] Permission changed to:', permission)
+      
+      if (permission === 'granted' && isAuthenticated) {
+        // Try to register any pending token
+        const token = localStorage.getItem('pending_web_push_token')
+        if (token) {
+          console.log('[FCM] Permission granted, attempting to register pending token')
+          try {
+            const body = {
+              platform: 'web', provider: 'fcm', token,
+              device: {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                languages: navigator.languages,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                tzOffsetMin: new Date().getTimezoneOffset(),
+                permission: getNotificationPermission(),
+                screen: { w: window.screen?.width, h: window.screen?.height, dpr: window.devicePixelRatio }
+              }
+            }
+            const resp = await fetch('/api/notifications/register-device', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            if (resp.ok) {
+              localStorage.removeItem('pending_web_push_token')
+              localStorage.setItem('last_registered_token', token)
+              console.log('[FCM] Permission change: Token successfully registered')
+            }
+          } catch (error) {
+            console.error('[FCM] Permission change: Error registering token:', error)
+          }
+        }
+      }
+    }
+
     // Safe event listener setup
     try {
       window.addEventListener('focus', onFocus)
+      // Listen for permission changes (this is a custom event we'll trigger)
+      window.addEventListener('notification-permission-changed', onPermissionChange)
     } catch (error) {
-      console.warn('[FCM] Failed to add focus listener:', error)
+      console.warn('[FCM] Failed to add event listeners:', error)
     }
 
     return () => { 
@@ -306,6 +354,7 @@ export default function InitFirebasePush() {
       }
       try {
         window.removeEventListener('focus', onFocus)
+        window.removeEventListener('notification-permission-changed', onPermissionChange)
       } catch {}
     }
   }, [isAuthenticated])
@@ -327,6 +376,12 @@ export default function InitFirebasePush() {
     const id = setInterval(async () => {
       const token = localStorage.getItem('pending_web_push_token')
       if (!token || !isAuthenticated) return
+      
+      // Check if permission is granted before trying to register
+      if (getNotificationPermission() !== 'granted') {
+        console.log('[FCM] Polling: Permission not granted, keeping token pending')
+        return
+      }
       
       // Check if this token was already registered
       const lastRegisteredToken = localStorage.getItem('last_registered_token')

@@ -27,6 +27,7 @@ import { useKeyboard } from './hooks/useKeyboard';
 import { ModelProvider, useModel } from './contexts/ModelContext';
 import { LoadingProvider } from './contexts/LoadingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { UserInfoProvider } from './contexts/UserInfoContext';
 import { RouterProvider, useRouter, type Route } from './contexts/RouterContext';
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { api } from './utils/api';
@@ -67,42 +68,6 @@ const WEBVIEW_OPTIMIZATIONS = {
   SIMPLIFIED_GRADIENTS: Capacitor?.isNativePlatform?.() || false
 };
 
-// Helper function to check Android version
-async function checkAndroidVersion(): Promise<number> {
-  try {
-    if (Capacitor?.isNativePlatform?.()) {
-      // Check if Device plugin is available
-      if (Capacitor.isPluginAvailable('Device')) {
-        const { Device } = await import('@capacitor/device')
-        const deviceInfo = await Device.getInfo()
-        return parseInt(deviceInfo.osVersion || '0')
-      } else {
-        console.warn('[App] Device plugin not available, using fallback method')
-        // Fallback: try to detect Android version from user agent
-        const userAgent = navigator.userAgent
-        const androidMatch = userAgent.match(/Android\s+(\d+)/)
-        if (androidMatch && androidMatch[1]) {
-          return parseInt(androidMatch[1])
-        }
-        return 0
-      }
-    }
-    return 0
-  } catch (error) {
-    console.error('[App] Error detecting Android version:', error)
-    // Fallback: try to detect Android version from user agent
-    try {
-      const userAgent = navigator.userAgent
-      const androidMatch = userAgent.match(/Android\s+(\d+)/)
-      if (androidMatch && androidMatch[1]) {
-        return parseInt(androidMatch[1])
-      }
-    } catch (fallbackError) {
-      console.warn('[App] Fallback Android detection also failed:', fallbackError)
-    }
-    return 0
-  }
-}
 
 // Interface for API response structure
 interface ApiModel {
@@ -119,6 +84,7 @@ interface ApiModel {
   supports_streaming: number
   supports_web_search: number
   supports_reasoning: number
+  access_level: 'full' | 'limited' | 'premium'
 }
 
 interface ApiModelsResponse {
@@ -146,16 +112,14 @@ const OptimizedImage = ({
   alt: string;
   className?: string;
   fallbackSrc?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }) => {
   const [imageSrc, setImageSrc] = useState(src);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   const defaultFallback = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
 
   const handleLoad = () => {
-    setIsLoaded(true);
     setHasError(false);
   };
 
@@ -169,7 +133,6 @@ const OptimizedImage = ({
   // Reset state when src changes
   useEffect(() => {
     setImageSrc(src);
-    setIsLoaded(false);
     setHasError(false);
   }, [src]);
 
@@ -306,7 +269,6 @@ const MainAppContent: React.FC = () => {
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [chatCreatedSuccessfully, setChatCreatedSuccessfully] = useState(false);
-  const [refreshSidebarChatHistory, setRefreshSidebarChatHistory] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -318,14 +280,8 @@ const MainAppContent: React.FC = () => {
   // Function to refresh sidebar chat history
   const refreshSidebarChatHistoryHandler = useCallback(() => {
     console.log('[App] Refreshing sidebar chat history');
-    // Force a re-render by updating the refresh counter
-    setRefreshSidebarChatHistory(prev => prev + 1);
-    
-    // Also trigger a direct refresh after a short delay to ensure it works
-    setTimeout(() => {
-      console.log('[App] Forcing additional sidebar refresh');
-      setRefreshSidebarChatHistory(prev => prev + 1);
-    }, 100);
+    // This function can be used to trigger sidebar refresh
+    // The actual refresh logic should be handled by the Sidebar component
   }, []);
   const { showToast } = useToast();
   
@@ -464,7 +420,7 @@ const MainAppContent: React.FC = () => {
     window.addEventListener('notificationPermissionGranted', handlePermissionGranted as unknown as EventListener)
     
     // Also check for the global function as a fallback
-    if ((window as any).onNotificationPermissionResult) {
+    if ((window as unknown as { onNotificationPermissionResult?: () => void }).onNotificationPermissionResult) {
       console.log('[App] Global permission handler already exists')
     }
     
@@ -522,7 +478,6 @@ const MainAppContent: React.FC = () => {
 
   // Back button functionality
   const [backPressCount, setBackPressCount] = useState(0);
-  const [showExitToast, setShowExitToast] = useState(false);
 
   // Handle touch start for drag detection
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -600,7 +555,7 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     if (Capacitor?.isNativePlatform?.()) {
       // Expose router context to window so MainActivity can access it
-      (window as any).routerContext = {
+      (window as unknown as { routerContext?: unknown }).routerContext = {
         isAtRoot: () => isAtRoot(),
         canGoBack: () => canGoBack(),
         currentRoute: currentRoute,
@@ -617,8 +572,8 @@ const MainAppContent: React.FC = () => {
             navigate(route as Route);
             // Clear history after navigation
             setTimeout(() => {
-              // Use the clearHistory function from router context
-              const router = (window as any).routerContext;
+            // Use the clearHistory function from router context
+            const router = (window as unknown as { routerContext?: { clearHistory?: () => void } }).routerContext;
               if (router && router.clearHistory) {
                 router.clearHistory();
               }
@@ -629,13 +584,13 @@ const MainAppContent: React.FC = () => {
       
       // Cleanup on unmount
       return () => {
-        delete (window as any).routerContext;
+        delete (window as unknown as { routerContext?: unknown }).routerContext;
       };
     }
     
     // Return empty cleanup function when not on native platform
     return () => {};
-  }, [isAtRoot, canGoBack, currentRoute, goBack]);
+  }, [isAtRoot, canGoBack, currentRoute, goBack, navigate]);
 
   // Simple back button handling using BackButtonHandler
   useEffect(() => {
@@ -702,9 +657,9 @@ const MainAppContent: React.FC = () => {
     setMessages,
   } = useChat({ chatId: currentChatId, user });
 
-  const toggleSidebar = () => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(!isSidebarOpen);
-  };
+  }, [isSidebarOpen]);
 
     // Function to handle chat selection from sidebar
   const handleChatSelect = useCallback(async (chatId: string, chatCode?: string) => {
@@ -799,7 +754,7 @@ const MainAppContent: React.FC = () => {
               const feedbackMap: { [id: string]: boolean } = {};
               const dislikeMap: { [id: string]: boolean } = {};
               
-              feedbackResponse.forEach((item: any) => {
+              feedbackResponse.forEach((item: { message_id?: string; feedback_type?: string }) => {
                 if (item.message_id && item.feedback_type) {
                   if (item.feedback_type === 'like') {
                     feedbackMap[item.message_id] = true;
@@ -832,8 +787,8 @@ const MainAppContent: React.FC = () => {
     let isMounted = true;
     
     const loadModels = async () => {
-      // Only load if models are already loaded or currently loading
-      if (modelsLoaded || modelsLoading) {
+      // Only load if models are already loaded
+      if (modelsLoaded) {
         return;
       }
       
@@ -849,12 +804,13 @@ const MainAppContent: React.FC = () => {
           // Handle new API structure (array of models)
           if (Array.isArray(data.models)) {
             allModels = data.models.map((model: ApiModel) => ({
-              name: model.name,
-              shortName: model.short_name,
-              icon: model.icon_url,
-              tokenCost: model.token_cost,
-              provider: model.provider,
-              modelPath: model.model_path,
+                name: model.name,
+                shortName: model.short_name,
+                icon: model.icon_url,
+                tokenCost: model.token_cost,
+                provider: model.provider,
+                modelPath: model.model_path,
+                accessLevel: model.access_level as 'full' | 'limited' | 'premium',
               features: {
                 maxTokens: model.max_tokens,
                 contextLength: model.context_length,
@@ -903,6 +859,7 @@ const MainAppContent: React.FC = () => {
               tokenCost: 100,
               provider: 'OpenAI',
               modelPath: 'gpt-4',
+              accessLevel: 'premium' as const,
               features: {
                 maxTokens: 4096,
                 contextLength: 8192,
@@ -919,6 +876,7 @@ const MainAppContent: React.FC = () => {
               tokenCost: 80,
               provider: 'Anthropic',
               modelPath: 'claude-3-5-sonnet',
+              accessLevel: 'premium' as const,
               features: {
                 maxTokens: 4096,
                 contextLength: 200000,
@@ -944,7 +902,7 @@ const MainAppContent: React.FC = () => {
 
     loadModels();
     return () => { isMounted = false; };
-  }, []); // Empty dependency array - only run once
+  }, [modelsLoaded, selectedModel, setModels, setModelsLoaded, setModelsLoading, setSelectedModel]); // Include all dependencies
 
   // Handle input change with auth check
   const handleInputChange = useCallback((text: string) => {
@@ -1338,7 +1296,7 @@ const MainAppContent: React.FC = () => {
         container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
       }, 50);
     }
-  }, [messages.length, autoScroll, isUserAtBottom]);
+  }, [messages, autoScroll, isUserAtBottom]);
 
   // 3. Scroll to bottom during streaming every few chunks
   useEffect(() => {
@@ -1392,7 +1350,7 @@ const MainAppContent: React.FC = () => {
     try {
       await navigator.clipboard.writeText(text);
       showToastRef.current('متن کپی شد', 'success');
-    } catch (err) {
+    } catch {
       showToastRef.current('خطا در کپی کردن متن', 'error');
     }
   };
@@ -1410,7 +1368,7 @@ const MainAppContent: React.FC = () => {
       } else {
         showToastRef.current('خطا در ثبت بازخورد', 'error');
       }
-    } catch (error) {
+    } catch {
       showToastRef.current('خطا در ثبت بازخورد', 'error');
     } finally {
       setIsLikeLoading(false);
@@ -1591,8 +1549,8 @@ const MainAppContent: React.FC = () => {
         </button> */}
       </div>
 
-      {/* Model Dropdown - Only show after models are loaded */}
-      {!modelsLoading && models.length > 0 && (
+      {/* Model Dropdown - Show when models are available or loading */}
+      {(models.length > 0 || modelsLoading) && (
         <div className="sticky top-0 z-30 backdrop-blur-md bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 flex items-center justify-center px-4 py-2">
           <ModelDropdown 
             selectedModel={selectedModel} 
@@ -1621,7 +1579,7 @@ const MainAppContent: React.FC = () => {
                     <div className={`absolute inset-0 rounded-full ${WEBVIEW_OPTIMIZATIONS.SIMPLIFIED_GRADIENTS ? 'bg-blue-400' : 'bg-gradient-to-tr from-blue-500 to-blue-300'} opacity-20 blur-xl loading-pulse`} />
                     
                     {/* Main logo container with enhanced animations */}
-                    <div className={`relative size-20 md:size-24 flex items-center justify-center rounded-full ${WEBVIEW_OPTIMIZATIONS.SIMPLIFIED_GRADIENTS ? 'bg-blue-100' : 'bg-gradient-to-tr from-blue-200 to-blue-50'} ${WEBVIEW_OPTIMIZATIONS.SIMPLIFIED_SHADOWS ? '' : 'shadow-lg'} border-2 border-blue-200 dark:border-blue-700 dark:bg-blue-900/20 dark:border-blue-600 loading-transition hover:scale-105 loading-container-pulse`}>
+                    <div className={`relative size-20 md:size-24 flex items-center justify-center rounded-full ${WEBVIEW_OPTIMIZATIONS.SIMPLIFIED_GRADIENTS ? 'bg-blue-100' : 'bg-gradient-to-tr from-blue-200 to-blue-50'} ${WEBVIEW_OPTIMIZATIONS.SIMPLIFIED_SHADOWS ? '' : 'shadow-lg'} border-2 border-blue-200 dark:border-blue-600 dark:bg-blue-900/20 loading-transition hover:scale-105 loading-container-pulse`}>
                       {/* Rotating logo with smooth animation */}
                       <OptimizedImage 
                         src="/kalamelogo.png" 
@@ -2153,17 +2111,6 @@ const MainAppContent: React.FC = () => {
         }}
       />
 
-      {/* Exit Toast Notification */}
-      {showExitToast && (
-        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-amber-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-bounce">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <span className="font-medium">برای خروج از برنامه دوباره دکمه back را بزنید</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -2172,13 +2119,15 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <RouterProvider>
-          <LoadingProvider>
-            <ModelProvider>
-              <MainAppContent />
-            </ModelProvider>
-          </LoadingProvider>
-        </RouterProvider>
+        <UserInfoProvider>
+          <RouterProvider>
+            <LoadingProvider>
+              <ModelProvider>
+                <MainAppContent />
+              </ModelProvider>
+            </LoadingProvider>
+          </RouterProvider>
+        </UserInfoProvider>
       </ToastProvider>
     </ThemeProvider>
   );

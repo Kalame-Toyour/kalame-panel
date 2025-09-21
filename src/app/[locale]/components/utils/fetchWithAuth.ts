@@ -55,7 +55,8 @@ async function refreshAccessToken(refreshToken: string | undefined): Promise<str
 export default async function fetchWithAuth(
   input: RequestInfo,
   init: RequestInit = {},
-  retryCount = 0
+  retryCount = 0,
+  timeoutMs?: number
 ): Promise<Response> {
   try {
     // Check if we have a session
@@ -80,7 +81,7 @@ export default async function fetchWithAuth(
       const newAccessToken = await refreshAccessToken(refreshToken);
       if (newAccessToken) {
         // Retry with new token
-        return fetchWithAuth(input, init, retryCount + 1);
+        return fetchWithAuth(input, init, retryCount + 1, timeoutMs);
       } else {
         // Refresh failed, redirect to auth
         await signOut({ callbackUrl: '/auth' });
@@ -107,6 +108,11 @@ export default async function fetchWithAuth(
       credentials: 'include',
     };
 
+    // Add timeout signal if specified
+    if (timeoutMs) {
+      fetchOptions.signal = AbortSignal.timeout(timeoutMs);
+    }
+
     const response = await fetch(input, fetchOptions);
 
     // If unauthorized, try refresh (up to 3 times)
@@ -119,7 +125,7 @@ export default async function fetchWithAuth(
         console.log('Successfully refreshed token, retrying request');
         headers.set('Authorization', `Bearer ${newAccessToken}`);
         const retryOptions: RequestInit = { ...fetchOptions, headers };
-        return fetchWithAuth(input, retryOptions, retryCount + 1);
+        return fetchWithAuth(input, retryOptions, retryCount + 1, timeoutMs);
       } else {
         // Refresh failed, sign out
         console.error('Token refresh failed, redirecting to login');

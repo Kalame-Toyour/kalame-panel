@@ -115,6 +115,8 @@ const PhoneAuthFlow = () => {
           username: data.needUserData?.username,
           expireAt: data.needUserData?.expireAt,
           parsedExpireAt: data.needUserData?.expireAt ? new Date(data.needUserData.expireAt).toISOString() : 'No expiration',
+          userType: data.needUserData?.user_type,
+          fullUserData: data.needUserData,
         });
         
         const signInResult = await signIn('credentials', {
@@ -125,12 +127,14 @@ const PhoneAuthFlow = () => {
           userId: data.needUserData?.ID,
           username: data.needUserData?.username,
           expireAt: data.needUserData?.expireAt,
-          premium: data.needUserData?.premium,
-          premiumExpireTime: data.needUserData?.premium_expiretime,
+          userType: data.needUserData?.user_type,
           redirect: false,
         });
         
         console.log('SignIn result:', signInResult);
+        console.log('User data being passed to signIn:', {
+          userType: data.needUserData?.user_type,
+        });
         
         if (signInResult && signInResult.ok) {
           toast.success('ورود با موفقیت انجام شد');
@@ -206,6 +210,8 @@ const PhoneAuthFlow = () => {
           username: data.needUserData.username,
           expireAt: data.needUserData.expireAt,
           parsedExpireAt: data.needUserData.expireAt ? new Date(data.needUserData.expireAt).toISOString() : 'No expiration',
+          userType: data.needUserData.user_type,
+          fullUserData: data.needUserData,
         });
         
         // Use signIn with a custom provider to pass tokens directly
@@ -217,12 +223,14 @@ const PhoneAuthFlow = () => {
           userId: data.needUserData.ID,
           username: data.needUserData.username,
           expireAt: data.needUserData.expireAt,
-          premium: data.needUserData.premium,
-          premiumExpireTime: data.needUserData.premium_expiretime,
+          userType: data.needUserData.user_type,
           redirect: false,
         });
         
         console.log('SignIn result after registration:', signInResult);
+        console.log('User data being passed to signIn (registration):', {
+          userType: data.needUserData.user_type,
+        });
         
         if (signInResult && signInResult.ok) {
           toast.success('ثبت نام و ورود با موفقیت انجام شد');
@@ -284,6 +292,8 @@ const PhoneAuthFlow = () => {
           username: data.needUserData.username,
           expireAt: data.needUserData.expireAt,
           parsedExpireAt: data.needUserData.expireAt ? new Date(data.needUserData.expireAt).toISOString() : 'No expiration',
+          userType: data.needUserData.user_type,
+          fullUserData: data.needUserData,
         });
         
         const signInResult = await signIn('credentials', {
@@ -294,12 +304,14 @@ const PhoneAuthFlow = () => {
           userId: data.needUserData.ID,
           username: data.needUserData.username,
           expireAt: data.needUserData.expireAt,
-          premium: data.needUserData.premium,
-          premiumExpireTime: data.needUserData.premium_expiretime,
+          userType: data.needUserData.user_type,
           redirect: false,
         });
         
         console.log('SignIn result with code:', signInResult);
+        console.log('User data being passed to signIn (code):', {
+          userType: data.needUserData.user_type,
+        });
         
         if (signInResult && signInResult.ok) {
           toast.success('ورود با موفقیت انجام شد');

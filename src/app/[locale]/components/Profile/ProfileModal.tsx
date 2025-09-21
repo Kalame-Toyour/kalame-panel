@@ -12,19 +12,22 @@ import {
   BookText,
   LogIn,
   CreditCard,
+  Download,
 } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useLocale } from 'next-intl';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+// Remove useUserInfo import as it's no longer needed
 import LanguageSwitcherModal from '../LanguageSwitcher';
 import LogoutDialog from '../LogoutDialog';
 import ChatHistorySidebar from '../Chat/ChatHistorySidebar';
 import { useTheme } from '../ThemeProvider';
 import fetchWithAuth from '../utils/fetchWithAuth';
 import { motion, AnimatePresence } from 'framer-motion';
-import { isUserPremium } from '@/utils/premiumUtils';
+import { isUserPremium, getUserAccountTypeText } from '@/utils/premiumUtils';
+import { useUserInfoContext } from '../../contexts/UserInfoContext';
 
 type ProfileModalProps = {
   isOpen: boolean;
@@ -49,8 +52,11 @@ type Chat = {
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const { user } = useAuth();
+  const { localUserInfo } = useUserInfoContext();
+  // Remove updateUserInfo as it's no longer needed in this component
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
@@ -58,6 +64,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { theme, setTheme } = useTheme();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Remove unnecessary userInfo update when modal opens
+  // UserInfo is now cached and updated only when needed
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -140,6 +149,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const handleLoginClick = () => {
     onClose();
     router.push(`/${locale}/auth`);
+  };
+
+  const handleDownloadApp = () => {
+    // Static URL for app download - you can change this to your actual app store links
+    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.kalame.app';
+    window.open(downloadUrl, '_blank');
+    onClose();
   };
 
   const featureNavigationItems: NavigationItem[] = [
@@ -281,7 +297,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                       chatHistory={chatHistory}
                       isLoading={isChatHistoryLoading}
                       onChatSelect={onClose} // Close modal on chat select
-                      activeChatId={pathname.split('/').pop() || ''} // Simplified active chat ID logic
+                      activeChatId={searchParams?.get('chat') || ''} // Extract chat ID from URL parameters
                     />
                     {!isChatHistoryLoading && chatHistory.length === 0 && (
                       <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -314,11 +330,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                     <div className="flex flex-col flex-1 min-w-0 text-right">
                       <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">{user.name}</span>
                       <span className={`text-xs truncate ${
-                        isUserPremium(user) 
+                        localUserInfo && isUserPremium(localUserInfo) 
                           ? 'text-amber-600 dark:text-amber-400 font-semibold' 
                           : 'text-gray-600 dark:text-gray-400'
                       }`}>
-                        {isUserPremium(user) ? 'اکانت پرمیوم' : 'اکانت رایگان'}
+                        {localUserInfo ? getUserAccountTypeText(localUserInfo) : 'اکانت رایگان'}
                       </span>
                     </div>
                   </button>
@@ -335,6 +351,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                       <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); onClose(); router.push(`/${locale}/help`) }}>
                         <BookText size={18} className="text-purple-500" />
                         راهنما
+                      </button>
+                      <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); handleDownloadApp(); }}>
+                        <Download size={18} className="text-green-500" />
+                        دانلود اپلیکیشن
                       </button>
                       <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
                       <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all" onClick={() => { setProfileMenuOpen(false); handleLogoutConfirm(); }}>

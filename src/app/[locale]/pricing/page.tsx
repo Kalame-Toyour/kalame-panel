@@ -11,9 +11,11 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast'
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../hooks/useAuth';
+import { useUserInfo } from '../hooks/useUserInfo';
+import { useUserInfoContext } from '../contexts/UserInfoContext';
 import PurchaseAuthNotification from '../components/PurchaseAuthNotification';
 import IPWarningBanner from '../components/IPWarningBanner';
-import { checkUserLocation, checkUserLocationFallback } from '../services/ipService';
+import { checkUserLocationComprehensive } from '../services/ipService';
 
 
 interface Package {
@@ -30,6 +32,7 @@ interface Package {
   image_service_num: number
   tts_service_num: number
   stt_service_num: number
+  package_name: string
 }
 
 
@@ -54,6 +57,8 @@ export default function PricingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { updateUserInfo } = useUserInfo();
+  const { localUserInfo } = useUserInfoContext();
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [packages, setPackages] = useState<Package[] | null>(null);
 
@@ -66,6 +71,39 @@ export default function PricingPage() {
   const [userCountry, setUserCountry] = useState<string>('');
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [isRecheckingIP, setIsRecheckingIP] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+  const [isDiscountActive, setIsDiscountActive] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountId, setDiscountId] = useState<number | null>(null);
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountMessage, setDiscountMessage] = useState('');
+  const [showDiscountAuthModal, setShowDiscountAuthModal] = useState(false);
+  const [userType, setUserType] = useState<string>('free');
+
+  // Function to determine active package based on user type
+  const getActivePackage = () => {
+    if (!packages) return null;
+    
+    if (userType === 'premium') {
+      return packages.find(pkg => pkg.package_name === 'premium');
+    } else {
+      return packages.find(pkg => pkg.package_name === 'free');
+    }
+  };
+
+  // Function to check if a package is the user's active package
+  const isActivePackage = (pkg: Package) => {
+    const activePackage = getActivePackage();
+    return activePackage?.ID === pkg.ID;
+  };
+
+  // Update userType when user info changes
+  useEffect(() => {
+    if (localUserInfo?.userType) {
+      setUserType(localUserInfo.userType);
+    }
+  }, [localUserInfo?.userType]);
 
   useEffect(function fetchPackages() {
     let isMounted = true;
@@ -104,26 +142,24 @@ export default function PricingPage() {
     
     async function performIPCheck() {
       try {
-        // Try primary service first
-        let result = await checkUserLocation();
+        console.log('Starting comprehensive IP check...');
+        const result = await checkUserLocationComprehensive();
         
-        // If primary fails, try fallback
-        if (result.error) {
-          result = await checkUserLocationFallback();
-        }
+        console.log('IP check result:', result);
         
         if (isMounted) {
           setUserCountry(result.country || '');
           if (!result.isFromIran) {
+            console.log('User not from Iran, showing warning');
             setShowIPWarning(true);
+          } else {
+            console.log('User confirmed from Iran');
           }
         }
       } catch (error) {
         console.error('IP check failed:', error);
         // Don't show warning if we can't check IP to avoid blocking legitimate users
-              } finally {
-          // IP check completed
-        }
+      }
     }
     
     performIPCheck();
@@ -151,13 +187,10 @@ export default function PricingPage() {
   const handleRecheckIP = async () => {
     setIsRecheckingIP(true);
     try {
-      // Try primary service first
-      let result = await checkUserLocation();
+      console.log('Starting IP recheck...');
+      const result = await checkUserLocationComprehensive();
       
-      // If primary fails, try fallback
-      if (result.error) {
-        result = await checkUserLocationFallback();
-      }
+      console.log('IP recheck result:', result);
       
       setUserCountry(result.country || '');
       if (result.isFromIran) {
@@ -172,6 +205,116 @@ export default function PricingPage() {
     } finally {
       setIsRecheckingIP(false);
     }
+  };
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      toast.error(isRTL ? 'لطفاً کد تخفیف را وارد کنید' : 'Please enter a discount code');
+      return;
+    }
+
+    // Check if user is authenticated or has targetUserId
+    if (!user && !targetUserId) {
+      setShowDiscountAuthModal(true);
+      return;
+    }
+
+    setIsApplyingDiscount(true);
+    
+    try {
+      const requestBody: { code: string; userId?: string } = { code: discountCode.trim() };
+      
+      // Add userId to request body
+      if (targetUserId) {
+        requestBody.userId = targetUserId;
+        console.log('Sending discount check for targetUserId:', targetUserId);
+      } else if (user?.id) {
+        requestBody.userId = user.id;
+        console.log('Sending discount check for userId:', user.id);
+      }
+
+      const res = await fetch('/api/checkDiscount', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        // Check if discount is 100% (package activation)
+        if (data.discount_percent === 100) {
+          // Update user info before showing success modal with force refresh
+          try {
+            console.log('100% discount detected, updating user info...');
+            await updateUserInfo(true); // Force refresh to bypass cache
+            console.log('User info updated successfully after 100% discount');
+          } catch (error) {
+            console.error('Failed to update user info after 100% discount:', error);
+            // Continue with showing modal even if update fails
+          }
+          
+          setDiscountMessage(data.message || (isRTL ? 'پکیج شما فعال شد!' : 'Your package has been activated!'));
+          setShowDiscountModal(true);
+        } else {
+          setIsDiscountActive(true);
+          setDiscountPercent(data.discount_percent || 0);
+          setDiscountId(data.discountId || null);
+          toast.success(data.message || (isRTL ? 'کد تخفیف با موفقیت اعمال شد!' : 'Discount code applied successfully!'));
+        }
+      } else {
+        toast.error(data.message || (isRTL ? 'کد تخفیف نامعتبر است' : 'Invalid discount code'));
+      }
+    } catch (error) {
+      console.error('Discount application error:', error);
+      toast.error(isRTL ? 'خطا در اعمال کد تخفیف' : 'Error applying discount code');
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setIsDiscountActive(false);
+    setDiscountPercent(0);
+    setDiscountId(null);
+    setDiscountCode('');
+    toast.success(isRTL ? 'کد تخفیف حذف شد' : 'Discount code removed');
+  };
+
+  const handleDiscountModalClose = () => {
+    setShowDiscountModal(false);
+    setDiscountMessage('');
+    setDiscountCode('');
+    router.push('/');
+  };
+
+  const handleDiscountAuthModalClose = () => {
+    setShowDiscountAuthModal(false);
+  };
+
+  const handleDiscountAuthRedirect = () => {
+    setShowDiscountAuthModal(false);
+    setTimeout(() => {
+      router.push('/auth');
+    }, 300);
+  };
+
+  const calculateDiscountedPrice = (originalPrice: number) => {
+    if (!isDiscountActive) return originalPrice;
+    return Math.round(originalPrice * (1 - discountPercent / 100));
+  };
+
+  // Convert English numbers to Persian
+  const toPersianNumbers = (num: number | string): string => {
+    const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    return num.toString().replace(/\d/g, (d) => persianDigits[parseInt(d)] || d);
+  };
+
+  // Convert Rial to Toman (divide by 10)
+  const convertRialToToman = (price: number) => {
+    return Math.round(price / 10);
   };
 
   return (
@@ -241,10 +384,10 @@ export default function PricingPage() {
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 mb-6">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg">
-              <Crown className="size-8 text-white" />
+            <div className="p-3 rounded-2xl bg-gradient-to-br mb-4 from-amber-400 to-orange-500 shadow-lg">
+              <Crown className="size-8 text-white " />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl justify-center  font-bold bg-gradient-to-r pb-4 from-amber-500 to-orange-600 bg-clip-text text-transparent">
               {isRTL ? 'انتخاب پکیج' : 'Choose Your Plan'}
             </h1>
           </div>
@@ -254,6 +397,94 @@ export default function PricingPage() {
               : 'Get the complete AI experience with professional features and unlimited access'
             }
           </p>
+        </motion.div>
+
+
+        {/* Discount Code Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="max-w-md mx-auto mb-12"
+        >
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                {isRTL ? 'کد تخفیف دارید؟' : 'Have a discount code?'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {isRTL ? 'کد تخفیف خود را وارد کنید و از قیمت ویژه بهره‌مند شوید' : 'Enter your discount code to get special pricing'}
+              </p>
+            </div>
+            
+            {!isDiscountActive ? (
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                    placeholder={isRTL ? 'کد تخفیف را وارد کنید...' : 'Enter discount code...'}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleApplyDiscount();
+                      }
+                    }}
+                  />
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleApplyDiscount}
+                  disabled={isApplyingDiscount || !discountCode.trim()}
+                  className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isApplyingDiscount ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      <span>{isRTL ? 'در حال اعمال...' : 'Applying...'}</span>
+                    </div>
+                  ) : (
+                    isRTL ? 'اعمال کد تخفیف' : 'Apply Discount Code'
+                  )}
+                </motion.button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="bg-green-100 dark:bg-green-900/30 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-green-500 rounded-lg">
+                        <Check className="size-4 text-white" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-green-800 dark:text-green-200">
+                          {isRTL ? 'کد تخفیف فعال' : 'Discount Active'}
+                        </div>
+                        <div className="text-sm text-green-600 dark:text-green-300">
+                          {isRTL ? `${toPersianNumbers(discountPercent)}٪ تخفیف اعمال شد` : `${discountPercent}% discount applied`}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRemoveDiscount}
+                      className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                      title={isRTL ? 'حذف کد تخفیف' : 'Remove discount'}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* Features Grid */}
@@ -311,26 +542,38 @@ export default function PricingPage() {
                     ))}
                   </>
                 )}
-                {!isLoading && !hasError && packages && packages.map((pkg, idx) => (
-                  <motion.div
-                    key={pkg.ID}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 * idx }}
-                    whileHover={{ y: -5 }}
-                    className={`relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border-2 transition-all ${
-                      idx === 1
-                        ? 'border-amber-400 shadow-xl scale-105'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-amber-300'
-                    } ${showIPWarning ? 'opacity-75' : ''}`}
-                  >
-                    {idx === 1 && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold">
-                          {isRTL ? 'محبوب‌ترین' : 'Most Popular'}
+                {!isLoading && !hasError && packages && packages.map((pkg, idx) => {
+                  const isActive = isActivePackage(pkg);
+                  return (
+                    <motion.div
+                      key={pkg.ID}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.1 * idx }}
+                      whileHover={{ y: -5 }}
+                      className={`relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border-2 transition-all flex flex-col h-full ${
+                        isActive
+                          ? 'border-green-400 shadow-xl scale-105 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
+                          : idx === 1
+                          ? 'border-amber-400 shadow-xl scale-105'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-amber-300'
+                      } ${showIPWarning ? 'opacity-75' : ''}`}
+                    >
+                      {isActive && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                            <Check className="w-4 h-4" />
+                            {isRTL ? 'بسته فعال' : 'Active Package'}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {!isActive && idx === 1 && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                            {isRTL ? 'محبوب‌ترین' : 'Most Popular'}
+                          </div>
+                        </div>
+                      )}
 
                     <div className="text-center mb-6">
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
@@ -339,89 +582,151 @@ export default function PricingPage() {
                       <p className="text-gray-600 dark:text-gray-400 text-sm">
                         {pkg.short_desc}
                       </p>
+                      {isActive && (
+                        <div className="mt-3 inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-medium">
+                          <Check className="w-3 h-3" />
+                          <span>{isRTL ? 'فعال' : 'Active'}</span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="text-center mb-6">
-                      <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                        {pkg.price.toLocaleString('fa-IR')}
-                        <span className="text-lg text-gray-600 dark:text-gray-400"> تومان</span>
+                    {!isActive && (
+                      <div className="text-center mb-6">
+                        {isDiscountActive ? (
+                          <div>
+                            <div className="text-lg text-gray-500 dark:text-gray-400 line-through mb-1">
+                              {toPersianNumbers(convertRialToToman(pkg.price).toLocaleString())}
+                              <span className="text-sm"> تومان</span>
+                            </div>
+                            <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
+                              {toPersianNumbers(convertRialToToman(calculateDiscountedPrice(pkg.price)).toLocaleString())}
+                              <span className="text-lg text-green-600 dark:text-green-400"> تومان</span>
+                            </div>
+                            <div className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full text-xs font-medium">
+                              <span>{toPersianNumbers(discountPercent)}% {isRTL ? 'تخفیف' : 'OFF'}</span>
+                            </div>
+                          </div>
+                        ) : pkg.discount_percent > 0 ? (
+                          <div>
+                            <div className="text-lg text-gray-500 dark:text-gray-400 line-through mb-1">
+                              {toPersianNumbers(convertRialToToman(pkg.price).toLocaleString())}
+                              <span className="text-sm"> تومان</span>
+                            </div>
+                            <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
+                              {toPersianNumbers(convertRialToToman(Math.round(pkg.price * (1 - pkg.discount_percent / 100))).toLocaleString())}
+                              <span className="text-lg text-green-600 dark:text-green-400"> تومان</span>
+                            </div>
+                            <div className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full text-xs font-medium">
+                              <span>{toPersianNumbers(pkg.discount_percent)}% {isRTL ? 'تخفیف' : 'OFF'}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                            {toPersianNumbers(convertRialToToman(pkg.price).toLocaleString())}
+                            <span className="text-lg text-gray-600 dark:text-gray-400"> تومان</span>
+                          </div>
+                        )}
                       </div>
-                      {/* <div className="text-gray-600 dark:text-gray-400">
-                        {pkg.token_number.toLocaleString('fa-IR')} {isRTL ? 'توکن' : 'tokens'}
-                      </div> */}
+                    )}
+
+                    <div className="flex-grow">
+                      <ul className="space-y-3 mb-6">
+                        {pkg.description.split('\n').filter(Boolean).map((feature, i) => (
+                          <li key={i} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                            <Check className="size-4 text-green-500" />
+                            <span className="text-sm text-right">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
 
-                    <ul className="space-y-3 mb-6">
-                      {pkg.description.split('\n').filter(Boolean).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <Check className="size-4 text-green-500" />
-                          <span className="text-sm text-right">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={async () => {
-                        // Check if user is logged in (only required if no targetUserId)
-                        if (!user && !targetUserId) {
-                          setShowAuthNotification(true);
-                          return;
-                        }
-                        
-                        setBuyingId(pkg.ID)
-                        try {
-                          const requestBody: { packageID: number; userId?: string } = { packageID: pkg.ID }
-                          if (targetUserId) {
-                            requestBody.userId = targetUserId
-                            console.log('Sending payment request for userId:', targetUserId);
+                    <div className="mt-auto">
+                      {isActive ? (
+                        <div className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg flex items-center justify-center gap-2">
+                          <Check className="w-5 h-5" />
+                          <span>{isRTL ? 'بسته فعال شما' : 'Your Active Package'}</span>
+                        </div>
+                      ) : (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={async () => {
+                          // Check if user is logged in (only required if no targetUserId)
+                          if (!user && !targetUserId) {
+                            setShowAuthNotification(true);
+                            return;
                           }
                           
-                          const res = await fetch('/api/payment-request', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(requestBody)
-                          })
-                          const data = await res.json()
-                          if (res.ok && data.payment) {
-                            window.location.href = data.payment
-                          } else {
-                            toast.error(data.error || 'خطا در دریافت لینک پرداخت')
+                          setBuyingId(pkg.ID)
+                          try {
+                          const requestBody: { 
+                            packageID: number; 
+                            userId?: string;
+                            discountCode?: string;
+                            discountPercent?: number;
+                            finalPrice?: number;
+                            discountId?: number;
+                          } = { packageID: pkg.ID }
+                            
+                            if (targetUserId) {
+                              requestBody.userId = targetUserId
+                              console.log('Sending payment request for userId:', targetUserId);
+                            }
+                            
+                            if (isDiscountActive) {
+                              requestBody.discountCode = discountCode;
+                              requestBody.discountPercent = discountPercent ?? undefined;
+                              requestBody.finalPrice = calculateDiscountedPrice(pkg.price);
+                              requestBody.discountId = discountId ?? undefined;
+                            }
+                            
+                            const res = await fetch('/api/payment-request', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(requestBody)
+                            })
+                            const data = await res.json()
+                            if (res.ok && data.payment) {
+                              window.location.href = data.payment
+                            } else {
+                              toast.error(data.error || 'خطا در دریافت لینک پرداخت')
+                            }
+                          } catch {
+                            toast.error('خطا در ارتباط با سرور پرداخت')
+                          } finally {
+                            setBuyingId(null)
                           }
-                        } catch {
-                          toast.error('خطا در ارتباط با سرور پرداخت')
-                        } finally {
-                          setBuyingId(null)
-                        }
-                      }}
-                      disabled={buyingId === pkg.ID || showIPWarning}
-                      className={`w-full py-3 rounded-xl font-bold transition-all ${
-                        showIPWarning
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 cursor-not-allowed'
-                          : idx === 1
-                          ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {buyingId === pkg.ID ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-spin opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                          </svg>
-                          <span>{isRTL ? 'در حال انتقال به درگاه...' : 'Redirecting to payment...'}</span>
-                        </div>
-                      ) : showIPWarning ? (
-                        isRTL ? 'لطفاً فیلترشکن را خاموش کنید' : 'Please turn off VPN'
-                      ) : targetUserId ? (
-                        isRTL ? 'خرید این پکیج' : 'Buy for User'
-                      ) : (
-                        isRTL ? 'خرید این پکیج' : 'Buy this package'
+                        }}
+                        disabled={buyingId === pkg.ID || showIPWarning}
+                        className={`w-full py-3 rounded-xl font-bold transition-all ${
+                          showIPWarning
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 cursor-not-allowed'
+                            : idx === 1
+                            ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {buyingId === pkg.ID ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-spin opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                            </svg>
+                            <span>{isRTL ? 'در حال انتقال به درگاه...' : 'Redirecting to payment...'}</span>
+                          </div>
+                        ) : showIPWarning ? (
+                          isRTL ? 'لطفاً فیلترشکن را خاموش کنید' : 'Please turn off VPN'
+                        ) : targetUserId ? (
+                          isRTL ? 'خرید این پکیج' : 'Buy for User'
+                        ) : (
+                          isRTL ? 'خرید این پکیج' : 'Buy this package'
+                        )}
+                      </motion.button>
                       )}
-                    </motion.button>
+                    </div>
                   </motion.div>
-                ))}
+                  );
+                })}
                 {!isLoading && hasError && (
                   <div className="col-span-2 text-center text-red-500 py-8">
                     {isRTL ? 'خطا در دریافت اطلاعات پکیج‌ها' : 'Failed to load packages.'}
@@ -500,6 +805,85 @@ export default function PricingPage() {
         onClose={() => setIsLanguageModalOpen(false)}
         isCollapsed={false}
       />
+
+      {/* Discount Success Modal */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl"
+          >
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {isRTL ? 'تبریک!' : 'Congratulations!'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                {discountMessage}
+              </p>
+            </div>
+            
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleDiscountModalClose}
+              className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all"
+            >
+              {isRTL ? 'بازگشت به صفحه اصلی' : 'Return to Home'}
+            </motion.button>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Discount Auth Modal */}
+      {showDiscountAuthModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl"
+          >
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {isRTL ? 'ورود به اکانت' : 'Login Required'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                {isRTL 
+                  ? 'برای استفاده از کد تخفیف باید وارد اکانت خود شوید' 
+                  : 'You need to login to use discount codes'
+                }
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDiscountAuthModalClose}
+                className="flex-1 py-3 rounded-xl font-bold bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+              >
+                {isRTL ? 'انصراف' : 'Cancel'}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDiscountAuthRedirect}
+                className="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all"
+              >
+                {isRTL ? 'ورود' : 'Login'}
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

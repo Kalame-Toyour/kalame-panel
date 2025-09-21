@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader, CheckCircle2, XCircle } from 'lucide-react'
+import { useUserInfo } from '../../hooks/useUserInfo'
 
 interface Payment {
   ID: number
@@ -26,10 +27,12 @@ interface PageProps {
 
 export default function PaymentResultPage({ params }: PageProps) {
   const router = useRouter()
+  const { updateUserInfo } = useUserInfo()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [payment, setPayment] = useState<Payment | null>(null)
   const [trackId, setTrackId] = useState<string | null>(null)
+  const [userInfoUpdated, setUserInfoUpdated] = useState(false)
 
   useEffect(() => {
     // Resolve params in useEffect since it's a Promise
@@ -52,13 +55,26 @@ export default function PaymentResultPage({ params }: PageProps) {
         console.log(data)
         if (res.ok && data.payment) {
           setPayment(data.payment)
+          
+          // If payment was successful, update user info with force refresh
+          if (data.payment.status === 'verify' && !userInfoUpdated) {
+            try {
+              console.log('Payment successful, updating user info...');
+              await updateUserInfo(true); // Force refresh to bypass cache
+              setUserInfoUpdated(true);
+              console.log('User info updated successfully after payment');
+            } catch (error) {
+              console.error('Failed to update user info after payment:', error);
+              // Continue even if update fails
+            }
+          }
         } else {
           setError(data.error || 'خطا در دریافت اطلاعات پرداخت')
         }
       })
       .catch(() => setError('خطا در ارتباط با سرور پرداخت'))
       .finally(() => setLoading(false))
-  }, [trackId])
+  }, [trackId, userInfoUpdated, updateUserInfo]) // Include updateUserInfo in dependencies
 
   if (loading) {
     return (

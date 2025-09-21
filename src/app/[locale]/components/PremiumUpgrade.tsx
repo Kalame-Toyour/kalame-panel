@@ -22,12 +22,12 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`relative mx-1 my-0.5 overflow-hidden rounded-xl bg-white/10 dark:bg-gray-900/20 backdrop-blur-md border border-white/20 dark:border-gray-700/30 p-1 shadow-md transition-all duration-300 hover:bg-white/15 dark:hover:bg-gray-900/30 ${className}`}
+        className={`relative mx-1 my-0.5 overflow-hidden rounded-xl bg-white/20 dark:bg-gray-900/20 backdrop-blur-md border border-amber-200/30 dark:border-gray-700/30 p-1 shadow-md transition-all duration-300 hover:bg-white/30 dark:hover:bg-gray-900/30 ${className}`}
         onClick={handleUpgradeClick}
       >
         {/* Glassmorphism background with gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 via-orange-500/15 to-amber-600/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-400/30 via-orange-500/20 to-amber-600/25 dark:from-amber-400/20 dark:via-orange-500/15 dark:to-amber-600/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent dark:via-white/5 animate-shimmer" />
         
         <div className="relative z-10 flex items-center gap-1.5">
           <div className="flex size-6 items-center justify-center rounded-full bg-amber-500/30 backdrop-blur-sm">
@@ -40,7 +40,7 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
         </div>
         
         {/* Glassmorphism hover effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-white/5 to-orange-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-white/10 to-orange-500/20 dark:from-amber-400/10 dark:via-white/5 dark:to-orange-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       </motion.div>
     );
   }
@@ -49,12 +49,12 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
     <motion.div
       whileHover={{ y: -1, scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
-      className={`group relative cursor-pointer overflow-hidden rounded-lg bg-white/10 dark:bg-gray-900/20 backdrop-blur-md border border-white/20 dark:border-gray-700/30 p-2 mt-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-white/15 dark:hover:bg-gray-900/30 ${className}`}
+      className={`group relative cursor-pointer overflow-hidden rounded-lg bg-white/20 dark:bg-gray-900/20 backdrop-blur-md border border-amber-200/30 dark:border-gray-700/30 p-2 mt-2 shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-white/30 dark:hover:bg-gray-900/30 ${className}`}
       onClick={handleUpgradeClick}
     >
       {/* Glassmorphism background with gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/20 via-orange-500/15 to-amber-600/20" />
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/30 via-orange-500/20 to-amber-600/25 dark:from-amber-400/20 dark:via-orange-500/15 dark:to-amber-600/20" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent dark:via-white/5 animate-shimmer" />
       
       <div className="relative z-10">
         {/* Ultra compact header */}
@@ -62,7 +62,7 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
           <div className="flex size-5 items-center justify-center rounded-full bg-amber-500/30 backdrop-blur-sm">
             <Crown className="size-2.5 text-amber-600 dark:text-amber-400" />
           </div>
-          <h3 className="text-xs font-bold text-gray-800 dark:text-gray-200">ارتقا اکانت</h3>
+          <h3 className="text-xs font-bold text-gray-800 dark:text-gray-200">دسترسی به تمامی امکانات</h3>
         </div>
 
         {/* Mini CTA Button */}
@@ -76,7 +76,7 @@ function PremiumUpgrade({ className = '', variant = 'desktop' }: PremiumUpgradeP
       </div>
 
       {/* Glassmorphism hover effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-white/5 to-orange-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-white/10 to-orange-500/20 dark:from-amber-400/10 dark:via-white/5 dark:to-orange-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
     </motion.div>
   );
 }

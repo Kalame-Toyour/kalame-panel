@@ -158,6 +158,7 @@ export const api = {
     console.log(`🔐 Auth GET request to: ${AppConfig.baseApiUrl}${endpoint}`);
     return await apiClient.get(endpoint, {
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
     });

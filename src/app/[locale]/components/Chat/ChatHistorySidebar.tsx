@@ -83,7 +83,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
     // Skeleton loading UI
     return (
       <div>
-        <h2 className="z-1 border-b border-gray-200 p-1 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت و گوهای اخیر</h2>
+        <h2 className="z-1 border-b border-gray-200 p-1 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت‌وگوهای اخیر</h2>
         {[...Array(3)].map((_, idx) => (
           <div key={idx} className="mt-1 mb-4 animate-pulse">
             <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
@@ -105,7 +105,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
 
   return (
     <>
-      <h2 className="z-1 border-b border-gray-200 p-2 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت و گوهای اخیر</h2>
+      <h2 className="z-1 border-b border-gray-200 p-2 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت‌وگوهای اخیر</h2>
       {orderedKeys.map(groupKey => (
         <div key={groupKey} className="mb-4">
           <h3 className="sticky -top-4 bg-gray-100 rounded-t-lg dark:bg-gray-900 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -118,11 +118,11 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
                 <li key={chat.id}>
                   <button
                     onClick={() => handleChatSelect(chat.id)}
-                    className={`w-full px-4 py-1 text-left rounded transition-colors truncate focus:outline-none
-                      ${currentChatId === chat.id
-                        ? 'bg-blue-100 dark:bg-blue-950 font-bold text-blue-700 dark:text-blue-300 shadow'
-                        : 'hover:bg-gray-200 dark:hover:bg-gray-700'}
-                    `}
+                    className={`w-full px-4 py-2 text-left rounded transition-all duration-300 ease-out truncate focus:outline-none hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                      currentChatId === chat.id
+                        ? 'active-chat active bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 font-bold text-blue-700 dark:text-blue-300 shadow'
+                        : ''
+                    }`}
                   >
                     <p className="truncate text-gray-900 dark:text-gray-100 font-medium text-sm text-right">
                       {chat.title || chat.text?.slice(0, 30) || 'بدون عنوان'}

@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
+import { useNotificationPermission } from '../hooks/useNotificationPermission'
 
 interface Props { onGranted?: () => void }
 
@@ -16,7 +18,7 @@ function isNotificationSupported(): boolean {
 function getNotificationPermission(): NotificationPermission | 'default' {
   try {
     if (!isNotificationSupported()) return 'default'
-    return (window as any).Notification?.permission || 'default'
+    return (window as Window & { Notification?: { permission: NotificationPermission } }).Notification?.permission || 'default'
   } catch {
     return 'default'
   }
@@ -27,7 +29,7 @@ function requestNotificationPermission(): Promise<NotificationPermission> {
     if (!isNotificationSupported()) {
       return Promise.resolve('denied' as NotificationPermission)
     }
-    const NotificationClass = (window as any).Notification
+    const NotificationClass = (window as Window & { Notification?: typeof Notification }).Notification
     return NotificationClass?.requestPermission() || Promise.resolve('denied' as NotificationPermission)
   } catch {
     return Promise.resolve('denied' as NotificationPermission)
@@ -39,7 +41,7 @@ function createSafeNotification(title: string, options?: NotificationOptions): b
     if (!isNotificationSupported() || getNotificationPermission() !== 'granted') {
       return false
     }
-    const NotificationClass = (window as any).Notification
+    const NotificationClass = (window as Window & { Notification?: typeof Notification }).Notification
     if (NotificationClass) {
       new NotificationClass(title, options)
       return true
@@ -51,6 +53,8 @@ function createSafeNotification(title: string, options?: NotificationOptions): b
 }
 
 export default function PromptNotificationPermission({ onGranted }: Props) {
+  const { isAuthenticated, isLoading } = useAuth()
+  const { registerDeviceAfterPermission } = useNotificationPermission()
   const [shouldShow, setShouldShow] = useState(false)
   const [isSecureContext, setIsSecureContext] = useState(false)
 
@@ -58,11 +62,17 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
     try {
       if (typeof window === 'undefined') return
       
+      // Don't show if user is not authenticated or still loading
+      if (!isAuthenticated || isLoading) {
+        setShouldShow(false)
+        return
+      }
+      
       // Check if we're in a secure context (HTTPS or localhost)
       const isSecure = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost'
       setIsSecureContext(isSecure)
       
-      // Only show if notifications are supported, in secure context, and not dismissed
+      // Only show if user is authenticated, notifications are supported, in secure context, and not dismissed
       const dismissed = localStorage.getItem('notif_prompt_dismissed') === '1'
       if (isNotificationSupported() && getNotificationPermission() === 'default' && !dismissed && isSecure) {
         setShouldShow(true)
@@ -70,6 +80,8 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
       
       // Log notification support status for debugging
       console.log('Notification support check:', {
+        isAuthenticated,
+        isLoading,
         hasNotification: isNotificationSupported(),
         permission: getNotificationPermission(),
         isSecureContext: isSecure,
@@ -80,7 +92,18 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
     } catch (error) {
       console.warn('[NotificationPrompt] Error during initialization:', error)
     }
-  }, [])
+  }, [isAuthenticated, isLoading])
+
+  // Reset dismissal when user logs in (for testing purposes)
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Only reset if permission is default (not granted or denied)
+      if (getNotificationPermission() === 'default') {
+        localStorage.removeItem('notif_prompt_dismissed')
+        console.log('[NotificationPrompt] Reset dismissal for authenticated user')
+      }
+    }
+  }, [isAuthenticated])
 
   if (!shouldShow) return null
 
@@ -111,6 +134,20 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
         localStorage.setItem('notif_prompt_dismissed', '1')
         setShouldShow(false)
         onGranted?.()
+        
+        // Register device with backend after permission is granted
+        try {
+          await registerDeviceAfterPermission()
+        } catch (error) {
+          console.error('Error registering device after permission:', error)
+        }
+        
+        // Trigger permission change event for other components
+        try {
+          window.dispatchEvent(new CustomEvent('notification-permission-changed'))
+        } catch (error) {
+          console.warn('Failed to dispatch permission change event:', error)
+        }
         
         // Test notification to confirm it works
         const notificationCreated = createSafeNotification('اعلان‌ها فعال شد!', {

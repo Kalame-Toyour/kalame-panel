@@ -15,7 +15,9 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useRouter } from '../contexts/RouterContext';
 import { useAuth } from '../hooks/useAuth';
+import { useUserInfoContext } from '../contexts/UserInfoContext';
 import { api } from '../utils/api';
+import { isUserPremium, getUserAccountTypeText } from '../utils/premiumUtils';
 import dayjs from 'dayjs';
 import jalaliday from 'jalali-plugin-dayjs';
 import 'dayjs/locale/fa';
@@ -77,6 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { theme, setTheme } = useTheme();
   const { navigate } = useRouter();
   const { user, logout } = useAuth();
+  const { localUserInfo } = useUserInfoContext();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
@@ -339,6 +342,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     toggleSidebar();
   };
 
+
   const handleThemeToggle = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -548,7 +552,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="flex-1 overflow-y-auto p-4">
             <div className="mb-2">
-              <h2 className="border-b border-gray-200 dark:border-gray-700 p-2 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت و گوهای اخیر</h2>
+              <h2 className="border-b border-gray-200 dark:border-gray-700 p-2 text-base font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800">گفت‌وگوهای اخیر</h2>
               
               {isLoadingChats ? (
                 <div className="flex items-center justify-center py-8">
@@ -557,7 +561,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               ) : chatHistory.length === 0 ? (
                 <div className="rounded-xl bg-white/95 dark:bg-gray-900/95 shadow-sm p-2 border border-gray-200 dark:border-gray-700">
                   <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-xs">
-                    هیچ تاریخچه‌ای ندارید
+                    هنوز هیچ گفت‌وگویی ندارید
                   </div>
                 </div>
               ) : (
@@ -630,9 +634,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                     alt="آواتار کاربر"
                     className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm"
                   />
-                  <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate max-w-[120px]">
-                    {user.name || 'کاربر'}
-                  </span>
+                  <div className="flex flex-col flex-1 min-w-0 text-right">
+                    <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
+                      {user.name || 'کاربر'}
+                    </span>
+                    <span className={`text-xs truncate ${
+                      localUserInfo && isUserPremium(localUserInfo) 
+                        ? 'text-amber-600 dark:text-amber-400 font-semibold' 
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}>
+                      {localUserInfo ? getUserAccountTypeText(localUserInfo) : 'اکانت رایگان'}
+                    </span>
+                  </div>
                 </button>
                 {profileMenuOpen && (
                   <div className="absolute left-0 right-0 bottom-full mb-2 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl py-3 px-0 min-w-[210px] animate-fade-in flex flex-col gap-1">

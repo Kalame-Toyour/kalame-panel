@@ -261,13 +261,18 @@ export async function POST(request: Request) {
                         parsed.error === 'NO_CREDIT' ||
                         parsed.errorType === 'credit_error'
                       ) {
-                        console.log('Credit error detected, sending formatted message');
+                        console.log('Credit error detected, sending dynamic message from backend:', {
+                          message: parsed.message,
+                          remainingCredit: parsed.remainingCredit,
+                          buttonMessage: parsed.buttonMessage
+                        });
                         controller.enqueue(
                           `data: ${JSON.stringify({
-                            error: 'اعتبار شما به پایان رسیده است. برای ادامه مکالمه باید حساب خود را شارژ کنید.',
+                            error: parsed.message || 'اعتبار شما به پایان رسیده است. برای ادامه مکالمه باید حساب خود را شارژ کنید.',
                             errorType: 'no_credit',
                             details: parsed,
-                            remainingCredit: parsed.remainingCredit
+                            remainingCredit: parsed.remainingCredit,
+                            buttonMessage: parsed.buttonMessage || 'خرید اشتراک پیشرفته'
                           })}\n\n`
                         )
                       } else {
@@ -285,13 +290,18 @@ export async function POST(request: Request) {
 
                     // اگر JSON response شامل credit_error است اما در شرط‌های بالا قرار نگرفت
                     if (parsed.errorType === 'credit_error' || parsed.message?.includes('اعتبار')) {
-                      console.log('Credit error detected in fallback check');
+                      console.log('Credit error detected in fallback check, sending dynamic message:', {
+                        message: parsed.message,
+                        remainingCredit: parsed.remainingCredit,
+                        buttonMessage: parsed.buttonMessage
+                      });
                       controller.enqueue(
                         `data: ${JSON.stringify({
-                          error: 'اعتبار شما به پایان رسیده است. برای ادامه مکالمه باید حساب خود را شارژ کنید.',
+                          error: parsed.message || 'اعتبار شما به پایان رسیده است. برای ادامه مکالمه باید حساب خود را شارژ کنید.',
                           errorType: 'no_credit',
                           details: parsed,
-                          remainingCredit: parsed.remainingCredit
+                          remainingCredit: parsed.remainingCredit,
+                          buttonMessage: parsed.buttonMessage || 'خرید اشتراک پیشرفته'
                         })}\n\n`
                       )
                       controller.enqueue(`data: [DONE]\n\n`)

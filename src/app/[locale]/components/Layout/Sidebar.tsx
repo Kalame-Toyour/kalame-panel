@@ -12,6 +12,7 @@ import {
   LogIn,
   Star,
   CreditCard,
+  Download,
 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -22,7 +23,9 @@ import LogoutDialog from '../LogoutDialog';
 import { useTheme } from '../ThemeProvider';
 import ChatHistorySidebar from '../Chat/ChatHistorySidebar';
 import fetchWithAuth from '../utils/fetchWithAuth';
-import { isUserPremium } from '@/utils/premiumUtils';
+import { isUserPremium, getUserAccountTypeText } from '@/utils/premiumUtils';
+import { useUserInfoContext } from '../../contexts/UserInfoContext';
+import './sidebar.css';
 
 type SidebarProps = {
   isOpen: boolean;
@@ -61,6 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const t = useTranslations('sidebar');
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const { user, isLoading: isAuthLoading } = useAuth();
+  const { localUserInfo } = useUserInfoContext();
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -175,6 +179,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleUpgradeClick = () => {
     router.push(`/${locale}/pricing`);
     toggleSidebar();
+  };
+
+  const handleDownloadApp = () => {
+    // Static URL for app download - you can change this to your actual app store links
+    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.kalame.app';
+    window.open(downloadUrl, '_blank');
+    setProfileMenuOpen(false);
   };
 
   const featureNavigationItems: NavigationItem[] = [
@@ -362,7 +373,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {/* پیام اگر هیچ تاریخچه‌ای نبود */}
                   {!isChatHistoryLoading && chatHistory.length === 0 && (
                     <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-xs">
-                      هیچ تاریخچه‌ای ندارید
+                      هنوز هیچ گفت‌وگویی ندارید
                     </div>
                   )}
                 </div>
@@ -418,11 +429,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <div className="flex flex-col flex-1 min-w-0 text-right">
                         <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">{user.name}</span>
                         <span className={`text-xs truncate ${
-                          isUserPremium(user) 
+                          localUserInfo && isUserPremium(localUserInfo) 
                             ? 'text-amber-600 dark:text-amber-400 font-semibold' 
                             : 'text-gray-600 dark:text-gray-400'
                         }`}>
-                          {isUserPremium(user) ? 'اکانت پرمیوم' : 'اکانت رایگان'}
+                          {localUserInfo ? getUserAccountTypeText(localUserInfo) : 'اکانت رایگان'}
                         </span>
                       </div>
                     </button>
@@ -452,6 +463,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                         }}>
                           <Star size={18} className="text-yellow-500" />
                           راهنما
+                        </button>
+                        <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all" onClick={handleDownloadApp}>
+                          <Download size={18} className="text-green-500" />
+                          دانلود اپلیکیشن
                         </button>
                         <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
                         <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all" onClick={handleLogoutClick}>
