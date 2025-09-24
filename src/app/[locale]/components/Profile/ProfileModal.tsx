@@ -153,7 +153,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
 
   const handleDownloadApp = () => {
     // Static URL for app download - you can change this to your actual app store links
-    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.kalame.app';
+    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.kalame.ai';
     window.open(downloadUrl, '_blank');
     onClose();
   };

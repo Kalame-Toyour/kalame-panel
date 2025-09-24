@@ -101,6 +101,45 @@ export default function PaymentResultPage({ params }: PageProps) {
 
   const isSuccess = payment.status === 'verify'
 
+  // Function to detect if user is on mobile app
+  const isMobileApp = () => {
+    return typeof window !== 'undefined' && 
+           (window.navigator.userAgent.includes('Kalame') || 
+            window.navigator.userAgent.includes('Capacitor') ||
+            window.navigator.userAgent.includes('Android') ||
+            window.navigator.userAgent.includes('iPhone'));
+  };
+
+  // Function to return to mobile app
+  const returnToMobileApp = () => {
+    if (typeof window !== 'undefined') {
+      // Try multiple methods to return to the app
+      
+      // Method 1: Try to close the webview (works on some platforms)
+      if (window.close) {
+        window.close();
+      }
+      
+      // Method 2: Try to navigate back (works on some platforms)
+      if (window.history.length > 1) {
+        window.history.back();
+      }
+      
+      // Method 3: Try to open the app using custom URL scheme
+      const appUrl = 'kalame://payment-complete';
+      try {
+        window.location.href = appUrl;
+      } catch (error) {
+        console.log('Could not open app URL:', error);
+      }
+      
+      // Method 4: Show message to user
+      setTimeout(() => {
+        alert('لطفاً به اپلیکیشن کلمه برگردید');
+      }, 1000);
+    }
+  };
+
   return (
     <div className="flex flex-col p-4 items-center justify-center min-h-[60vh]">
       {isSuccess ? (
@@ -115,6 +154,19 @@ export default function PaymentResultPage({ params }: PageProps) {
               <div><span className="font-bold">مبلغ:</span> {payment.amount.toLocaleString('fa-IR')} تومان</div>
             </div>
           </div>
+          
+          {/* Mobile App Return Button */}
+          {isMobileApp() && (
+            <div className="mb-4">
+              <button 
+                className="px-8 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all"
+                onClick={returnToMobileApp}
+              >
+                بازگشت به اپلیکیشن کلمه
+              </button>
+            </div>
+          )}
+          
           <button className="mt-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-bold shadow" onClick={() => router.push('/')}>بازگشت به خانه</button>
         </>
       ) : (
@@ -122,6 +174,19 @@ export default function PaymentResultPage({ params }: PageProps) {
           <XCircle className="text-red-500 animate-pulse mb-2" size={56} />
           <div className="text-2xl font-bold text-red-600 mb-2">پرداخت ناموفق بود</div>
           <div className="text-sm text-gray-500 mb-4 text-center">در صورت کسر وجه، حداکثر تا ۷۲ ساعت آینده مبلغ به حساب شما بازخواهد گشت.<br />کد رهگیری شما: <span className="font-bold text-blue-700">{payment.code}</span></div>
+          
+          {/* Mobile App Return Button */}
+          {isMobileApp() && (
+            <div className="mb-4">
+              <button 
+                className="px-8 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all"
+                onClick={returnToMobileApp}
+              >
+                بازگشت به اپلیکیشن کلمه
+              </button>
+            </div>
+          )}
+          
           <button className="mt-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-bold shadow" onClick={() => router.push('/')}>بازگشت به خانه</button>
         </>
       )}

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { api } from '../utils/api';
 
 interface UserInfo {
@@ -175,6 +176,39 @@ export function UserInfoProvider({ children }: UserInfoProviderProps) {
 
     checkAuthAndFetchUserInfo();
   }, [hasFetchedUserInfo, getUserInfo]);
+
+  // Handle app state changes for user info refresh
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
+      const handleAppStateChange = async () => {
+        console.log('[UserInfoContext] App became active, refreshing user info...');
+        try {
+          const authData = localStorage.getItem('kariz_user');
+          if (authData) {
+            const user = JSON.parse(authData);
+            if (user.accessToken) {
+              // Force refresh user info when app becomes active
+              setHasFetchedUserInfo(false);
+              await getUserInfo();
+            }
+          }
+        } catch (error) {
+          console.error('[UserInfoContext] Error refreshing user info on app state change:', error);
+        }
+      };
+
+      // Listen for app state changes
+      CapacitorApp.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+        if (isActive) {
+          handleAppStateChange();
+        }
+      });
+
+      return () => {
+        CapacitorApp.removeAllListeners();
+      };
+    }
+  }, [getUserInfo]);
 
   const clearLocalUserInfo = () => {
     setLocalUserInfo(null);

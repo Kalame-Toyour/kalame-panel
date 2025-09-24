@@ -269,9 +269,9 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                 let parsed;
                 try {
                   parsed = JSON.parse(data);
-                  console.log('Successfully parsed JSON:', parsed);
+                  // console.log('Successfully parsed JSON:', parsed);
                 } catch {
-                  console.log('Partial JSON data, skipping:', data);
+                  // console.log('Partial JSON data, skipping:', data);
                   continue;
                 }
                 
@@ -328,7 +328,6 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                   }
                   fullContent += parsed.content;
                   lastStreamedTextRef.current = fullContent;
-                  console.log('Updated full content:', fullContent);
                   if (currentChatId === chatId && !isResetting) {
                     setMessages(prev => prev.map(msg => msg.id === aiMessageId ? { 
                       ...msg, 

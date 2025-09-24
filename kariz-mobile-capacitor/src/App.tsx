@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from 'rehype-highlight';
 import { Capacitor } from '@capacitor/core'
+import { App as CapacitorApp } from '@capacitor/app'
 
 import ChatInputModern from './components/ChatInputModern';
 import Sidebar from './components/Sidebar';
@@ -321,6 +322,75 @@ const MainAppContent: React.FC = () => {
       refreshAuthStateRef.current();
     }
   }, [currentRoute, user]); // Remove refreshAuthState from dependencies
+
+  // Handle app state changes for user info refresh
+  useEffect(() => {
+    if (Capacitor?.isNativePlatform?.()) {
+      const handleAppStateChange = async () => {
+        console.log('[App] App became active, refreshing user info...');
+        try {
+          // Refresh user info when app becomes active (e.g., returning from payment)
+          // This will be handled by the UserInfoProvider
+          console.log('[App] User info refresh will be handled by UserInfoProvider');
+        } catch (error) {
+          console.error('[App] Error refreshing user info on app state change:', error);
+        }
+      };
+
+      // Listen for app state changes
+      CapacitorApp.addListener('appStateChange', ({ isActive }: { isActive: boolean }) => {
+        if (isActive) {
+          handleAppStateChange();
+        }
+      });
+
+      return () => {
+        CapacitorApp.removeAllListeners();
+      };
+    }
+  }, []);
+
+  // Handle deep links for payment return
+  useEffect(() => {
+    if (Capacitor?.isNativePlatform?.()) {
+      const handleDeepLink = async () => {
+        try {
+          // Listen for app URL events (deep links)
+          CapacitorApp.addListener('appUrlOpen', (event: { url: string }) => {
+            console.log('[App] Deep link received:', event.url);
+            
+            // Check if it's a payment completion deep link
+            if (event.url.includes('kalame://payment-complete')) {
+              console.log('[App] Payment completion deep link detected');
+              // Navigate to pricing page to show updated user info
+              navigate('pricing');
+              // Show success message
+              showToast('پرداخت با موفقیت انجام شد! اطلاعات شما به‌روزرسانی شد.', 'success');
+            }
+          });
+
+          // Also check for initial URL when app starts
+          CapacitorApp.getLaunchUrl().then((result) => {
+            if (result?.url) {
+              console.log('[App] Initial URL:', result.url);
+              if (result.url.includes('kalame://payment-complete')) {
+                console.log('[App] Payment completion deep link on app start');
+                navigate('pricing');
+                showToast('پرداخت با موفقیت انجام شد! اطلاعات شما به‌روزرسانی شد.', 'success');
+              }
+            }
+          }).catch((error: any) => {
+            console.log('[App] No initial URL:', error);
+          });
+
+        } catch (error) {
+          console.error('[App] Error setting up deep link handling:', error);
+        }
+      };
+
+      handleDeepLink();
+    }
+  }, [navigate, showToast]);
 
   // Initialize mobile push registration when authenticated
   useEffect(() => {

@@ -2,17 +2,60 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { PremiumUser } from '@/utils/premiumUtils';
+import { useSession } from 'next-auth/react';
 
 interface UserInfoContextType {
   localUserInfo: PremiumUser | null;
-  updateLocalUserInfo: (newUserInfo: any) => void;
+  updateLocalUserInfo: (newUserInfo: Record<string, unknown>) => void;
   clearLocalUserInfo: () => void;
+  isFetchingUserInfo: boolean;
 }
 
 const UserInfoContext = createContext<UserInfoContextType | undefined>(undefined);
 
 export function UserInfoProvider({ children }: { children: ReactNode }) {
   const [localUserInfo, setLocalUserInfo] = useState<PremiumUser | null>(null);
+  const [isFetchingUserInfo, setIsFetchingUserInfo] = useState(false);
+  const { data: session } = useSession();
+
+  // Fetch user info from server when user is authenticated
+  const fetchUserInfoFromServer = useCallback(async () => {
+    if (!session?.user?.id || isFetchingUserInfo) return;
+    
+    setIsFetchingUserInfo(true);
+    try {
+      console.log('Fetching user info from server for first visit...');
+      const response = await fetch('/api/user/info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ forceRefresh: true }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('User info fetched from server:', data.user);
+        
+        // Update localStorage and state
+        const premiumUser: PremiumUser = {
+          id: data.user.ID?.toString() || '',
+          username: data.user.username || data.user.fname,
+          userType: data.user.user_type || 'free',
+        };
+        
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
+        setLocalUserInfo(premiumUser);
+        console.log('User info updated in context:', premiumUser);
+      } else {
+        console.error('Failed to fetch user info from server:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching user info from server:', error);
+    } finally {
+      setIsFetchingUserInfo(false);
+    }
+  }, [session?.user?.id, isFetchingUserInfo]);
 
   useEffect(() => {
     // Load user info from localStorage on mount
@@ -47,16 +90,24 @@ export function UserInfoProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const updateLocalUserInfo = useCallback((newUserInfo: any) => {
+  // Fetch user info from server when user is authenticated but no local data exists
+  useEffect(() => {
+    if (session?.user?.id && !localUserInfo && !isFetchingUserInfo) {
+      console.log('User is authenticated but no local user info, fetching from server...');
+      fetchUserInfoFromServer();
+    }
+  }, [session?.user?.id, localUserInfo, isFetchingUserInfo, fetchUserInfoFromServer]);
+
+  const updateLocalUserInfo = useCallback((newUserInfo: Record<string, unknown>) => {
     try {
       // Update localStorage first for immediate availability
       localStorage.setItem('userInfo', JSON.stringify(newUserInfo));
       
       // Then update state immediately
       const premiumUser: PremiumUser = {
-        id: newUserInfo.ID?.toString() || '',
-        username: newUserInfo.username || newUserInfo.fname,
-        userType: newUserInfo.user_type || 'free',
+        id: (newUserInfo.ID as string)?.toString() || '',
+        username: (newUserInfo.username as string) || (newUserInfo.fname as string),
+        userType: (newUserInfo.user_type as 'free' | 'promotion' | 'premium') || 'free',
       };
       
       console.log('Context: Updating localUserInfo state with:', premiumUser);
@@ -74,7 +125,7 @@ export function UserInfoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <UserInfoContext.Provider value={{ localUserInfo, updateLocalUserInfo, clearLocalUserInfo }}>
+    <UserInfoContext.Provider value={{ localUserInfo, updateLocalUserInfo, clearLocalUserInfo, isFetchingUserInfo }}>
       {children}
     </UserInfoContext.Provider>
   );

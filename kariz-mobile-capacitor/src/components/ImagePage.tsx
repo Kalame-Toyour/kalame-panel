@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Image as ImageIcon, Download , ArrowRight, X, ChevronDown } from 'lucide-react';
+import { Image as ImageIcon, Download , ArrowRight, X, ChevronDown, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../contexts/RouterContext';
 // import { useTheme } from '../contexts/ThemeContext';
@@ -7,6 +7,7 @@ import { useToast } from './ui/Toast';
 import { api } from '../utils/api';
 import type { ApiMediaItem } from '../utils/api';
 import { ModelDropdown, type LanguageModel } from './ModelDropdown';
+import FeedbackDialog from './FeedbackDialog';
 
 interface ApiModel {
   id: number;
@@ -30,6 +31,25 @@ interface ApiModel {
 
 const FALLBACK_RESOLUTIONS = ['256x256', '512x512', '1024x1024'];
 
+// Professional example prompts for image generation
+const PROFESSIONAL_PROMPTS = [
+  "منظره کوهستانی با آسمان پر ستاره، سبک نقاشی رنگ روغن، نور طلایی غروب، کیفیت 4K، جزئیات فوق‌العاده",
+  "گل‌های رنگارنگ در گلدان سرامیکی، نور طبیعی، عکاسی ماکرو، پس‌زمینه تار، کیفیت 4K",
+  "شهر مدرن در شب با نورهای رنگی، سبک عکاسی شهری، پرسپکتیو سه‌بعدی، جزئیات بالا",
+  "دریای آرام با غروب خورشید، آبرنگ، هنر دیجیتال، نور طلایی، وضوح فوق‌العاده",
+  "پرتره یک گربه پرشین سفید با چشمان آبی، نور نرم، پس‌زمینه ساده، عکاسی پرتره، کیفیت 4K",
+  "جنگل انبوه با نورهای خورشید، سبک نقاشی دیجیتال، سایه‌های طبیعی، جزئیات بالا",
+  "معماری کلاسیک با ستون‌های مرمر، نور طلایی، پرسپکتیو عمیق، کیفیت 4K",
+  "فضای داخلی خانه مدرن، نور طبیعی، طراحی مینیمال، جزئیات معماری",
+  "حیوان وحشی در طبیعت، عکاسی حیات وحش، نور طبیعی، پس‌زمینه تار، کیفیت 4K",
+  "غذاهای خوشمزه روی میز چوبی، نور طبیعی، عکاسی غذایی، جزئیات بالا",
+  "ماشین کلاسیک در گاراژ، نور صنعتی، عکاسی خودرو، کیفیت 4K",
+  "کودک در حال بازی، نور طبیعی، عکاسی پرتره، احساسات طبیعی",
+  "کتاب‌خانه قدیمی با قفسه‌های چوبی، نور گرم، فضای آرام، جزئیات بالا",
+  "باغ ژاپنی با سنگ‌های زن، نور نرم، طراحی مینیمال، کیفیت 4K",
+  "کوه‌های برفی با آسمان آبی، نور طبیعی، عکاسی منظره، وضوح فوق‌العاده"
+];
+
 export default function ImagePage() {
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState<string>('');
@@ -49,6 +69,14 @@ export default function ImagePage() {
   const [sizeOpen, setSizeOpen] = useState(false)
   const [showGuide, setShowGuide] = useState(false);
   const sizeDropdownRef = useRef<HTMLDivElement>(null)
+  const [randomPrompts, setRandomPrompts] = useState<string[]>([]);
+
+  // Feedback states
+  const [likedImages, setLikedImages] = useState<Record<string, boolean>>({});
+  const [dislikedImages, setDislikedImages] = useState<Record<string, boolean>>({});
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [currentFeedbackImageId, setCurrentFeedbackImageId] = useState<string | null>(null);
+  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
 
   const [models, setModels] = useState<LanguageModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState<boolean>(false);
@@ -87,6 +115,12 @@ export default function ImagePage() {
     
     return cleanup;
   }, [cleanup]);
+
+  // Randomly select 4 prompts when component mounts
+  useEffect(() => {
+    const shuffled = [...PROFESSIONAL_PROMPTS].sort(() => 0.5 - Math.random());
+    setRandomPrompts(shuffled.slice(0, 4));
+  }, []);
 
   // Handle key press events (similar to ChatInputModern)
   function handleKeyPress(e: React.KeyboardEvent) {
@@ -338,6 +372,75 @@ export default function ImagePage() {
     navigate('chat');
   };
 
+  // Feedback handlers
+  const handleLike = async (imageId: string) => {
+    if (isFeedbackLoading || !user?.accessToken) return;
+    
+    // Check if feedback already submitted
+    if (likedImages[imageId] || dislikedImages[imageId]) {
+      showToast('شما قبلاً نظر خود را ثبت کرده‌اید', 'warning');
+      return;
+    }
+    
+    setIsFeedbackLoading(true);
+    try {
+      const response = await api.submitFeedback(imageId, 'like', '', user.accessToken);
+      if (response.success) {
+        setLikedImages(prev => ({ ...prev, [imageId]: true }));
+        setDislikedImages(prev => ({ ...prev, [imageId]: false }));
+        showToast('بازخورد مثبت شما ثبت شد', 'success');
+      } else {
+        showToast('خطا در ثبت بازخورد', 'error');
+      }
+    } catch (error) {
+      console.error('Error submitting like feedback:', error);
+      showToast('خطا در ثبت بازخورد', 'error');
+    } finally {
+      setIsFeedbackLoading(false);
+    }
+  };
+
+  const handleDislike = (imageId: string) => {
+    // Check if feedback already submitted
+    if (likedImages[imageId] || dislikedImages[imageId]) {
+      showToast('شما قبلاً نظر خود را ثبت کرده‌اید', 'warning');
+      return;
+    }
+    setCurrentFeedbackImageId(imageId);
+    setFeedbackDialogOpen(true);
+  };
+
+  const handleSubmitFeedback = async (feedback: string) => {
+    if (isFeedbackLoading || !user?.accessToken || !currentFeedbackImageId) return;
+    
+    // Check if feedback already submitted
+    if (likedImages[currentFeedbackImageId] || dislikedImages[currentFeedbackImageId]) {
+      showToast('شما قبلاً نظر خود را ثبت کرده‌اید', 'warning');
+      setFeedbackDialogOpen(false);
+      return;
+    }
+    
+    setIsFeedbackLoading(true);
+    try {
+      const response = await api.submitFeedback(currentFeedbackImageId, 'dislike', feedback, user.accessToken);
+      if (response.success) {
+        setDislikedImages(prev => ({ ...prev, [currentFeedbackImageId]: true }));
+        setLikedImages(prev => ({ ...prev, [currentFeedbackImageId]: false }));
+        showToast('بازخورد شما ثبت شد', 'success');
+        setFeedbackDialogOpen(false);
+      } else {
+        showToast('خطا در ثبت بازخورد', 'error');
+        throw new Error('خطا در ثبت بازخورد');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      showToast('خطا در ثبت بازخورد', 'error');
+      throw error;
+    } finally {
+      setIsFeedbackLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
       {/* Header */}
@@ -361,17 +464,17 @@ export default function ImagePage() {
             <div className="mb-4">
               <button
                 onClick={() => setShowGuide(!showGuide)}
-                className="w-full p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-purple-100 transition-all duration-200"
+                className="w-full p-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl border border-blue-200 dark:border-blue-700 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-800/40 dark:hover:to-purple-800/40 transition-all duration-200"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 text-lg">💡</span>
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-800/50 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 dark:text-blue-300 text-lg">💡</span>
                     </div>
-                    <h3 className="text-sm font-medium text-blue-800 text-right">راهنمای تولید تصویر حرفه‌ای</h3>
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 text-right">راهنمای تولید تصویر حرفه‌ای</h3>
                   </div>
                   <div className={`transform transition-transform duration-200 ${showGuide ? 'rotate-180' : ''}`}>
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -380,26 +483,26 @@ export default function ImagePage() {
               
               {/* محتوای راهنما */}
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showGuide ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-b-xl border-l border-r border-b border-blue-200 -mt-1">
-                  <div className="space-y-3 text-xs text-blue-700">
+                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-b-xl border-l border-r border-b border-blue-200 dark:border-blue-700 -mt-1">
+                  <div className="space-y-3 text-xs text-blue-700 dark:text-blue-300">
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className="text-blue-500 dark:text-blue-400 font-bold">•</span>
                       <span><strong>جزئیات دقیق:</strong> به جای &ldquo;یک گل&rdquo; بنویسید &ldquo;گل رز قرمز زیبا با قطرات شبنم روی برگ‌ها&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className="text-blue-500 dark:text-blue-400 font-bold">•</span>
                       <span><strong>سبک هنری:</strong> مثل &ldquo;نقاشی رنگ روغن&rdquo;، &ldquo;عکاسی پرتره&rdquo;، &ldquo;هنر دیجیتال&rdquo;، &ldquo;آبرنگ&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className="text-blue-500 dark:text-blue-400 font-bold">•</span>
                       <span><strong>نورپردازی:</strong> &ldquo;نور طبیعی&rdquo;، &ldquo;نور طلایی غروب&rdquo;، &ldquo;نور نرم&rdquo;، &ldquo;سایه‌های تند&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className="text-blue-500 dark:text-blue-400 font-bold">•</span>
                       <span><strong>زاویه دید:</strong> &ldquo;نمای نزدیک&rdquo;، &ldquo;نمای کلی&rdquo;، &ldquo;از بالا&rdquo;، &ldquo;پرسپکتیو سه‌بعدی&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className="text-blue-500 dark:text-blue-400 font-bold">•</span>
                       <span><strong>کیفیت:</strong> &ldquo;کیفیت 4K&rdquo;، &ldquo;جزئیات بالا&rdquo;، &ldquo;وضوح فوق‌العاده&rdquo; را اضافه کنید</span>
                     </div>
                   </div>
@@ -478,28 +581,25 @@ export default function ImagePage() {
           </div>
 
           {/* نمونه پرامپت‌های آماده */}
-          <div className="mt-3">
-            <h4 className="text-xs font-medium text-gray-600 mb-2">پرامپت‌های آماده:</h4>
-            <div className="space-y-1">
-              {[
-                "منظره کوهستانی با آسمان پر ستاره، سبک نقاشی رنگ روغن",
-                "گل‌های رنگارنگ در گلدان سرامیکی، نور طبیعی، کیفیت 4K",
-                "شهر مدرن در شب با نورهای رنگی، سبک عکاسی شهری",
-                "دریای آرام با غروب خورشید، آبرنگ، جزئیات بالا"
-              ].map((example, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setPrompt(example)}
-                  className="w-full text-right px-1 py-2 text-xs bg-gray-50 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors border border-gray-200 hover:border-blue-300"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-blue-500 text-xs">✨</span>
-                    <span className="flex-1 leading-snug">{example}</span>
-                  </div>
-                </button>
-              ))}
+          {prompt.length <= 3 && (
+            <div className="mt-3">
+              <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">پرامپت‌های آماده:</h4>
+              <div className="space-y-1">
+                {randomPrompts.map((example, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setPrompt(example)}
+                    className="w-full text-right px-1 py-2 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300 transition-colors border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-500 dark:text-blue-400 text-xs">✨</span>
+                      <span className="flex-1 leading-snug">{example}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
           <div className="flex flex-col gap-4 mb-6">
           <div>
@@ -645,6 +745,87 @@ export default function ImagePage() {
                     دانلود تصویر
                   </button>
                 </div>
+
+                {/* Feedback buttons */}
+                <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm border border-gray-200 dark:border-gray-600">
+                    <button
+                      onClick={() => handleLike(result)}
+                      disabled={isFeedbackLoading}
+                      className={`group relative flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
+                        likedImages[result] 
+                          ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105' 
+                          : dislikedImages[result]
+                          ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 hover:scale-105'
+                      } disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100`}
+                    >
+                      <div className="flex items-center justify-center">
+                        <ThumbsUp 
+                          size={14} 
+                          className={`transition-all duration-300 ${
+                            likedImages[result] 
+                              ? 'text-white drop-shadow-sm' 
+                              : dislikedImages[result]
+                              ? 'text-gray-400 dark:text-gray-500'
+                              : 'text-gray-500 group-hover:text-green-600 dark:group-hover:text-green-400 group-hover:scale-110'
+                          }`} 
+                        />
+                      </div>
+                      <span className="hidden sm:inline font-medium">
+                        {isFeedbackLoading ? (
+                          <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                          'عالی'
+                        )}
+                      </span>
+                    </button>
+                    
+                    <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-0.5"></div>
+                    
+                    <button
+                      onClick={() => handleDislike(result)}
+                      disabled={isFeedbackLoading}
+                      className={`group relative flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-300 ${
+                        dislikedImages[result] 
+                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform scale-105' 
+                          : likedImages[result]
+                          ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 hover:scale-105'
+                      } disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100`}
+                    >
+                      <div className="flex items-center justify-center">
+                        <ThumbsDown 
+                          size={14} 
+                          className={`transition-all duration-300 ${
+                            dislikedImages[result] 
+                              ? 'text-white drop-shadow-sm' 
+                              : likedImages[result]
+                              ? 'text-gray-400 dark:text-gray-500'
+                              : 'text-gray-500 group-hover:text-red-600 dark:group-hover:text-red-400 group-hover:scale-110'
+                          }`} 
+                        />
+                      </div>
+                      <span className="hidden sm:inline font-medium">
+                        {isFeedbackLoading ? (
+                          <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                          'بهتر'
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                  
+                  {/* Feedback status indicator */}
+                  {(likedImages[result] || dislikedImages[result]) && (
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 opacity-0 animate-[fadeIn_0.3s_ease-in-out_forwards]">
+                      <div className={`w-2 h-2 rounded-full animate-pulse ${
+                        likedImages[result] ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                      <span className="font-medium">ثبت شد</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -760,6 +941,15 @@ export default function ImagePage() {
           </div>
         </div>
       )}
+
+      {/* Feedback Dialog */}
+      <FeedbackDialog
+        isOpen={feedbackDialogOpen}
+        onClose={() => setFeedbackDialogOpen(false)}
+        onSubmit={handleSubmitFeedback}
+        messageId={currentFeedbackImageId || ''}
+        isLoading={isFeedbackLoading}
+      />
     </div>
   );
 } 

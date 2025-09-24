@@ -17,7 +17,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import LogoutDialog from '../LogoutDialog';
 import { useTheme } from '../ThemeProvider';
@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const t = useTranslations('sidebar');
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { localUserInfo } = useUserInfoContext();
+  const { localUserInfo, isFetchingUserInfo } = useUserInfoContext();
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [profileMenuOpen]);
 
-  const refreshChatHistory = async () => {
+  const refreshChatHistory = useCallback(async () => {
     if (!user?.id) return;
     setIsChatHistoryLoading(true);
     try {
@@ -106,12 +106,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     } finally {
       setIsChatHistoryLoading(false);
     }
-  };
+  }, [user?.id]);
 
   useEffect(() => {
     refreshChatHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, refreshChatHistory]);
 
   // Only refresh chat history when a new chat is created (urlChatId changes from '' to a value)
   useEffect(() => {
@@ -119,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       refreshChatHistory();
     }
     prevChatIdRef.current = urlChatId;
-  }, [urlChatId]);
+  }, [urlChatId, refreshChatHistory]);
 
   const isRouteActive = (path: string) => {
     // pathname from usePathname() is like "/", "/image", or "/image/some-id"
@@ -183,7 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleDownloadApp = () => {
     // Static URL for app download - you can change this to your actual app store links
-    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.kalame.app';
+    const downloadUrl = 'https://play.google.com/store/apps/details?id=com.kalame.ai';
     window.open(downloadUrl, '_blank');
     setProfileMenuOpen(false);
   };
@@ -383,8 +382,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           {/* User Profile Dropdown or Login Button */}
           <div className="border-t p-4 dark:border-gray-700 bg-white/70 dark:bg-gray-900/70 relative">
-            {isAuthLoading ? (
-              // Skeleton loading for authentication state
+            {isAuthLoading || (user && isFetchingUserInfo) ? (
+              // Skeleton loading for authentication state or user info fetching
               <div className="flex items-center justify-center">
                 <div className="flex items-center gap-3 w-full">
                   <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />

@@ -58,7 +58,7 @@ export default function PricingPage() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const { updateUserInfo } = useUserInfo();
-  const { localUserInfo } = useUserInfoContext();
+  const { localUserInfo, isFetchingUserInfo } = useUserInfoContext();
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [packages, setPackages] = useState<Package[] | null>(null);
 
@@ -104,6 +104,23 @@ export default function PricingPage() {
       setUserType(localUserInfo.userType);
     }
   }, [localUserInfo?.userType]);
+
+  // Fetch user info on page load for authenticated users
+  useEffect(() => {
+    const fetchUserInfoOnLoad = async () => {
+      if (user?.id && !localUserInfo) {
+        try {
+          console.log('Fetching user info on pricing page load...');
+          await updateUserInfo(true); // Force refresh to get latest user info
+          console.log('User info updated successfully on pricing page');
+        } catch (error) {
+          console.error('Failed to update user info on pricing page:', error);
+        }
+      }
+    };
+
+    fetchUserInfoOnLoad();
+  }, [user?.id, localUserInfo, updateUserInfo]);
 
   useEffect(function fetchPackages() {
     let isMounted = true;
@@ -317,6 +334,32 @@ export default function PricingPage() {
     return Math.round(price / 10);
   };
 
+  // Show loading state when fetching user info for authenticated users
+  if (user && isFetchingUserInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+            className="relative"
+          >
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-500 to-orange-300 opacity-50 blur-lg" />
+            <Crown className="relative size-8 text-amber-500" />
+          </motion.div>
+          <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-lg font-medium text-transparent">
+            {isRTL ? 'در حال بارگذاری اطلاعات کاربر...' : 'Loading user information...'}
+          </span>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
@@ -399,8 +442,94 @@ export default function PricingPage() {
           </p>
         </motion.div>
 
+        {/* Premium User Banner */}
+        {user && userType === 'premium' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="max-w-3xl mx-auto mb-8"
+          >
+            <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-6 border-2 border-amber-200 dark:border-amber-700 shadow-lg">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md">
+                    <Crown className="size-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                      {isRTL ? 'اکانت شما پیشرفته است' : 'Your Advanced Account'}
+                    </h2>
+                    <p className="text-amber-700 dark:text-amber-300 font-medium text-sm">
+                      {isRTL ? 'شما از تمامی امکانات بهره‌مند هستید' : 'You have access to all features'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 w-fit mx-auto mb-2">
+                      <Check className="size-4 text-white" />
+                    </div>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-1 text-sm">
+                      {isRTL ? 'دسترسی نامحدود' : 'Unlimited'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs">
+                      {isRTL ? 'تمام مدل‌ها' : 'All Models'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 w-fit mx-auto mb-2">
+                      <Check className="size-4 text-white" />
+                    </div>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-1 text-sm">
+                      {isRTL ? 'امکانات پیشرفته' : 'Advanced'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs">
+                      {isRTL ? 'تصویر و صدا' : 'Image & Voice'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 w-fit mx-auto mb-2">
+                      <Check className="size-4 text-white" />
+                    </div>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-1 text-sm">
+                      {isRTL ? 'پشتیبانی اولویت' : 'Priority'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs">
+                      {isRTL ? 'پشتیبانی سریع' : 'Fast Support'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push('/')}
+                    className="px-6 py-2.5 rounded-lg font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md hover:shadow-lg transition-all text-sm"
+                  >
+                    {isRTL ? 'شروع گفت‌وگو' : 'Start Chatting'}
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push('/image')}
+                    className="px-6 py-2.5 rounded-lg font-bold bg-white/80 dark:bg-gray-800/80 text-amber-600 dark:text-amber-400 border-2 border-amber-300 dark:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-sm"
+                  >
+                    {isRTL ? 'تولید تصویر' : 'Generate Images'}
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
-        {/* Discount Code Section */}
+        {/* Discount Code Section - Only show for non-premium users */}
+        {(!user || userType !== 'premium') && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -486,6 +615,7 @@ export default function PricingPage() {
             )}
           </div>
         </motion.div>
+        )}
 
         {/* Features Grid */}
         {/* <motion.div
@@ -516,7 +646,8 @@ export default function PricingPage() {
           ))}
         </motion.div> */}
 
-        {/* Pricing Plans */}
+        {/* Pricing Plans - Only show for non-premium users */}
+        {(!user || userType !== 'premium') && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -744,6 +875,7 @@ export default function PricingPage() {
             </TabsContent>
           </Tabs>
         </motion.div>
+        )}
 
 
 

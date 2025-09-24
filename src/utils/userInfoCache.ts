@@ -3,12 +3,12 @@
  */
 
 interface CachedUserInfo {
-  data: any;
+  data: Record<string, unknown>;
   timestamp: number;
   expiresAt: number;
 }
 
-const CACHE_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 const CACHE_KEY = 'userInfo_cache';
 
 class UserInfoCache {
@@ -47,7 +47,7 @@ class UserInfoCache {
     }
   }
 
-  get(): any | null {
+  get(): Record<string, unknown> | null {
     if (!this.cache) {
       this.loadFromStorage();
     }
@@ -66,7 +66,7 @@ class UserInfoCache {
     return this.cache.data;
   }
 
-  set(data: any): void {
+  set(data: Record<string, unknown>): void {
     const now = Date.now();
     this.cache = {
       data,
@@ -102,12 +102,12 @@ export function shouldFetchUserInfo(forceRefresh: boolean = false): boolean {
 }
 
 // Helper function to get cached user info
-export function getCachedUserInfo(): any | null {
+export function getCachedUserInfo(): Record<string, unknown> | null {
   return userInfoCache.get();
 }
 
 // Helper function to set cached user info
-export function setCachedUserInfo(data: any): void {
+export function setCachedUserInfo(data: Record<string, unknown>): void {
   userInfoCache.set(data);
 }
 

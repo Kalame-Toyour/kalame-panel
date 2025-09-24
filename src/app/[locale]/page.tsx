@@ -51,7 +51,7 @@ const MainPageContent: React.FC = () => {
   const chatId = searchParams.get('chat');
   const startParam = searchParams.get('start');
   const { user } = useAuth();
-  const { localUserInfo } = useUserInfoContext();
+  const { localUserInfo, isFetchingUserInfo } = useUserInfoContext();
   const { updateUserInfo } = useUserInfo();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -85,7 +85,8 @@ const MainPageContent: React.FC = () => {
     const updateUserInfoOnce = async () => {
       try {
         console.log('Updating user info on page load...');
-        await updateUserInfo(false); // Use cache if available, only fetch if needed
+        // Force refresh on first visit to ensure premium status is correctly detected
+        await updateUserInfo(true); // Force refresh to get latest user info from server
         console.log('User info updated successfully on page load');
       } catch (error) {
         console.error('Failed to update user info on page load:', error);
@@ -519,8 +520,8 @@ const MainPageContent: React.FC = () => {
   // Check if we should show the empty state
   const shouldShowEmptyState = !hasStartedChat && (!messages || messages.length === 0) && !pendingMessage;
 
-  // Show loading state when switching chats or initializing
-  if ((isInitializing && (!messages || messages.length === 0)) || isSwitchingChat) {
+  // Show loading state when switching chats, initializing, or fetching user info
+  if ((isInitializing && (!messages || messages.length === 0)) || isSwitchingChat || (user && isFetchingUserInfo)) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
         <motion.div
@@ -538,7 +539,7 @@ const MainPageContent: React.FC = () => {
             <Loader className="relative size-8 text-blue-500" />
           </motion.div>
           <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-lg font-medium text-transparent">
-            در حال بارگذاری...
+            {user && isFetchingUserInfo ? 'در حال بارگذاری اطلاعات کاربر...' : 'در حال بارگذاری...'}
           </span>
         </motion.div>
       </div>

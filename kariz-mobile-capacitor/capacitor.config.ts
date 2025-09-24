@@ -9,6 +9,9 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"]
     }
   },
+  server: {
+    androidScheme: 'https'
+  },
   android: {
     allowMixedContent: true,
     captureInput: true,
