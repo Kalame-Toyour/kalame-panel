@@ -25,6 +25,8 @@ import ChatHistorySidebar from '../Chat/ChatHistorySidebar';
 import fetchWithAuth from '../utils/fetchWithAuth';
 import { isUserPremium, getUserAccountTypeText } from '@/utils/premiumUtils';
 import { useUserInfoContext } from '../../contexts/UserInfoContext';
+import DynamicText from '../../../components/DynamicText';
+import { useSite } from '@/contexts/SiteContext';
 import './sidebar.css';
 
 type SidebarProps = {
@@ -65,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const { user, isLoading: isAuthLoading } = useAuth();
   const { localUserInfo, isFetchingUserInfo } = useUserInfoContext();
+  const { currentSite } = useSite();
   const [chatHistory, setChatHistory] = useState<Chat[]>([]);
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -241,11 +244,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center w-full justify-between">
                 <div className="flex items-center">
                   <img
-                    src="/kalame-logo.png"
+                    src={currentSite?.logo || "/kalame-logo.png"}
                     alt="logo"
                     className="w-12 rounded-2xl transition-transform hover:scale-110 hover:shadow-lg duration-200"
                   />
-                  <span className="mx-2 text-2xl font-bold text-primary dark:text-primary select-none">{t('home')}</span>
+                  <span className="mx-2 text-2xl font-bold text-primary dark:text-primary select-none">
+                    <DynamicText>{t('home')}</DynamicText>
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button

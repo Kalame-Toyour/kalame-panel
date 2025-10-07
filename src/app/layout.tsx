@@ -4,6 +4,10 @@ import { Suspense } from 'react'
 import StructuredData from './components/StructuredData'
 import GoogleTagManager from './components/GoogleTagManager'
 import GTMPageTracker from './components/GTMPageTracker'
+import ServerGTM, { ServerGTMNoScript } from './components/ServerGTM'
+import DynamicHead from './components/DynamicHead'
+import DynamicStyles from './components/DynamicStyles'
+import { SiteProvider } from '@/contexts/SiteContext'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://kalame.chat'),
@@ -72,44 +76,31 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <head>
-        {/* Google Tag Manager */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-NZRSLF3P');`,
-          }}
-        />
-        {/* End Google Tag Manager */}
-        
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/kalame-logo.png" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <StructuredData />
-      </head>
-      <body>
-        {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-NZRSLF3P"
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
-        {/* End Google Tag Manager (noscript) */}
-        <GoogleTagManager />
-        <Suspense fallback={null}>
-          <GTMPageTracker />
-        </Suspense>
-        {children}
-      </body>
-    </html>
+    <SiteProvider>
+      <html lang="fa" dir="rtl" suppressHydrationWarning>
+        <head>
+          {/* Server-side Google Tag Manager */}
+          <ServerGTM />
+          
+          {/* Dynamic Head Elements */}
+          <DynamicHead />
+          
+          <link rel="manifest" href="/manifest.json" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <StructuredData />
+        </head>
+        <body>
+          {/* Server-side Google Tag Manager (noscript) */}
+          <ServerGTMNoScript />
+          
+          <GoogleTagManager />
+          <DynamicStyles />
+          <Suspense fallback={null}>
+            <GTMPageTracker />
+          </Suspense>
+          {children}
+        </body>
+      </html>
+    </SiteProvider>
   )
 }

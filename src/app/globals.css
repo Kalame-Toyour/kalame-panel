@@ -106,8 +106,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
 
-    --primary: 38 100% 50%; /* amber-600 */
+    --primary: 221 83% 53%; /* blue-600 - default for kalame.chat */
     --primary-foreground: 210 20% 98%;
+    --primary-hover: 221 83% 47%;
+    --primary-light: 221 83% 96%;
 
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 220.9 39.3% 11%;
@@ -115,7 +117,7 @@
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 8.9% 46.1%;
 
-    --accent: 38 100% 50%; /* amber-600 */
+    --accent: 221 83% 53%; /* blue-600 - default for kalame.chat */
     --accent-foreground: 220.9 39.3% 11%;
 
     --destructive: 0 84.2% 60.2%;
@@ -123,7 +125,7 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 38 100% 50%; /* amber-600 */
+    --ring: 221 83% 53%; /* blue-600 - default for kalame.chat */
 
     --radius: 0.5rem;
   }
@@ -138,7 +140,7 @@
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 38 100% 50%; /* amber-600 */
+    --primary: 221 83% 53%; /* blue-600 - default for kalame.chat */
     --primary-foreground: 0 0% 0%;
 
     --secondary: 215 27.9% 16.9%;
@@ -147,7 +149,7 @@
     --muted: 215 27.9% 16.9%;
     --muted-foreground: 217.9 10.6% 64.9%;
 
-    --accent: 38 100% 50%; /* amber-600 */
+    --accent: 221 83% 53%; /* blue-600 - default for kalame.chat */
     --accent-foreground: 0 0% 0%;
 
     --destructive: 0 62.8% 30.6%;
@@ -155,7 +157,7 @@
 
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
-    --ring: 38 100% 50%; /* amber-600 */
+    --ring: 221 83% 53%; /* blue-600 - default for kalame.chat */
   }
 }
 

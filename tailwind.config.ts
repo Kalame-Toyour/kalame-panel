@@ -20,9 +20,9 @@ const config = {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         primary: {
-          DEFAULT: '#2563eb', // Accessible blue
-          hover: '#1d4ed8',
-          light: '#dbeafe',
+          DEFAULT: 'hsl(var(--primary))', // Dynamic primary color
+          hover: 'hsl(var(--primary-hover))',
+          light: 'hsl(var(--primary-light))',
         },
         secondary: {
           DEFAULT: '#059669', // Accessible green
