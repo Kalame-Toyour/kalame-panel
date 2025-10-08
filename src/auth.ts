@@ -151,19 +151,26 @@ const config = {
       }
 
       // Return previous token if the access token has not expired yet
-      // Add a 5-minute buffer to refresh tokens before they expire
-      const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+      // Add a 2-minute buffer to refresh tokens before they expire
+      const bufferTime = 2 * 60 * 1000; // 2 minutes in milliseconds
       if (typeof token.expiresAt === 'number' && Date.now() < (token.expiresAt - bufferTime)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('JWT Callback - Token still valid, time left:', Math.round((token.expiresAt - Date.now()) / 1000), 'seconds');
+        }
         return token;
       }
 
       // Access token has expired or is close to expiring, try to update it
       if (token.refreshToken) {
-        console.log('Token expired or close to expiring, attempting refresh...');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Token expired or close to expiring, attempting refresh...');
+        }
         const refreshedToken = await refreshAccessToken(token);
         
         if (refreshedToken.error) {
-          console.error('Token refresh failed:', refreshedToken.error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Token refresh failed:', refreshedToken.error);
+          }
           // Clear the session data when refresh fails
           return {
             ...token,
@@ -181,7 +188,9 @@ const config = {
       }
 
       // No refresh token available, clear session data
-      console.log('No refresh token available, clearing session');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('No refresh token available, clearing session');
+      }
       return {
         ...token,
         error: 'RefreshAccessTokenError',

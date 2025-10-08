@@ -9,7 +9,6 @@ import DynamicHead from './components/DynamicHead'
 import DynamicStyles from './components/DynamicStyles'
 import JWTExpirationHandler from './components/JWTExpirationHandler'
 import SessionProviderWrapper from './components/SessionProviderWrapper'
-import JWTExpirationTest from './components/JWTExpirationTest'
 import { SiteProvider } from '@/contexts/SiteContext'
 
 export const metadata: Metadata = {
@@ -79,35 +78,34 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <SiteProvider>
-      <SessionProviderWrapper>
-        <html lang="fa" dir="rtl" suppressHydrationWarning>
-          <head>
-            {/* Server-side Google Tag Manager */}
-            <ServerGTM />
-            
-            {/* Dynamic Head Elements */}
-            <DynamicHead />
-            
-            <link rel="manifest" href="/manifest.json" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <StructuredData />
-          </head>
-          <body>
-            {/* Server-side Google Tag Manager (noscript) */}
-            <ServerGTMNoScript />
-            
+    <html lang="fa" dir="rtl" suppressHydrationWarning>
+      <head>
+        {/* Server-side Google Tag Manager */}
+        <ServerGTM />
+        
+        {/* Dynamic Head Elements */}
+        <DynamicHead />
+        
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <StructuredData />
+      </head>
+      <body>
+        {/* Server-side Google Tag Manager (noscript) */}
+        <ServerGTMNoScript />
+        
+        <SiteProvider>
+          <SessionProviderWrapper>
             <GoogleTagManager />
             <DynamicStyles />
             <JWTExpirationHandler />
-            <JWTExpirationTest />
             <Suspense fallback={null}>
               <GTMPageTracker />
             </Suspense>
             {children}
-          </body>
-        </html>
-      </SessionProviderWrapper>
-    </SiteProvider>
+          </SessionProviderWrapper>
+        </SiteProvider>
+      </body>
+    </html>
   )
 }

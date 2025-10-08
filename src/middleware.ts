@@ -108,29 +108,37 @@ export default async function middleware(
       secureCookie: process.env.NODE_ENV === 'production' && process.env.NEXTAUTH_URL?.startsWith('https'),
     });
 
-    console.log('Middleware - Token check:', {
-      hasToken: !!token,
-      tokenId: token?.id,
-      tokenName: token?.name,
-      tokenError: token?.error,
-      tokenExpiresAt: token?.expiresAt ? new Date(token.expiresAt).toISOString() : 'No expiration',
-      path: request.nextUrl.pathname,
-      host: request.headers.get('host'),
-      isProtected: isProtectedRoute(request),
-      isAuthPage: isAuthPage(request),
-      hasAccessToken: !!token?.accessToken,
-      hasRefreshToken: !!token?.refreshToken,
-    });
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Middleware - Token check:', {
+        hasToken: !!token,
+        tokenId: token?.id,
+        tokenName: token?.name,
+        tokenError: token?.error,
+        tokenExpiresAt: token?.expiresAt ? new Date(token.expiresAt).toISOString() : 'No expiration',
+        isExpired: token?.expiresAt ? Date.now() > token.expiresAt : false,
+        path: request.nextUrl.pathname,
+        host: request.headers.get('host'),
+        isProtected: isProtectedRoute(request),
+        isAuthPage: isAuthPage(request),
+        hasAccessToken: !!token?.accessToken,
+        hasRefreshToken: !!token?.refreshToken,
+      });
+    }
 
     // Handle protected routes
     if (isProtectedRoute(request)) {
       // Check if token is valid
       if (!isValidToken(token)) {
-        console.log('Middleware - Redirecting to auth (protected route)');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Middleware - Redirecting to auth (protected route)');
+        }
         
         // If token has error, clear session cookies to prevent infinite loops
         if (token?.error) {
-          console.log('Middleware - Token has error, clearing session cookies');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Middleware - Token has error, clearing session cookies');
+          }
           const response = NextResponse.redirect(new URL('/auth', request.url));
           
           // Clear NextAuth session cookies
