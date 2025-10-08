@@ -127,6 +127,23 @@ export default async function middleware(
       // Check if token is valid
       if (!isValidToken(token)) {
         console.log('Middleware - Redirecting to auth (protected route)');
+        
+        // If token has error, clear session cookies to prevent infinite loops
+        if (token?.error) {
+          console.log('Middleware - Token has error, clearing session cookies');
+          const response = NextResponse.redirect(new URL('/auth', request.url));
+          
+          // Clear NextAuth session cookies
+          response.cookies.delete('next-auth.session-token');
+          response.cookies.delete('__Secure-next-auth.session-token');
+          response.cookies.delete('next-auth.csrf-token');
+          response.cookies.delete('__Host-next-auth.csrf-token');
+          response.cookies.delete('next-auth.callback-url');
+          response.cookies.delete('__Secure-next-auth.callback-url');
+          
+          return response;
+        }
+        
         // Get the base URL - prioritize NEXTAUTH_URL, then fallback to request headers
         const baseUrl = process.env.NEXTAUTH_URL || 
                        `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('host')}`;

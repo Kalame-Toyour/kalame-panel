@@ -164,9 +164,13 @@ const config = {
         
         if (refreshedToken.error) {
           console.error('Token refresh failed:', refreshedToken.error);
+          // Clear the session data when refresh fails
           return {
             ...token,
-            error: refreshedToken.error,
+            error: 'RefreshAccessTokenError',
+            accessToken: undefined,
+            refreshToken: undefined,
+            expiresAt: undefined,
           };
         }
         
@@ -176,10 +180,14 @@ const config = {
         };
       }
 
-      // No refresh token available, return token with error
+      // No refresh token available, clear session data
+      console.log('No refresh token available, clearing session');
       return {
         ...token,
         error: 'RefreshAccessTokenError',
+        accessToken: undefined,
+        refreshToken: undefined,
+        expiresAt: undefined,
       };
     },
     async session({ session, token }) {

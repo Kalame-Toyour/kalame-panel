@@ -7,6 +7,9 @@ import GTMPageTracker from './components/GTMPageTracker'
 import ServerGTM, { ServerGTMNoScript } from './components/ServerGTM'
 import DynamicHead from './components/DynamicHead'
 import DynamicStyles from './components/DynamicStyles'
+import JWTExpirationHandler from './components/JWTExpirationHandler'
+import SessionProviderWrapper from './components/SessionProviderWrapper'
+import JWTExpirationTest from './components/JWTExpirationTest'
 import { SiteProvider } from '@/contexts/SiteContext'
 
 export const metadata: Metadata = {
@@ -77,30 +80,34 @@ export default function RootLayout({
 }) {
   return (
     <SiteProvider>
-      <html lang="fa" dir="rtl" suppressHydrationWarning>
-        <head>
-          {/* Server-side Google Tag Manager */}
-          <ServerGTM />
-          
-          {/* Dynamic Head Elements */}
-          <DynamicHead />
-          
-          <link rel="manifest" href="/manifest.json" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <StructuredData />
-        </head>
-        <body>
-          {/* Server-side Google Tag Manager (noscript) */}
-          <ServerGTMNoScript />
-          
-          <GoogleTagManager />
-          <DynamicStyles />
-          <Suspense fallback={null}>
-            <GTMPageTracker />
-          </Suspense>
-          {children}
-        </body>
-      </html>
+      <SessionProviderWrapper>
+        <html lang="fa" dir="rtl" suppressHydrationWarning>
+          <head>
+            {/* Server-side Google Tag Manager */}
+            <ServerGTM />
+            
+            {/* Dynamic Head Elements */}
+            <DynamicHead />
+            
+            <link rel="manifest" href="/manifest.json" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <StructuredData />
+          </head>
+          <body>
+            {/* Server-side Google Tag Manager (noscript) */}
+            <ServerGTMNoScript />
+            
+            <GoogleTagManager />
+            <DynamicStyles />
+            <JWTExpirationHandler />
+            <JWTExpirationTest />
+            <Suspense fallback={null}>
+              <GTMPageTracker />
+            </Suspense>
+            {children}
+          </body>
+        </html>
+      </SessionProviderWrapper>
     </SiteProvider>
   )
 }
