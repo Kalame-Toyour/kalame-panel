@@ -14,9 +14,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { text, chatId, modelType, webSearch, reasoning } = body
+    const { text, chatId, modelType, webSearch, reasoning, fileUrl } = body
 
     console.log('Incoming POST /api/chat/stream body:', body)
+    console.log('File URL received:', fileUrl)
 
     if (!text) {
       return NextResponse.json(
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
         while (retryCount < MAX_RETRIES) {
           try {
             // Call external API with streaming
-            const outgoingBody = {
+            const outgoingBody: any = {
               prompt: text,
               chatId,
               chatCode: chatId,
@@ -52,6 +53,17 @@ export async function POST(request: Request) {
               stream: true, // Request streaming from external API
             }
 
+            // Add file URL if provided
+            if (fileUrl) {
+              if (fileUrl.includes('.pdf')) {
+                outgoingBody.pdfUrl =  fileUrl;
+              } else {
+                outgoingBody.imageUrl = fileUrl;
+              }
+            }
+
+            console.log('Outgoing body:', outgoingBody);
+            console.log('File URL:', fileUrl);
             console.log(`Attempt ${retryCount + 1}/${MAX_RETRIES} to call external API`);
             
             response = await fetch(
@@ -171,7 +183,12 @@ export async function POST(request: Request) {
                   reasoning: reasoning || false,
                   stream: true,
                   continueFrom: lastSuccessfulChunk, // Send last successful chunk to continue
-                  isContinuation: true
+                  isContinuation: true,
+                  // Add file URL if provided
+                  ...(fileUrl && {
+                    imageUrl: fileUrl.includes('.pdf') ? undefined : fileUrl,
+                    pdfUrl: fileUrl.includes('.pdf') ?  fileUrl : undefined
+                  })
                 }),
                 signal: AbortSignal.timeout(STREAMING_TIMEOUT),
               }

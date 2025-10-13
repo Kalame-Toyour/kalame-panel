@@ -14,7 +14,7 @@ export default function DynamicText({ children, className = '' }: DynamicTextPro
   const getDisplayText = (text: string) => {
     if (!currentSite) return text
     
-    if (currentSite.url === 'https://okian.ai') {
+    if (currentSite.url === 'https://okian.ai' || currentSite.url === 'http://localhost:3000/') {
       // Replace "کلمه" with "اوکیان" for Okian.ai
       return text.replace(/کلمه/g, 'اوکیان')
     }

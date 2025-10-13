@@ -2,7 +2,7 @@
   "name": "هوش مصنوعی کلمه - دستیار هوش مصنوعی فارسی",
   "short_name": "کلمه",
   "description": "با هوش مصنوعی کلمه به صورت رایگان با قوی‌ترین مدل (ChatGPT) به فارسی چت کنید، عکس تولید کنید و از یک دستیار هوشمند فارسی‌زبان بهره ببرید",
-  "start_url": "https://kalame.chat/",
+  "start_url": "/api/manifest",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",

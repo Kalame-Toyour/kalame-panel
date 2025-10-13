@@ -1567,7 +1567,7 @@ html.dark button[class*="hover:bg-gray-700"]:not([class*="dark:bg-green-900/30"]
 }
 
 /* Ensure action buttons are properly centered */
-.flex.items-center.gap-2 button {
+.message-actions .flex.items-center.gap-2 button {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1576,41 +1576,41 @@ html.dark button[class*="hover:bg-gray-700"]:not([class*="dark:bg-green-900/30"]
 }
 
 /* Fix action button icons centering */
-.flex.items-center.gap-2 button svg,
-.flex.items-center.gap-2 button .lucide {
+.message-actions .flex.items-center.gap-2 button svg,
+.message-actions .flex.items-center.gap-2 button .lucide {
   display: block !important;
   margin: 0 auto !important;
   flex-shrink: 0 !important;
 }
 
 /* Remove unwanted backgrounds from action buttons in dark mode */
-html.dark .flex.items-center.gap-2 button:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+html.dark .message-actions .flex.items-center.gap-2 button:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
   background-color: transparent !important;
   background: none !important;
 }
 
 /* Only show background for active states (liked/disliked) */
-html.dark .flex.items-center.gap-2 button.bg-green-100,
-html.dark .flex.items-center.gap-2 button.dark\:bg-green-900\/30 {
+html.dark .message-actions .flex.items-center.gap-2 button.bg-green-100,
+html.dark .message-actions .flex.items-center.gap-2 button.dark\:bg-green-900\/30 {
   background-color: rgba(34, 197, 94, 0.3) !important;
 }
 
-html.dark .flex.items-center.gap-2 button.bg-red-100,
-html.dark .flex.items-center.gap-2 button.dark\:bg-red-900\/30 {
+html.dark .message-actions .flex.items-center.gap-2 button.bg-red-100,
+html.dark .message-actions .flex.items-center.gap-2 button.dark\:bg-red-900\/30 {
   background-color: rgba(239, 68, 68, 0.3) !important;
 }
 
 /* Additional fixes for action buttons */
-.flex.items-center.justify-between .flex.items-center.gap-2 {
+.message-actions .flex.items-center.justify-between .flex.items-center.gap-2 {
   display: flex !important;
   align-items: center !important;
   gap: 0.5rem !important;
 }
 
 /* Ensure all action buttons have consistent styling */
-.flex.items-center.gap-2 button[title*="کپی"],
-.flex.items-center.gap-2 button[title*="پاسخ مفید بود"],
-.flex.items-center.gap-2 button[title*="پاسخ مفید نبود"] {
+.message-actions .flex.items-center.gap-2 button[title*="کپی"],
+.message-actions .flex.items-center.gap-2 button[title*="پاسخ مفید بود"],
+.message-actions .flex.items-center.gap-2 button[title*="پاسخ مفید نبود"] {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1619,11 +1619,11 @@ html.dark .flex.items-center.gap-2 button.dark\:bg-red-900\/30 {
   transition: all 0.2s ease-in-out !important;
 }
 
-/* Fix hover states for action buttons */
-.flex.items-center.gap-2 button:hover:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+/* Fix hover states for chat message action buttons only */
+.message-actions .flex.items-center.gap-2 button:hover:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
   background-color: rgba(156, 163, 175, 0.3) !important;
 }
 
-html.dark .flex.items-center.gap-2 button:hover:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
+html.dark .message-actions .flex.items-center.gap-2 button:hover:not([class*="bg-green-100"]):not([class*="bg-red-100"]):not([class*="dark:bg-green-900/30"]):not([class*="dark:bg-red-900/30"]) {
   background-color: rgba(75, 85, 99, 0.3) !important;
 }

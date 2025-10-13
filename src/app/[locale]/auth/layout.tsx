@@ -7,20 +7,25 @@ import React from 'react';
 import DynamicBackground from '../components/DynamicBackground';
 import Providers from '../components/Providers';
 import '../../../styles/global.css';
+import { getServerDynamicContent } from '@/utils/serverDynamicContent';
 
-export const metadata: Metadata = {
-  icons: [
-    {
-      rel: 'icon',
-      type: 'image/png',
-      url: '/kalame-logo.png',
-    },
-    {
-      rel: 'apple-touch-icon',
-      url: '/kalame-logo.png',
-    },
-  ],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getServerDynamicContent()
+  
+  return {
+    icons: [
+      {
+        rel: 'icon',
+        type: 'image/png',
+        url: content.favicon,
+      },
+      {
+        rel: 'apple-touch-icon',
+        url: content.appleTouchIcon,
+      },
+    ],
+  }
+}
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({ locale }));

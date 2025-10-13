@@ -8,6 +8,7 @@ import { signIn } from 'next-auth/react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { AnimatedBackground } from '../components/Layout/AnimatedBackground';
 import { TypingAnimation } from '../components/Layout/TypingAnimation';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 type SignupFormData = {
   phone: string;
@@ -42,6 +43,7 @@ const PhoneAuthFlow = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginWithCode, setLoginWithCode] = useState(true);
   const [isCodeSubmitted, setIsCodeSubmitted] = useState(false);
+  const content = useDynamicContent();
 
   const handlePhoneSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -390,8 +392,12 @@ const PhoneAuthFlow = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-700 dark:via-gray-900 dark:to-gray-800">
-      <AnimatedBackground />
+    <div className={`relative min-h-screen flex items-center justify-center overflow-hidden ${
+      content.brandName === 'کلمه' 
+        ? 'bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-700 dark:via-gray-900 dark:to-gray-800'
+        : 'bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800'
+    }`}>
+      <AnimatedBackground brandName={content.brandName} />
       <div className="absolute top-6 left-6 z-20">
         <ThemeToggle />
       </div>
@@ -399,15 +405,21 @@ const PhoneAuthFlow = () => {
         <div className="flex w-full max-w-5xl flex-col-reverse md:flex-row items-stretch justify-center gap-8 md:gap-0 shadow-2xl rounded-3xl bg-white/0 dark:bg-gray-900/0">
           {/* Left: Gradient background with TypingAnimation (desktop only) */}
           <div className="hidden md:flex flex-1 flex-col justify-center relative overflow-hidden rounded-r-3xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-cyan-400 to-blue-300 dark:from-blue-900 dark:via-cyan-900 dark:to-blue-800 opacity-90 z-0" />
+            <div 
+              className={`absolute inset-0 opacity-90 z-0 ${
+                content.brandName === 'کلمه' 
+                  ? 'bg-gradient-to-br from-blue-500 via-cyan-400 to-blue-300 dark:from-blue-900 dark:via-cyan-900 dark:to-blue-800'
+                  : 'bg-gradient-to-br from-[#7700e8] via-[#5a00b8] to-[#05008c] dark:from-[#7700e8] dark:via-[#5a00b8] dark:to-[#05008c]'
+              }`}
+            />
             <div className="relative z-10 flex flex-col h-full items-center justify-center px-10 py-16 text-white">
-              <img src="/kalame-logo.png" alt="Logo" className="h-20 mb-8 mt-4 animate-fade-in drop-shadow-lg" />
-              <h2 className="text-3xl font-extrabold mb-4 drop-shadow-lg">کلمه، دستیار هوشمند شما</h2>
-              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","امنیت و سرعت بالا"]} />
-              <p className="mt-8 text-center text-base font-light leading-relaxed drop-shadow-lg">با کلمه می‌توانید به ابزارهای هوش مصنوعی متصل شوید، محتوای تاثیرگذار تولید کنید و از پشتیبانی ۲۴ ساعته بهره‌مند شوید.</p>
+              <img src={content.logo} alt="Logo" className="h-20 mb-8 mt-4 animate-fade-in drop-shadow-lg" />
+              <h2 className="text-3xl font-extrabold mb-4 drop-shadow-lg">{content.brandName}، دستیار هوشمند شما</h2>
+              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","امنیت و سرعت بالا"]} brandName={content.brandName} />
+              <p className="mt-8 text-center text-base font-light leading-relaxed drop-shadow-lg">با {content.brandName} می‌توانید به ابزارهای هوش مصنوعی متصل شوید، محتوای تاثیرگذار تولید کنید و از پشتیبانی ۲۴ ساعته بهره‌مند شوید.</p>
               <div className="mt-12 text-xs opacity-80 text-center">
-                <div>ارائه شده توسط تیم کلمه</div>
-                <div className="mt-1">برای سوالات: <a href="mailto:support@kalame.chat" className="underline">support@kalame.chat</a></div>
+                <div>ارائه شده توسط تیم {content.brandName}</div>
+                <div className="mt-1">برای سوالات: <a href={`mailto:support@${content.brandName === 'کلمه' ? 'kalame.chat' : 'okian.ai'}`} className="underline">support@{content.brandName === 'کلمه' ? 'kalame.chat' : 'okian.ai'}</a></div>
               </div>  
             </div>
           </div>
@@ -415,8 +427,8 @@ const PhoneAuthFlow = () => {
           <div className="flex-1 flex flex-col items-center justify-center w-full">
             {/* On mobile, show TypingAnimation above card */}
             <div className="md:hidden w-full flex flex-col items-center animate-fade-in-up">
-              <img src="/kalame-logo.png" alt="Logo" className="h-16 mb-2 animate-fade-in drop-shadow-lg" />
-              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","امنیت و سرعت بالا"]} />
+              <img src={content.logo} alt="Logo" className="h-16 mb-2 animate-fade-in drop-shadow-lg" />
+              <TypingAnimation texts={["ارتباط با ابزارهای هوش مصنوعی","تولید محتوای تاثیر گذار","امنیت و سرعت بالا"]} brandName={content.brandName} />
             </div>
             {/* Main card: only one card, with correct border radius */}
             <div className="w-full max-w-md rounded-none md:rounded-l-none md:rounded-r-3x border-gray-200 dark:border-gray-800 p-8 animate-fade-in-up transition-all duration-500">

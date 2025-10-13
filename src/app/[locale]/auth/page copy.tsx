@@ -252,7 +252,7 @@ const PhoneAuthFlow = () => {
 
   return (
     <div className="relative min-h-screen p-4 flex items-center justify-center overflow-hidden">
-      <AnimatedBackground />
+      <AnimatedBackground brandName="کلمه" />
       <div className="absolute top-6 left-6 z-20">
         <ThemeToggle />
       </div>

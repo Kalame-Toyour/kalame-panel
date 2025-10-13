@@ -33,6 +33,11 @@ export type Message = {
   // Reasoning support
   reasoningContent?: string;
   isReasoningComplete?: boolean;
+  // File support
+  fileUrl?: string;
+  fileType?: 'image' | 'pdf';
+  fileName?: string;
+  fileSize?: number;
 };
 
 export type CryptoAnalysis = {

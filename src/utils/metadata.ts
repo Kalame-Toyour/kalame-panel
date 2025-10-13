@@ -124,5 +124,10 @@ export function generateMetadata(domain: string): Metadata {
     }
   }
 
+  // Default to okian.ai for localhost, otherwise fallback to kalame.chat
+  if (domain === 'localhost' || domain === '127.0.0.1') {
+    return siteConfigs['okian.ai']
+  }
+  
   return siteConfigs[domain] || siteConfigs['kalame.chat']
 }

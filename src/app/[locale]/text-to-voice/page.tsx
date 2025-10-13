@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 interface VoiceSample {
   ID: number;
@@ -24,6 +25,7 @@ const VoiceListPage = () => {
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const content = useDynamicContent();
 
   useEffect(() => {
     fetchVoices();
@@ -171,7 +173,9 @@ const VoiceListPage = () => {
                     <div className="flex items-center gap-3 mt-auto pt-4 border-t border-gray-200 dark:border-gray-600">
                       <button 
                         title={playingId === voice.ID ? "توقف" : "پخش نمونه"}
-                        className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 ${
+                          content.brandName === 'کلمه' ? 'focus:ring-blue-500' : 'focus:ring-purple-500'
+                        }`}
                         onClick={() => handlePlay(voice)}
                       >
                         {playingId === voice.ID ? (
@@ -185,7 +189,11 @@ const VoiceListPage = () => {
                         )}
                       </button>
                       <button 
-                        className="flex-1 rounded-lg py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        className={`flex-1 rounded-lg py-2.5 px-4 text-white font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                          content.brandName === 'کلمه'
+                            ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                            : 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'
+                        }`}
                         onClick={() => handleSelectVoice(voice.ID)}
                       >
                         انتخاب این صدا
@@ -212,7 +220,9 @@ const VoiceListPage = () => {
                 ))}
               </select>
               <textarea
-                className="w-full h-32 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 text-right text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                className={`w-full h-32 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 text-right text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 resize-none ${
+                  content.brandName === 'کلمه' ? 'focus:ring-blue-400' : 'focus:ring-purple-400'
+                }`}
                 placeholder="متن مورد نظر خود را بنویسید..."
                 value={userText}
                 onChange={e => setUserText(e.target.value)}
@@ -222,7 +232,11 @@ const VoiceListPage = () => {
             {ttsError && <div className="text-center text-red-500 mb-4">{ttsError}</div>}
             <div className="flex gap-4">
               <button
-                className="flex-1 rounded-lg py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className={`flex-1 rounded-lg py-3 text-white font-semibold text-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
                 disabled={!userText || !selectedVoice || ttsLoading}
                 onClick={handleTTS}
               >
@@ -237,11 +251,19 @@ const VoiceListPage = () => {
         )}
         {step === 'result' && ttsAudioUrl && (
           <div className="flex flex-col items-center gap-6 mt-8 w-full">
-            <div className="w-full max-w-xl flex flex-col items-center bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-xl p-6">
+            <div className={`w-full max-w-xl flex flex-col items-center rounded-2xl shadow-xl p-6 ${
+              typeof window !== 'undefined' && window.location.hostname === 'okian.ai' 
+                ? 'bg-gradient-to-br from-purple-50 to-purple-200 dark:from-gray-800 dark:to-gray-700'
+                : 'bg-gradient-to-br from-blue-50 to-blue-200 dark:from-gray-800 dark:to-gray-700'
+            }`}>
               <div className="flex flex-col items-center w-full">
                 <div className="flex items-center gap-4 w-full justify-center mb-4">
                   <button
-                    className={`rounded-full bg-blue-600 hover:bg-blue-700 text-white p-4 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 ${isPlaying ? 'scale-110' : ''}`}
+                    className={`rounded-full text-white p-4 shadow-lg focus:outline-none transition-all duration-200 ${isPlaying ? 'scale-110' : ''} ${
+                      typeof window !== 'undefined' && window.location.hostname === 'okian.ai' 
+                        ? 'bg-purple-600 hover:bg-purple-700 focus:ring-2 focus:ring-purple-400'
+                        : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400'
+                    }`}
                     onClick={handleVoicePlayPause}
                     aria-label={isPlaying ? 'توقف' : 'پخش'}
                   >
@@ -261,7 +283,11 @@ const VoiceListPage = () => {
                     {[1,2,3,4,5,6,7,8].map(i => (
                       <div
                         key={i}
-                        className={`w-1.5 rounded bg-blue-400 dark:bg-blue-300 transition-all duration-300 ${isPlaying ? 'animate-wave' : 'h-2'}`}
+                        className={`w-1.5 rounded transition-all duration-300 ${isPlaying ? 'animate-wave' : 'h-2'} ${
+                          content.brandName === 'کلمه'
+                            ? 'bg-blue-400 dark:bg-blue-300'
+                            : 'bg-purple-400 dark:bg-purple-300'
+                        }`}
                         style={{ height: isPlaying ? `${Math.random() * 24 + 8}px` : '8px' }}
                       />
                     ))}
@@ -280,7 +306,11 @@ const VoiceListPage = () => {
             </div>
             <div className="flex gap-2 w-full max-w-4xl mt-2 justify-center">
               <button
-                className="min-w-[90px] rounded-md py-3 px-3 bg-blue-600 hover:bg-blue-700 text-white font-normal text-sm transition-colors"
+                className={`min-w-[90px] rounded-md py-3 px-3 text-white font-normal text-sm transition-colors ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
                 onClick={() => setStep('input')}
               >تبدیل مجدد</button>
               <button

@@ -9,6 +9,7 @@ import { Dialog } from '@headlessui/react';
 import { AppConfig } from '@/utils/AppConfig';
 import { ModelDropdown, type LanguageModel } from '../components/ModelDropdown'
 import { SimpleDropdown } from '../components/SimpleDropdown'
+import { useDynamicContent } from '@/utils/dynamicContent'
 
 interface MediaItem {
   ID: number;
@@ -49,6 +50,7 @@ interface ApiModel {
 
 const ImageGenerationPage = () => {
   const router = useRouter();
+  const content = useDynamicContent();
   const [prompt, setPrompt] = useState('');
   const [size, setSize] = useState<string>('');
   // Model shortName is read from selectedModel; no separate model state needed
@@ -319,17 +321,37 @@ const ImageGenerationPage = () => {
             <div className="mb-4">
               <button
                 onClick={() => setShowGuide(!showGuide)}
-                className="w-full p-1 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-700/50 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-800/30 dark:hover:to-purple-800/30 transition-all duration-200"
+                className={`w-full p-1 rounded-xl border transition-all duration-200 ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700/50 hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-800/30 dark:hover:to-purple-800/30'
+                    : 'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-700/50 hover:from-purple-100 hover:to-indigo-100 dark:hover:from-purple-800/30 dark:hover:to-indigo-800/30'
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 dark:text-blue-300 text-lg">💡</span>
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-blue-100 dark:bg-blue-800'
+                        : 'bg-purple-100 dark:bg-purple-800'
+                    }`}>
+                      <span className={`text-lg ${
+                        content.brandName === 'کلمه'
+                          ? 'text-blue-600 dark:text-blue-300'
+                          : 'text-purple-600 dark:text-purple-300'
+                      }`}>💡</span>
                     </div>
-                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 text-right">راهنمای تولید تصویر حرفه‌ای</h3>
+                    <h3 className={`text-sm font-medium text-right ${
+                      content.brandName === 'کلمه'
+                        ? 'text-blue-800 dark:text-blue-200'
+                        : 'text-purple-800 dark:text-purple-200'
+                    }`}>راهنمای تولید تصویر حرفه‌ای</h3>
                   </div>
                   <div className={`transform transition-transform duration-200 ${showGuide ? 'rotate-180' : ''}`}>
-                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-5 h-5 ${
+                      content.brandName === 'کلمه'
+                        ? 'text-blue-600 dark:text-blue-300'
+                        : 'text-purple-600 dark:text-purple-300'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -338,26 +360,44 @@ const ImageGenerationPage = () => {
               
               {/* محتوای راهنما */}
               <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showGuide ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 rounded-b-xl border-l border-r border-b border-blue-200 dark:border-blue-700/50 -mt-1">
-                  <div className="space-y-3 text-xs text-blue-700 dark:text-blue-300">
+                <div className={`p-4 rounded-b-xl border-l border-r border-b -mt-1 ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/10 dark:to-purple-900/10 border-blue-200 dark:border-blue-700/50'
+                    : 'bg-gradient-to-r from-purple-50/50 to-indigo-50/50 dark:from-purple-900/10 dark:to-indigo-900/10 border-purple-200 dark:border-purple-700/50'
+                }`}>
+                  <div className={`space-y-3 text-xs ${
+                    content.brandName === 'کلمه'
+                      ? 'text-blue-700 dark:text-blue-300'
+                      : 'text-purple-700 dark:text-purple-300'
+                  }`}>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className={`font-bold ${
+                        content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                      }`}>•</span>
                       <span><strong>جزئیات دقیق:</strong> به جای &ldquo;یک گل&rdquo; بنویسید &ldquo;گل رز قرمز زیبا با قطرات شبنم روی برگ‌ها&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className={`font-bold ${
+                        content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                      }`}>•</span>
                       <span><strong>سبک هنری:</strong> مثل &ldquo;نقاشی رنگ روغن&rdquo;، &ldquo;عکاسی پرتره&rdquo;، &ldquo;هنر دیجیتال&rdquo;، &ldquo;آبرنگ&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className={`font-bold ${
+                        content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                      }`}>•</span>
                       <span><strong>نورپردازی:</strong> &ldquo;نور طبیعی&rdquo;، &ldquo;نور طلایی غروب&rdquo;، &ldquo;نور نرم&rdquo;، &ldquo;سایه‌های تند&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className={`font-bold ${
+                        content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                      }`}>•</span>
                       <span><strong>زاویه دید:</strong> &ldquo;نمای نزدیک&rdquo;، &ldquo;نمای کلی&rdquo;، &ldquo;از بالا&rdquo;، &ldquo;پرسپکتیو سه‌بعدی&rdquo;</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <span className="text-blue-500 font-bold">•</span>
+                      <span className={`font-bold ${
+                        content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                      }`}>•</span>
                       <span><strong>کیفیت:</strong> &ldquo;کیفیت 4K&rdquo;، &ldquo;جزئیات بالا&rdquo;، &ldquo;وضوح فوق‌العاده&rdquo; را اضافه کنید</span>
                     </div>
                   </div>
@@ -371,7 +411,11 @@ const ImageGenerationPage = () => {
                 توضیح تصویر مورد نظر
               </label>
               <textarea
-                className="w-full h-32 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 text-right text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 resize-none transition-all duration-200 shadow-sm hover:shadow-md"
+                className={`w-full h-32 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 text-right text-gray-800 dark:text-gray-100 focus:outline-none resize-none transition-all duration-200 shadow-sm hover:shadow-md ${
+                  content.brandName === 'کلمه'
+                    ? 'focus:ring-2 focus:ring-blue-400 focus:border-blue-400'
+                    : 'focus:ring-2 focus:ring-purple-400 focus:border-purple-400'
+                }`}
                 placeholder="مثال: یک گربه پرشین سفید با چشمان آبی، نشسته روی یک صندلی چوبی، در یک اتاق با نور طبیعی، سبک عکاسی پرتره، کیفیت 4K، جزئیات بالا"
                 value={prompt}
                 onChange={e => {
@@ -411,7 +455,11 @@ const ImageGenerationPage = () => {
                   <motion.button
                     key={idx}
                     onClick={() => setPrompt(example)}
-                    className="w-full text-right px-1 py-2 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-800 hover:text-blue-700 dark:hover:text-blue-200 transition-colors border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600"
+                    className={`w-full text-right px-1 py-2 text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors border border-gray-200 dark:border-gray-600 ${
+                      content.brandName === 'کلمه'
+                        ? 'hover:bg-blue-50 dark:hover:bg-blue-800 hover:text-blue-700 dark:hover:text-blue-200 hover:border-blue-300 dark:hover:border-blue-600'
+                        : 'hover:bg-purple-50 dark:hover:bg-purple-800 hover:text-purple-700 dark:hover:text-purple-200 hover:border-purple-300 dark:hover:border-purple-600'
+                    }`}
                     initial={{ opacity: 1, y: 0 }}
                     animate={{ 
                       opacity: prompt.length > 3 ? 0 : 1,
@@ -420,7 +468,9 @@ const ImageGenerationPage = () => {
                     transition={{ duration: 0.3, delay: idx * 0.05 }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-blue-500 text-xs">✨</span>
+                      <span className={`text-xs ${
+                        content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                      }`}>✨</span>
                       <span className="flex-1 leading-snug">{example}</span>
                     </div>
                   </motion.button>
@@ -474,7 +524,9 @@ const ImageGenerationPage = () => {
           <button
             className={`w-full flex items-center justify-center gap-3 rounded-xl py-4 font-bold text-lg mt-6 transition-all duration-200 transform ${
               prompt && !loading 
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-xl' 
+                ? content.brandName === 'کلمه'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-xl'
+                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white cursor-pointer hover:scale-[1.02] shadow-lg hover:shadow-xl'
                 : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
             }`}
             disabled={!prompt || loading}
@@ -493,7 +545,11 @@ const ImageGenerationPage = () => {
             )}
           </button>
           {loading && (
-            <div className="text-center text-blue-600 dark:text-blue-400 mt-4 animate-pulse">
+            <div className={`text-center mt-4 animate-pulse ${
+              content.brandName === 'کلمه'
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-purple-600 dark:text-purple-400'
+            }`}>
               <p className="mb-2">تولید عکس ممکن است تا  دقایقی طول بکشد. لطفاً صبر کنید...</p>
               {retryInfo && (
                 <p className="text-sm text-amber-600 dark:text-amber-400">{retryInfo}</p>
@@ -547,7 +603,11 @@ const ImageGenerationPage = () => {
                     href={result.startsWith('http') ? result : AppConfig.mediaBaseUrl + result}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                    className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : 'bg-purple-600 hover:bg-purple-700'
+                    }`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -596,7 +656,9 @@ const ImageGenerationPage = () => {
           
           {loadingImages ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${
+                content.brandName === 'کلمه' ? 'border-blue-600' : 'border-purple-600'
+              }`}></div>
               <p className="text-gray-500 dark:text-gray-400 font-medium">در حال بارگذاری گالری...</p>
             </div>
           ) : userImages.length > 0 ? (
@@ -626,7 +688,11 @@ const ImageGenerationPage = () => {
                           <div className="flex gap-3">
                             <button
                               onClick={() => handleOpenModal(image.media_url.startsWith('http') ? image.media_url : AppConfig.mediaBaseUrl + image.media_url)}
-                              className="flex items-center gap-2 text-white bg-blue-600/90 backdrop-blur-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg"
+                              className={`flex items-center gap-2 text-white backdrop-blur-sm px-4 py-2 rounded-lg transition-colors shadow-lg ${
+                                content.brandName === 'کلمه'
+                                  ? 'bg-blue-600/90 hover:bg-blue-700'
+                                  : 'bg-purple-600/90 hover:bg-purple-700'
+                              }`}
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -689,7 +755,11 @@ const ImageGenerationPage = () => {
             )}
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold mt-2"
+              className={`flex items-center gap-2 text-white px-6 py-2 rounded-lg font-semibold mt-2 ${
+                content.brandName === 'کلمه'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              }`}
             >
               <Download size={20} />
               دانلود تصویر

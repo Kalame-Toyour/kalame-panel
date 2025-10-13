@@ -28,6 +28,7 @@ import fetchWithAuth from '../utils/fetchWithAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isUserPremium, getUserAccountTypeText } from '@/utils/premiumUtils';
 import { useUserInfoContext } from '../../contexts/UserInfoContext';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 type ProfileModalProps = {
   isOpen: boolean;
@@ -64,6 +65,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { theme, setTheme } = useTheme();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const content = useDynamicContent();
 
   // Remove unnecessary userInfo update when modal opens
   // UserInfo is now cached and updated only when needed
@@ -259,12 +261,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         onClick={() => handleFeatureNavigation(item.path)}
                         className={`flex items-center gap-3 w-full rounded-lg px-3 py-2.5 border transition-colors text-right text-sm font-medium
                           ${isActive
-                            ? 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 border-blue-500 dark:border-blue-600'
+                            ? content.brandName === 'کلمه'
+                              ? 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 border-blue-500 dark:border-blue-600'
+                              : 'bg-purple-500 text-white hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 border-purple-500 dark:border-purple-600'
                             : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'
                           }
                         `}
                       >
-                        {React.cloneElement(item.icon as React.ReactElement, { className: `w-5 h-5 ${isActive ? 'text-white' : 'text-blue-500 dark:text-blue-400'}` })}
+                        {React.cloneElement(item.icon as React.ReactElement, { className: `w-5 h-5 ${isActive ? 'text-white' : content.brandName === 'کلمه' ? 'text-blue-500 dark:text-blue-400' : 'text-purple-500 dark:text-purple-400'}` })}
                         <span>{item.text}</span>
                         <ChevronLeft size={18} className={`mr-auto ${locale === 'fa' ? '' : 'rotate-180'} ${isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500'}`} />
                       </button>
@@ -283,7 +287,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         }
                         onClose();
                       }}
-                      className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark transition-colors"
+                      className={`rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors ${
+                        content.brandName === 'کلمه'
+                          ? 'bg-blue-500 hover:bg-blue-600'
+                          : 'bg-purple-500 hover:bg-purple-600'
+                      }`}
                     >
                       + گفت‌وگوی جدید
                     </button>
@@ -369,7 +377,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                 <div className="fixed bottom-0 z-50 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-700 px-4 py-3 shadow-2xl w-full max-w-sm" style={{left: locale === 'fa' ? 'auto' : '0', right: locale === 'fa' ? '0' : 'auto'}}>
                   <button
                     onClick={handleLoginClick}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200"
+                    className={`w-full flex items-center justify-center gap-2 px-6 py-3 text-white rounded-lg font-semibold shadow-lg transition-all duration-200 ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+                        : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700'
+                    }`}
                   >
                     <LogIn size={20} />
                     <span>ورود / ثبت‌نام</span>

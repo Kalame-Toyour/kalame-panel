@@ -70,6 +70,12 @@ export function SiteProvider({ children }: { children: React.ReactNode }) {
   const getSiteByDomain = (domain: string): SiteConfig | null => {
     // Handle both with and without www
     const cleanDomain = domain.replace(/^www\./, '')
+    
+    // Default to okian.ai for localhost
+    if (cleanDomain === 'localhost' || cleanDomain === '127.0.0.1') {
+      return siteConfigs['okian.ai'] || null
+    }
+    
     return siteConfigs[cleanDomain] || null
   }
 

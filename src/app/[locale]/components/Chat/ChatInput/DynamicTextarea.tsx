@@ -74,7 +74,7 @@ const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
         <textarea
           ref={textareaRef}
           placeholder={t('inputPlaceholder')}
-          className={`w-full block resize-none bg-transparent pl-2 md:pl-16 pt-3 pb-3 text-gray-900
+          className={`w-full block resize-none bg-transparent pl-16 pt-3 pb-3 text-gray-900
             placeholder:text-gray-500 focus:outline-none dark:text-white dark:placeholder:text-gray-400
             ${isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}
             ${isLoading ? 'cursor-not-allowed opacity-50' : ''} ${overflow ? 'overflow-y-auto' : 'overflow-hidden'}`}

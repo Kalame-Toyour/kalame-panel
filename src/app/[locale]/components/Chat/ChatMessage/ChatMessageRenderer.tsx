@@ -11,6 +11,8 @@ import { useLocale } from 'next-intl';
 import { Copy, ThumbsUp, ThumbsDown, Check, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import FeedbackDialog from '../FeedbackDialog';
 import toast from 'react-hot-toast';
+import { useDynamicContent } from '@/utils/dynamicContent';
+import { AppConfig } from '@/utils/AppConfig';
 
 type ChatMessageRendererProps = {
   message: Message;
@@ -19,10 +21,12 @@ type ChatMessageRendererProps = {
 // Reasoning Indicator Component
 const ReasoningIndicator = ({ 
   content, 
-  isComplete 
+  isComplete,
+  brandName = 'کلمه'
 }: { 
   content: string; 
-  isComplete: boolean; 
+  isComplete: boolean;
+  brandName?: string;
 }) => {
   // Start expanded for active reasoning, collapsed for completed reasoning from history
   const [isExpanded, setIsExpanded] = useState(!isComplete);
@@ -54,43 +58,87 @@ const ReasoningIndicator = ({
 
   if (!content) return null;
 
+  const isOkian = brandName === 'اُکیان';
+  
   return (
-    <div className="mb-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950/30 overflow-hidden w-full max-w-full">
+    <div className={`mb-4 border rounded-lg overflow-hidden w-full max-w-full ${
+      isOkian 
+        ? 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30'
+        : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30'
+    }`}>
       {/* Header */}
       <div 
-        className="flex items-center justify-between p-3 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+        className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${
+          isOkian 
+            ? 'hover:bg-purple-100 dark:hover:bg-purple-900/40'
+            : 'hover:bg-blue-100 dark:hover:bg-blue-900/40'
+        }`}
         onClick={handleToggle}
       >
         <div className="flex items-center gap-2">
-          <Brain className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+          <Brain className={`w-4 h-4 ${
+            isOkian 
+              ? 'text-purple-600 dark:text-purple-400'
+              : 'text-blue-600 dark:text-blue-400'
+          }`} />
+          <span className={`text-sm font-medium ${
+            isOkian 
+              ? 'text-purple-800 dark:text-purple-200'
+              : 'text-blue-800 dark:text-blue-200'
+          }`}>
             {!isComplete ? 'در حال تفکر' : 'تفکر تکمیل شد'}
           </span>
           {!isComplete && (
             <div className="flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
-              <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
+              <span className={`w-1 h-1 rounded-full animate-bounce [animation-delay:0ms] ${
+                isOkian ? 'bg-purple-400' : 'bg-blue-400'
+              }`} />
+              <span className={`w-1 h-1 rounded-full animate-bounce [animation-delay:150ms] ${
+                isOkian ? 'bg-purple-400' : 'bg-blue-400'
+              }`} />
+              <span className={`w-1 h-1 rounded-full animate-bounce [animation-delay:300ms] ${
+                isOkian ? 'bg-purple-400' : 'bg-blue-400'
+              }`} />
             </div>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-blue-600 dark:text-blue-400">
+          <span className={`text-xs ${
+            isOkian 
+              ? 'text-purple-600 dark:text-purple-400'
+              : 'text-blue-600 dark:text-blue-400'
+          }`}>
             {isExpanded ? 'بستن' : 'مشاهده'}
           </span>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <ChevronUp className={`w-4 h-4 ${
+              isOkian 
+                ? 'text-purple-600 dark:text-purple-400'
+                : 'text-blue-600 dark:text-blue-400'
+            }`} />
           ) : (
-            <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <ChevronDown className={`w-4 h-4 ${
+              isOkian 
+                ? 'text-purple-600 dark:text-purple-400'
+                : 'text-blue-600 dark:text-blue-400'
+            }`} />
           )}
         </div>
       </div>
 
       {/* Content */}
       {isExpanded && (
-        <div className="px-3 pb-3 border-t border-blue-200 dark:border-blue-800 w-full overflow-hidden">
+        <div className={`px-3 pb-3 border-t w-full overflow-hidden ${
+          isOkian 
+            ? 'border-purple-200 dark:border-purple-800'
+            : 'border-blue-200 dark:border-blue-800'
+        }`}>
           <div 
-            className="mt-2 text-sm text-blue-800 dark:text-blue-200 leading-relaxed w-full overflow-hidden"
+            className={`mt-2 text-sm leading-relaxed w-full overflow-hidden ${
+              isOkian 
+                ? 'text-purple-800 dark:text-purple-200'
+                : 'text-blue-800 dark:text-blue-200'
+            }`}
             dir={isRTL(content) ? 'rtl' : 'ltr'}
           >
             <ReactMarkdown
@@ -100,13 +148,21 @@ const ReasoningIndicator = ({
                   <p className="mb-2 last:mb-0 break-words">{children}</p>
                 ),
                 strong: ({ children }) => (
-                  <strong className="font-semibold text-blue-900 dark:text-blue-100 break-words">{children}</strong>
+                  <strong className={`font-semibold break-words ${
+                    isOkian 
+                      ? 'text-purple-900 dark:text-purple-100'
+                      : 'text-blue-900 dark:text-blue-100'
+                  }`}>{children}</strong>
                 ),
                 em: ({ children }) => (
                   <em className="italic break-words">{children}</em>
                 ),
                 code: ({ children }) => (
-                  <code className="bg-blue-100 dark:bg-blue-900/40 px-1 py-0.5 rounded text-xs font-mono break-words">
+                  <code className={`px-1 py-0.5 rounded text-xs font-mono break-words ${
+                    isOkian 
+                      ? 'bg-purple-100 dark:bg-purple-900/40'
+                      : 'bg-blue-100 dark:bg-blue-900/40'
+                  }`}>
                     {children}
                   </code>
                 ),
@@ -115,7 +171,11 @@ const ReasoningIndicator = ({
               {content}
             </ReactMarkdown>
             {!isComplete && (
-              <span className="inline-block w-2 h-4 bg-blue-600 dark:bg-blue-400 animate-pulse ml-1" />
+              <span className={`inline-block w-2 h-4 animate-pulse ml-1 ${
+                isOkian 
+                  ? 'bg-purple-600 dark:bg-purple-400'
+                  : 'bg-blue-600 dark:bg-blue-400'
+              }`} />
             )}
           </div>
         </div>
@@ -142,8 +202,8 @@ const EnhancedTable = ({ children, ...props }: React.TableHTMLAttributes<HTMLTab
   </div>
 );
 
-const EnhancedTableHeader = ({ children }: React.HTMLAttributes<HTMLTableSectionElement>) => (
-  <thead className="bg-blue-100 dark:bg-blue-900">
+const EnhancedTableHeader = ({ children, brandName = 'کلمه' }: React.HTMLAttributes<HTMLTableSectionElement> & { brandName?: string }) => (
+  <thead className={brandName === 'اُکیان' ? 'bg-purple-100 dark:bg-purple-900' : 'bg-blue-100 dark:bg-blue-900'}>
     {children}
   </thead>
 );
@@ -160,8 +220,10 @@ const EnhancedTableRow = ({ children }: React.HTMLAttributes<HTMLTableRowElement
   </tr>
 );
 
-const EnhancedTableHeaderCell = ({ children }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
-  <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 bg-blue-50 dark:bg-blue-700 font-semibold text-center break-words">
+const EnhancedTableHeaderCell = ({ children, brandName = 'کلمه' }: React.ThHTMLAttributes<HTMLTableCellElement> & { brandName?: string }) => (
+  <th className={`border border-gray-300 dark:border-gray-600 px-4 py-3 font-semibold text-center break-words ${
+    brandName === 'اُکیان' ? 'bg-purple-50 dark:bg-purple-700' : 'bg-blue-50 dark:bg-blue-700'
+  }`}>
     {children}
   </th>
 );
@@ -175,6 +237,7 @@ const EnhancedTableCell = ({ children }: React.TdHTMLAttributes<HTMLTableCellEle
 function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element {
   const router = useRouter();
   const locale = useLocale();
+  const content = useDynamicContent();
   
   // No typewriter effect: always show the full message.text immediately
   const prevTextRef = useRef('')
@@ -391,8 +454,92 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
     return null;
   };
 
+  const renderFileContent = () => {
+    if (!message.fileUrl || message.sender !== 'user') return null;
+
+    const isImage = message.fileType === 'image';
+    const isPDF = message.fileType === 'pdf';
+    
+    // Build complete URL using mediaBaseUrl
+    const completeFileUrl = message.fileUrl.startsWith('http') 
+      ? message.fileUrl 
+      : `${AppConfig.mediaBaseUrl}${message.fileUrl}`;
+
+    return (
+      <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div className="flex items-center gap-3">
+          {/* File Icon */}
+          <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+            isImage 
+              ? content.brandName === 'کلمه'
+                ? 'bg-blue-100 dark:bg-blue-900'
+                : 'bg-purple-100 dark:bg-purple-900'
+              : content.brandName === 'کلمه'
+                ? 'bg-red-100 dark:bg-red-900'
+                : 'bg-orange-100 dark:bg-orange-900'
+          }`}>
+            {isImage ? (
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-300" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-red-600 dark:text-red-300" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
+          
+          {/* File Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                {message.fileName || 'فایل آپلود شده'}
+              </h4>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                isImage
+                  ? content.brandName === 'کلمه'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                  : content.brandName === 'کلمه'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
+              }`}>
+                {isImage ? 'عکس' : 'PDF'}
+              </span>
+            </div>
+            {message.fileSize && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {formatFileSize(message.fileSize)}
+              </p>
+            )}
+          </div>
+        </div>
+        
+        {/* Image Preview */}
+        {isImage && (
+          <div className="mt-3">
+            <img
+              src={completeFileUrl}
+              alt="پیش‌نمایش فایل"
+              className="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-600 max-h-32 object-cover"
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 بایت';
+    const k = 1024;
+    const sizes = ['بایت', 'کیلوبایت', 'مگابایت', 'گیگابایت'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const renderContent = () => {
     const mediaContent = renderMediaContent();
+    const fileContent = renderFileContent();
     // Clean up all excessive blank lines for AI messages
     const cleanedText = message.sender === 'ai'
       ? trimAllExcessiveBlankLines(message.text)
@@ -401,12 +548,14 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
     return (
       <div className="space-y-4">
         {mediaContent}
+        {fileContent}
         
         {/* Reasoning Indicator for AI messages */}
         {message.sender === 'ai' && message.reasoningContent && (
           <ReasoningIndicator 
             content={message.reasoningContent}
             isComplete={message.isReasoningComplete !== false} // true for chat history, false for streaming
+            brandName={content.brandName}
           />
         )}
 
@@ -417,10 +566,16 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
             prose-p:text-gray-700 dark:prose-p:text-gray-300
             prose-strong:text-gray-900 dark:prose-strong:text-gray-100
             prose-em:text-gray-700 dark:prose-em:text-gray-300
-            prose-code:text-blue-600 dark:prose-code:text-blue-400
+            ${content.brandName === 'اُکیان' 
+              ? 'prose-code:text-purple-600 dark:prose-code:text-purple-400' 
+              : 'prose-code:text-blue-600 dark:prose-code:text-blue-400'
+            }
             prose-pre:bg-gray-50 dark:prose-pre:bg-gray-800
             prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-700
-            prose-blockquote:border-l-blue-500 dark:prose-blockquote:border-l-blue-400
+            ${content.brandName === 'اُکیان' 
+              ? 'prose-blockquote:border-l-purple-500 dark:prose-blockquote:border-l-purple-400' 
+              : 'prose-blockquote:border-l-blue-500 dark:prose-blockquote:border-l-blue-400'
+            }
             prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300
             prose-ul:text-gray-700 dark:prose-ul:text-gray-300
             prose-ol:text-gray-700 dark:prose-ol:text-gray-300
@@ -429,7 +584,10 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
             prose-th:text-gray-900 dark:prose-th:text-gray-100
             prose-td:text-gray-700 dark:prose-td:text-gray-300
             prose-hr:border-gray-300 dark:prose-hr:border-gray-600
-            prose-a:text-blue-600 dark:prose-a:text-blue-400
+            ${content.brandName === 'اُکیان' 
+              ? 'prose-a:text-purple-600 dark:prose-a:text-purple-400' 
+              : 'prose-a:text-blue-600 dark:prose-a:text-blue-400'
+            }
             prose-a:no-underline hover:prose-a:underline
             [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
             ${message.sender === 'user' ? 'w-auto' : 'w-full max-w-full'}`}>
@@ -449,19 +607,27 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
                       </pre>
                     </div>
                   ) : (
-                    <code className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-sm font-mono break-words" {...props}>
+                    <code className={`px-2 py-1 rounded text-sm font-mono break-words ${
+                      content.brandName === 'اُکیان'
+                        ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                        : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                    }`} {...props}>
                       {children}
                     </code>
                   )
                 },
                 table: ({ children, ...props }) => <EnhancedTable {...props}>{children}</EnhancedTable>,
-                thead: ({ children }) => <EnhancedTableHeader>{children}</EnhancedTableHeader>,
+                thead: ({ children }) => <EnhancedTableHeader brandName={content.brandName}>{children}</EnhancedTableHeader>,
                 tbody: ({ children }) => <EnhancedTableBody>{children}</EnhancedTableBody>,
                 tr: ({ children }) => <EnhancedTableRow>{children}</EnhancedTableRow>,
-                th: ({ children }) => <EnhancedTableHeaderCell>{children}</EnhancedTableHeaderCell>,
+                th: ({ children }) => <EnhancedTableHeaderCell brandName={content.brandName}>{children}</EnhancedTableHeaderCell>,
                 td: ({ children }) => <EnhancedTableCell>{children}</EnhancedTableCell>,
                 blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-blue-500 dark:border-blue-400 pl-4 py-3 my-4 bg-blue-50 dark:bg-blue-900/10 rounded-r-lg break-words overflow-hidden">
+                  <blockquote className={`border-l-4 pl-4 py-3 my-4 rounded-r-lg break-words overflow-hidden ${
+                    content.brandName === 'اُکیان'
+                      ? 'border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-900/10'
+                      : 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/10'
+                  }`}>
                     {children}
                   </blockquote>
                 ),
@@ -513,7 +679,12 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
                 a: ({ href, children }) => (
                   <a 
                     href={href} 
-                    className="text-blue-600 underline underline-offset-2 hover:text-blue-800 transition-colors font-semibold break-words"                    target="_blank"
+                    className={`underline underline-offset-2 transition-colors font-semibold break-words ${
+                      content.brandName === 'اُکیان'
+                        ? 'text-purple-600 hover:text-purple-800'
+                        : 'text-blue-600 hover:text-blue-800'
+                    }`}
+                    target="_blank"
                     rel="noopener noreferrer"
                   >
                     {children}
@@ -533,9 +704,15 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
                 dir="rtl"
                 aria-label="در حال تایپ..."
               >
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
+                <span className={`w-2 h-2 rounded-full animate-bounce [animation-delay:0ms] ${
+                  content.brandName === 'اُکیان' ? 'bg-purple-400' : 'bg-blue-400'
+                }`} />
+                <span className={`w-2 h-2 rounded-full animate-bounce [animation-delay:150ms] ${
+                  content.brandName === 'اُکیان' ? 'bg-purple-400' : 'bg-blue-400'
+                }`} />
+                <span className={`w-2 h-2 rounded-full animate-bounce [animation-delay:300ms] ${
+                  content.brandName === 'اُکیان' ? 'bg-purple-400' : 'bg-blue-400'
+                }`} />
               </span>
             )}
             {/* اگر پیام خطای اتمام اعتبار بود، دکمه شارژ حساب نمایش بده */}
@@ -543,7 +720,11 @@ function ChatMessageRenderer({ message }: ChatMessageRendererProps): JSX.Element
               <div className="mt-4 flex justify-center">
                 <button
                   onClick={handleRechargeClick}
-                  className="inline-block rounded-lg bg-blue-600 px-5 py-2 text-white font-bold shadow hover:bg-blue-700 transition-colors"
+                  className={`inline-block rounded-lg px-5 py-2 text-white font-bold shadow transition-colors ${
+                    content.brandName === 'اُکیان'
+                      ? 'bg-purple-600 hover:bg-purple-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   {message.rechargeButtonText || 'شارژ حساب و ادامه مکالمه'}
                 </button>

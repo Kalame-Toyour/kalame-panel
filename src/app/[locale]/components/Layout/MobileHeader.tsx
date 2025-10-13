@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import PremiumUpgrade from '../PremiumUpgrade';
 import { isUserPremium } from '@/utils/premiumUtils';
 import { useUserInfoContext } from '../../contexts/UserInfoContext';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 type MobileHeaderProps = {
   toggleProfile: () => void;
@@ -15,6 +16,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ toggleProfile }) => {
   const { localUserInfo } = useUserInfoContext();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chat');
+  const content = useDynamicContent();
 
   const showPremiumUpgrade = user && localUserInfo && !isUserPremium(localUserInfo) && !chatId;
   const showLogo = !showPremiumUpgrade;
@@ -39,7 +41,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ toggleProfile }) => {
       {showLogo && (
         <div className="relative">
           <img
-            src="/kalame-logo.png"
+            src={content.logo}
             alt="logo"
             className="w-9 mx-1 animate-[spin_2s_linear_infinite_paused] rounded-2xl transition-all duration-700 hover:rotate-[360deg] hover:scale-110 hover:animate-[spin_7s_linear_infinite_running]
               hover:shadow-lg dark:brightness-110"

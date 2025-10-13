@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 import { LanguageSwitcherButton } from '../LanguageSwitcher';
 import { ThemeToggle } from '../ThemeToggle';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 type NavigationProps = {
   isMobileMenuOpen: boolean;
@@ -22,6 +23,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   const t = useTranslations();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const content = useDynamicContent();
 
   useEffect(() => {
     // Check if user is logged in by checking session data
@@ -60,13 +62,17 @@ export const Navigation: React.FC<NavigationProps> = ({
             <Link href="/" className="group flex items-center gap-3">
               <div className="overflow-hidden rounded-xl">
                 <img
-                  src="/kalame-logo.png"
+                  src={content.logo}
                   alt="logo"
                   className="w-12 transition-all duration-500 ease-out group-hover:rotate-6 group-hover:scale-110"
                 />
               </div>
-              <span className="relative bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-2xl font-extrabold text-transparent transition-colors after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-amber-500 after:to-amber-600 after:transition-all after:duration-300 group-hover:after:w-full dark:from-amber-400 dark:to-amber-500">
-                {t('sidebar.home')}
+              <span className={`relative bg-clip-text text-2xl font-extrabold text-transparent transition-colors after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-amber-500 after:to-amber-600 after:transition-all after:duration-300 group-hover:after:w-full dark:from-amber-400 dark:to-amber-500 ${
+                content.brandName === 'کلمه'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                  : 'bg-gradient-to-r from-purple-500 to-purple-600'
+              }`}>
+                {content.brandName}
               </span>
             </Link>
           </div>

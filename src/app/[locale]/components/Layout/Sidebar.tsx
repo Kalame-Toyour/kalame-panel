@@ -27,6 +27,7 @@ import { isUserPremium, getUserAccountTypeText } from '@/utils/premiumUtils';
 import { useUserInfoContext } from '../../contexts/UserInfoContext';
 import DynamicText from '../../../components/DynamicText';
 import { useSite } from '@/contexts/SiteContext';
+import { useDynamicContent } from '@/utils/dynamicContent';
 import './sidebar.css';
 
 type SidebarProps = {
@@ -75,6 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const prevChatIdRef = useRef<string>('');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const content = useDynamicContent();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -244,25 +246,25 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center w-full justify-between">
                 <div className="flex items-center">
                   <img
-                    src={currentSite?.logo || "/kalame-logo.png"}
+                    src={content.logo}
                     alt="logo"
                     className="w-12 rounded-2xl transition-transform hover:scale-110 hover:shadow-lg duration-200"
                   />
                   <span className="mx-2 text-2xl font-bold text-primary dark:text-primary select-none">
-                    <DynamicText>{t('home')}</DynamicText>
+                    <DynamicText>{content.brandName}</DynamicText>
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    className="rounded-lg p-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-400"
+                    className={`rounded-lg p-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 ${content.brandName === 'کلمه' ? 'focus:ring-blue-400' : 'focus:ring-purple-400'}`}
                     title={t('lightmode')}
                   >
                     {theme === 'light' ? <Moon size={20} className="dark:text-gray-200" /> : <Sun size={20} className="dark:text-gray-200" />}
                   </button>
                   <button
                     onClick={toggleCollapse}
-                    className="rounded-lg p-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-400"
+                    className={`rounded-lg p-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-2 ${content.brandName === 'کلمه' ? 'focus:ring-blue-400' : 'focus:ring-purple-400'}`}
                     title={t('about')}
                   >
                     <PanelLeftOpen size={20} className={`${locale === 'fa' ? 'rotate-0' : 'rotate-180'} dark:text-gray-200`} />
@@ -333,7 +335,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="mb-2 px-4 pt-2">
               <button
                 onClick={handleNewChat}
-                className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-white hover:from-blue-600 hover:to-blue-700 hover:scale-[1.03] focus:ring-2 focus:ring-blue-400 transition-all text-sm font-semibold mb-4 shadow-md"
+                className={`w-full rounded-lg px-4 py-2 text-white hover:scale-[1.03] focus:ring-2 transition-all text-sm font-semibold mb-4 shadow-md ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:ring-blue-400'
+                    : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 focus:ring-purple-400'
+                }`}
               >
                 + گفت‌وگوی جدید
               </button>
@@ -348,11 +354,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                       onClick={() => handleFeatureNavigation(item.path)}
                       className={`flex items-center gap-3 w-full rounded-lg px-3 py-2 border border-transparent dark:border-transparent transition-all text-right font-medium text-xs md:text-sm
                         ${isRouteActive(item.path)
-                          ? 'bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-700 dark:text-blue-200 shadow-md scale-[1.03]'
-                          : 'bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700 hover:scale-[1.03]'}
-                        focus:ring-2 focus:ring-blue-400 focus:outline-none duration-150`}
+                          ? content.brandName === 'کلمه'
+                            ? 'bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-700 dark:text-blue-200 shadow-md scale-[1.03]'
+                            : 'bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800 text-purple-700 dark:text-purple-200 shadow-md scale-[1.03]'
+                          : content.brandName === 'کلمه'
+                            ? 'bg-gray-50 dark:bg-gray-900 hover:bg-blue-50 dark:hover:bg-blue-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700 hover:scale-[1.03]'
+                            : 'bg-gray-50 dark:bg-gray-900 hover:bg-purple-50 dark:hover:bg-purple-800 text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700 hover:scale-[1.03]'}
+                        focus:ring-2 ${content.brandName === 'کلمه' ? 'focus:ring-blue-400' : 'focus:ring-purple-400'} focus:outline-none duration-150`}
                     >
-                      {React.cloneElement(item.icon as React.ReactElement, { className: `w-5 h-5 md:w-6 md:h-6 ${isRouteActive(item.path) ? 'text-blue-500' : 'text-blue-400'} transition-colors` })}
+                      {React.cloneElement(item.icon as React.ReactElement, { className: `w-5 h-5 md:w-6 md:h-6 ${isRouteActive(item.path) 
+                        ? content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-600'
+                        : content.brandName === 'کلمه' ? 'text-blue-400' : 'text-purple-500'
+                      } transition-colors` })}
                       <span className="truncate">{item.text}</span>
                     </button>
                   )
@@ -419,7 +432,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                   // Expanded state - show full profile with dropdown
                   <>
                     <button
-                      className="flex items-center gap-3 w-full rounded-lg px-3 py-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                      className={`flex items-center gap-3 w-full rounded-lg px-3 py-2 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-2 focus:outline-none ${
+                        content.brandName === 'کلمه' ? 'focus:ring-blue-400' : 'focus:ring-purple-400'
+                      }`}
                       onClick={() => setProfileMenuOpen((v) => !v)}
                       aria-haspopup="true"
                       aria-expanded={profileMenuOpen}
@@ -492,12 +507,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                     title="ورود به حساب"
                     onClick={() => router.push(`/${locale}/auth`)}
                   >
-                    <LogIn size={24} className="text-blue-500 dark:text-blue-400" />
+                    <LogIn size={24} className={content.brandName === 'کلمه' ? 'text-blue-500 dark:text-blue-400' : 'text-purple-500 dark:text-purple-400'} />
                   </button>
                 ) : (
                   // Expanded state - show full login button
                   <button
-                    className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 transition-all focus:ring-2 focus:outline-none ${
+                      content.brandName === 'کلمه'
+                        ? 'text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:ring-blue-400'
+                        : 'text-purple-500 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 focus:ring-purple-400'
+                    }`}
                     onClick={() => router.push(`/${locale}/auth`)}
                   >
                     <LogIn size={20} />

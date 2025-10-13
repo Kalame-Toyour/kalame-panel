@@ -17,7 +17,15 @@ type ChatState = {
   showCompactInsights: boolean;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
-  handleSend: (text?: string, options?: { modelType?: string; webSearch?: boolean; reasoning?: boolean }) => Promise<void>;
+  handleSend: (text?: string, options?: { 
+    modelType?: string; 
+    webSearch?: boolean; 
+    reasoning?: boolean;
+    fileUrl?: string;
+    fileType?: 'image' | 'pdf';
+    fileName?: string;
+    fileSize?: number;
+  }) => Promise<void>;
   handleSelectAnswer: (selectedAnswer: string) => void;
   handleStartChat: () => void;
   handleChartRequest: (symbol: string) => void;
@@ -101,15 +109,51 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
   // Store initial message when routing
   useEffect(() => {
     if (options?.pendingMessage) {
+      // Try to get file info from sessionStorage
+      let fileInfo = null;
+      try {
+        const storedData = sessionStorage.getItem('pendingMessageData');
+        if (storedData) {
+          const parsed = JSON.parse(storedData);
+          if (parsed.fileUrl) {
+            fileInfo = {
+              fileUrl: parsed.fileUrl,
+              fileType: parsed.fileType,
+              fileName: parsed.fileName,
+              fileSize: parsed.fileSize
+            };
+            console.log('Retrieved file info from sessionStorage:', fileInfo);
+            // Clear the stored data after reading
+            sessionStorage.removeItem('pendingMessageData');
+          }
+        }
+      } catch (error) {
+        console.error('Error reading pendingMessageData from sessionStorage:', error);
+      }
+      
       setInitialMessage(options.pendingMessage);
       setHasStartedChat(true);
       setShowInsightCards(false);
       setShowCompactInsights(true);
+      
+      // Store file info for later use in streaming
+      if (fileInfo) {
+        // Store in a ref or state for use in handleStreamingMessage
+        (window as any).pendingFileInfo = fileInfo;
+      }
     }
   }, [options?.pendingMessage, options?.modelType]);
 
   // Streaming message handler with timeout and error handling
-  const handleStreamingMessage = useCallback(async (text: string, modelType: string = 'GPT-4', options?: { reuseLast?: boolean; webSearch?: boolean; reasoning?: boolean }) => {
+  const handleStreamingMessage = useCallback(async (text: string, modelType: string = 'GPT-4', options?: { 
+    reuseLast?: boolean; 
+    webSearch?: boolean; 
+    reasoning?: boolean;
+    fileUrl?: string;
+    fileType?: 'image' | 'pdf';
+    fileName?: string;
+    fileSize?: number;
+  }) => {
     if (!chatId || isResetting) {
       console.log('Streaming blocked: chatId missing or resetting');
       return;
@@ -177,16 +221,33 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
           return;
         }
         
+        console.log('useChat - Sending to /api/chat/stream:', {
+          text,
+          chatId: currentChatId,
+          modelType,
+          webSearch: options?.webSearch || false,
+          reasoning: options?.reasoning || false,
+          fileUrl: options?.fileUrl
+        });
+
+        // Prepare request body
+        const requestBody: any = {
+          text, 
+          chatId: currentChatId, 
+          modelType,
+          webSearch: options?.webSearch || false,
+          reasoning: options?.reasoning || false
+        };
+
+        // Add fileUrl only if it exists and is not undefined
+        if (options?.fileUrl) {
+          requestBody.fileUrl = options.fileUrl;
+        }
+
         const response = await fetch('/api/chat/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            text, 
-            chatId: currentChatId, 
-            modelType,
-            webSearch: options?.webSearch || false,
-            reasoning: options?.reasoning || false
-          }),
+          body: JSON.stringify(requestBody),
           signal: abortControllerRef.current.signal,
         });
         if (!response.ok) {
@@ -423,7 +484,17 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
             try {
               setIsLoading(true);
               console.log('Sending initial message:', initialMessage, 'with chatId:', chatId);
-              await handleStreamingMessageRef.current(initialMessage, options?.modelType || 'GPT-4');
+              
+              // Get file info from window if available
+              const pendingFileInfo = (window as any).pendingFileInfo;
+              if (pendingFileInfo) {
+                console.log('Using pending file info for initial message:', pendingFileInfo);
+                await handleStreamingMessageRef.current(initialMessage, options?.modelType || 'GPT-4', pendingFileInfo);
+                // Clear the pending file info after use
+                (window as any).pendingFileInfo = null;
+              } else {
+                await handleStreamingMessageRef.current(initialMessage, options?.modelType || 'GPT-4');
+              }
               console.log('Initial message streaming completed');
             } catch (error) {
               console.error('Error sending initial message:', error);
@@ -455,6 +526,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                   platform: string;
                   model?: string;
                   reason?: string;
+                  message_upload_url?: string;
                 }) => ({
                   id: msg.ID.toString(),
                   text: msg.text,
@@ -466,6 +538,13 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                   // Handle reasoning content from chat history
                   reasoningContent: msg.reason || undefined,
                   isReasoningComplete: msg.reason ? true : undefined,
+                  // Handle file upload URL from chat history
+                  ...(msg.message_upload_url && {
+                    fileUrl: msg.message_upload_url,
+                    fileType: msg.message_upload_url.includes('.pdf') ? 'pdf' as const : 'image' as const,
+                    fileName: msg.message_upload_url.split('/').pop() || 'فایل آپلود شده',
+                    fileSize: undefined // Size not available in history
+                  })
                 }));
                 if (mapped.length > 0) {
                   setHasHistory(true);
@@ -627,7 +706,15 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
     );
   }, [hasStartedChat, handleStartChat]);
 
-  const handleSend = useCallback(async (text: string = inputText, options?: { modelType?: string; webSearch?: boolean; reasoning?: boolean }) => {
+  const handleSend = useCallback(async (text: string = inputText, options?: { 
+    modelType?: string; 
+    webSearch?: boolean; 
+    reasoning?: boolean;
+    fileUrl?: string;
+    fileType?: 'image' | 'pdf';
+    fileName?: string;
+    fileSize?: number;
+  }) => {
     if (text.trim() === '' || !chatId) {
       return;
     }
@@ -639,7 +726,22 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
       text,
       sender: 'user',
       type: 'text',
+      // Add file info if available
+      ...(options?.fileUrl && {
+        fileUrl: options.fileUrl,
+        fileType: options.fileType,
+        fileName: options.fileName,
+        fileSize: options.fileSize
+      })
     };
+    
+    console.log('Creating user message with file info:', {
+      text,
+      fileUrl: options?.fileUrl,
+      fileType: options?.fileType,
+      fileName: options?.fileName,
+      fileSize: options?.fileSize
+    });
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);

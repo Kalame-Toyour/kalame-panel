@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { useLocale } from 'next-intl';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 export interface SimpleOption {
   label: string;
@@ -22,6 +23,7 @@ export function SimpleDropdown({ options, value, onChange, className, title }: S
   const [open, setOpen] = useState(false);
   const locale = useLocale();
   const ref = useRef<HTMLDivElement>(null);
+  const content = useDynamicContent();
 
   useEffect(() => {
     if (!open) return;
@@ -42,7 +44,11 @@ export function SimpleDropdown({ options, value, onChange, className, title }: S
         type="button"
         variant="outline"
         size="sm"
-        className={`rounded-full px-2 py-0 md:py-2 flex items-center gap-2 font-bold min-w-[180px] md:min-w-[220px] max-w-xl whitespace-nowrap bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400 transition-all w-full justify-between`}
+        className={`rounded-full px-2 py-0 md:py-2 flex items-center gap-2 font-bold min-w-[180px] md:min-w-[220px] max-w-xl whitespace-nowrap bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm transition-all w-full justify-between ${
+          content.brandName === 'کلمه'
+            ? 'hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400'
+            : 'hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-purple-900 dark:hover:text-purple-200 focus:ring-2 focus:ring-purple-400'
+        }`}
         onClick={() => setOpen(v => !v)}
         aria-label={locale === 'fa' ? 'انتخاب گزینه' : 'Select option'}
       >
@@ -67,7 +73,13 @@ export function SimpleDropdown({ options, value, onChange, className, title }: S
             {options.map(opt => (
               <div
                 key={opt.value}
-                className={`px-3 md:px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${opt.value === value ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''}`}
+                className={`px-3 md:px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer ${
+                  opt.value === value 
+                    ? content.brandName === 'کلمه'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                      : 'bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500'
+                    : ''
+                }`}
                 onClick={() => { onChange(opt.value); setOpen(false); }}
               >
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">{opt.label}</span>

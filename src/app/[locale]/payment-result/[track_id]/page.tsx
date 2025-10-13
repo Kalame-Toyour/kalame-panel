@@ -79,8 +79,16 @@ export default function PaymentResultPage({ params }: PageProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader className="animate-spin text-blue-500 mb-4" size={40} />
-        <div className="text-lg font-bold text-blue-700">در حال بررسی وضعیت پرداخت...</div>
+        <Loader className={`animate-spin mb-4 ${
+          typeof window !== 'undefined' && window.location.hostname === 'okian.ai' 
+            ? 'text-purple-500' 
+            : 'text-blue-500'
+        }`} size={40} />
+        <div className={`text-lg font-bold ${
+          typeof window !== 'undefined' && window.location.hostname === 'okian.ai' 
+            ? 'text-purple-700' 
+            : 'text-blue-700'
+        }`}>در حال بررسی وضعیت پرداخت...</div>
       </div>
     )
   }

@@ -177,12 +177,14 @@ export default function InitFirebasePush() {
           const title = payload.notification?.title || payload.data?.title || 'پیام جدید'
           const body = payload.notification?.body || payload.data?.body || ''
           const data = { url: payload.data?.url || '/', ...payload.data }
+          // Get logo based on current domain
+          const logo = window.location.hostname === 'kalame.chat' ? '/kalame-logo.png' : '/okian-logo.svg'
           const options: NotificationOptions = {
             body,
-            icon: '/kalame-logo.png',
+            icon: logo,
             data,
             requireInteraction: true,
-            badge: '/kalame-logo.png',
+            badge: logo,
             tag: 'kalame-fcm',
           }
           try {

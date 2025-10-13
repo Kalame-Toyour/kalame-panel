@@ -20,6 +20,8 @@ export const env = createEnv({
     NEXTAUTH_SECRET: z.string().min(1),
     NEXTAUTH_URL: z.string().url(),
     TIME_ZONE: z.string().min(1),
+    BACKEND_API_URL: z.string().url().optional(),
+    ENABLE_BACKEND_UPLOAD: z.string().optional(),
   },
   client: {},
   runtimeEnv: {
@@ -29,5 +31,7 @@ export const env = createEnv({
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     TIME_ZONE: process.env.TIME_ZONE,
+    BACKEND_API_URL: process.env.BACKEND_API_URL,
+    ENABLE_BACKEND_UPLOAD: process.env.ENABLE_BACKEND_UPLOAD,
   },
 });

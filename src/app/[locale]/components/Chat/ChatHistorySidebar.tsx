@@ -4,6 +4,7 @@ import ClientOnly from '../ClientOnly';
 import dayjs from 'dayjs'
 import jalaliday from 'jalali-plugin-dayjs'
 import 'dayjs/locale/fa'
+import { useDynamicContent } from '@/utils/dynamicContent';
 dayjs.extend(jalaliday);
 
 type Chat = {
@@ -25,6 +26,7 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentChatId = typeof activeChatId === 'string' ? activeChatId : (searchParams?.get?.('chat') || '');
+  const content = useDynamicContent();
 
   // گروه‌بندی چت‌ها بر اساس بازه‌های زمانی و ماه شمسی
   const now = dayjs();
@@ -120,7 +122,9 @@ const ChatHistorySidebar = ({ chatHistory, isLoading, onChatSelect, activeChatId
                     onClick={() => handleChatSelect(chat.id)}
                     className={`w-full px-4 py-2 text-left rounded transition-all duration-300 ease-out truncate focus:outline-none hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-100 ${
                       currentChatId === chat.id
-                        ? 'active-chat active bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500 font-bold text-blue-700 dark:text-blue-300 shadow'
+                        ? content.brandName === 'کلمه'
+                          ? 'active-chat active bg-blue-100 dark:bg-blue-900/30 border-r-4 border-blue-500 font-bold text-blue-700 dark:text-blue-300 shadow'
+                          : 'active-chat active bg-purple-100 dark:bg-purple-900/30 border-r-4 border-purple-500 font-bold text-purple-700 dark:text-purple-300 shadow'
                         : ''
                     }`}
                   >

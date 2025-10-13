@@ -5,6 +5,7 @@ import { useLocale } from 'next-intl'
 import { PremiumUpgradeModal } from './PremiumUpgradeModal'
 import { isUserPremium } from '@/utils/premiumUtils'
 import { useUserInfoContext } from '../contexts/UserInfoContext'
+import { useDynamicContent } from '@/utils/dynamicContent'
 
 export interface ModelCapabilities {
   streaming: boolean
@@ -73,6 +74,7 @@ export function ModelDropdown({ selectedModel, setSelectedModel, className, mode
   const [selectedPremiumModel, setSelectedPremiumModel] = useState<LanguageModel | null>(null)
   const { localUserInfo } = useUserInfoContext()
   const isPremiumUser = localUserInfo ? isUserPremium(localUserInfo) : false
+  const content = useDynamicContent()
 
   // Handle model selection with premium check
   const handleModelSelect = (model: LanguageModel) => {
@@ -158,7 +160,11 @@ export function ModelDropdown({ selectedModel, setSelectedModel, className, mode
         type="button"
         variant="outline"
         size="sm"
-        className={`rounded-full px-2 py-0 md:py-1 flex items-center gap-2 font-bold min-w-[160px] sm:min-w-[180px] md:min-w-[220px] max-w-full sm:max-w-xl whitespace-nowrap bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400 transition-all w-full justify-between`}
+        className={`rounded-full px-2 py-0 md:py-1 flex items-center gap-2 font-bold min-w-[160px] sm:min-w-[180px] md:min-w-[220px] max-w-full sm:max-w-xl whitespace-nowrap bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm transition-all w-full justify-between ${
+          content.brandName === 'کلمه'
+            ? 'hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900 dark:hover:text-blue-200 focus:ring-2 focus:ring-blue-400'
+            : 'hover:bg-purple-50 hover:text-purple-700 dark:hover:bg-purple-900 dark:hover:text-purple-200 focus:ring-2 focus:ring-purple-400'
+        }`}
         onClick={() => setShowDropdown(v => !v)}
         aria-label={locale === 'fa' ? 'انتخاب مدل هوش مصنوعی' : 'Select AI model'}
       >
@@ -209,7 +215,11 @@ export function ModelDropdown({ selectedModel, setSelectedModel, className, mode
                 <div
                   key={model.shortName}
                   className={`p-3 md:p-4 transition-all duration-200 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 relative group ${
-                    selectedModel?.name === model.name ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''
+                    selectedModel?.name === model.name 
+                      ? content.brandName === 'کلمه'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                        : 'bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500'
+                      : ''
                   } ${!isAccessible ? 'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
                   onClick={() => handleModelSelect(model)}
                 >
@@ -285,7 +295,11 @@ export function ModelDropdown({ selectedModel, setSelectedModel, className, mode
                     <div
                       key={model.shortName}
                       className={`p-3 md:p-4 transition-all duration-200 cursor-pointer relative group ${
-                        selectedModel?.name === model.name ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''
+                        selectedModel?.name === model.name 
+                          ? content.brandName === 'کلمه'
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                            : 'bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500'
+                          : ''
                       } ${!isAccessible ? 'bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
                       onClick={() => handleModelSelect(model)}
                     >
@@ -332,13 +346,21 @@ export function ModelDropdown({ selectedModel, setSelectedModel, className, mode
                             )}
                             <div className="flex gap-1">
                               {model.features?.supportsWebSearch && (
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                  content.brandName === 'کلمه'
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                    : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                }`}>
                                   <Search size={10} />
                                   <span className="text-[10px]">جست‌وجو</span>
                                 </span>
                               )}
                               {model.features?.supportsReasoning && (
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                                <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                                  content.brandName === 'کلمه'
+                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                    : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                }`}>
                                   <Brain size={10} />
                                   <span className="text-[10px]">استدلال</span>
                                 </span>

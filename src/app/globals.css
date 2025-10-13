@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styles for compact button layout */
+@media (max-width: 380px) {
+  .compact-buttons {
+    gap: 0.25rem !important;
+  }
+  
+  .compact-buttons button {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .compact-buttons button svg {
+    width: 0.625rem !important;
+    height: 0.625rem !important;
+  }
+}
+
+/* Larger buttons for desktop/laptop views */
+@media (min-width: 1024px) {
+  .compact-buttons button {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    font-size: 0.875rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  .compact-buttons button svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+  
+  .compact-buttons {
+    gap: 0.75rem !important;
+  }
+}
+
 @font-face {
   font-family: 'IranSansX';
   src: url('/fonts/IranSansX-Regular.woff2') format('woff2'),
@@ -464,4 +503,36 @@ html.dark .active-chat.dark\:bg-blue-900\/50 {
 
 html.dark .active-chat.border-blue-500 {
   border-right-color: #60a5fa !important;
+}
+
+/* Purple theme for Okian.ai */
+[data-brand="okian"] .active-chat {
+  background-color: #f3e8ff !important;
+  border-right: 4px solid #9333ea !important;
+}
+
+html.dark [data-brand="okian"] .active-chat {
+  background-color: rgba(147, 51, 234, 0.2) !important;
+  border-right: 4px solid #a855f7 !important;
+}
+
+[data-brand="okian"] .active-chat:hover {
+  background-color: #e9d5ff !important;
+}
+
+html.dark [data-brand="okian"] .active-chat:hover {
+  background-color: rgba(147, 51, 234, 0.3) !important;
+}
+
+/* Override any conflicting styles for active chat - Purple theme for Okian */
+html.dark [data-brand="okian"] .active-chat.bg-purple-100 {
+  background-color: rgba(147, 51, 234, 0.2) !important;
+}
+
+html.dark [data-brand="okian"] .active-chat.dark\:bg-purple-900\/30 {
+  background-color: rgba(147, 51, 234, 0.2) !important;
+}
+
+html.dark [data-brand="okian"] .active-chat.border-purple-500 {
+  border-right-color: #a855f7 !important;
 }

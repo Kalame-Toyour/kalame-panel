@@ -12,9 +12,11 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'پیام جدید'
   const body = data.body || ''
   const url = data.url || '/'
+  // Get logo based on current domain
+  const logo = self.location.hostname === 'kalame.chat' ? '/kalame-logo.png' : '/okian-logo.svg'
   event.waitUntil(self.registration.showNotification(title, {
     body,
-    icon: '/kalame-logo.png',
+    icon: logo,
     data: { url }
   }))
 })

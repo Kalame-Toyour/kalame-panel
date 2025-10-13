@@ -7,6 +7,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Toaster } from 'react-hot-toast';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 import ChatMessageContainer from './components/Chat/ChatMessage/ChatMessageContainer';
 import ChatInputModern from './components/Chat/ChatInput/ChatInputModern';
@@ -53,6 +54,7 @@ const MainPageContent: React.FC = () => {
   const { user } = useAuth();
   const { localUserInfo, isFetchingUserInfo } = useUserInfoContext();
   const { updateUserInfo } = useUserInfo();
+  const content = useDynamicContent();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const userInfoUpdateRef = useRef<boolean>(false);
@@ -394,8 +396,18 @@ const MainPageContent: React.FC = () => {
    // Custom handleSend to support chat creation and navigation
    const handleSend = useCallback(async (
      text?: string,
-     options?: { modelType?: string; webSearch?: boolean; reasoning?: boolean }
+     options?: { 
+       modelType?: string; 
+       webSearch?: boolean; 
+       reasoning?: boolean;
+       fileUrl?: string;
+       fileType?: 'image' | 'pdf';
+       fileName?: string;
+       fileSize?: number;
+     }
    ) => {
+     console.log('handleSend called with:', { text, options });
+     
      if (!user) {
        setShowAuthNotification(true);
        return;
@@ -426,7 +438,22 @@ const MainPageContent: React.FC = () => {
          text: sendText,
          sender: 'user' as const,
          type: 'text' as const,
+         // Add file info if available
+         ...(options?.fileUrl && {
+           fileUrl: options.fileUrl,
+           fileType: options.fileType,
+           fileName: options.fileName,
+           fileSize: options.fileSize
+         })
        };
+       
+       console.log('Creating user message for new chat with file info:', {
+         text: sendText,
+         fileUrl: options?.fileUrl,
+         fileType: options?.fileType,
+         fileName: options?.fileName,
+         fileSize: options?.fileSize
+       });
        setMessages(prev => [...prev, userMessage]);
        setInputText('');
        
@@ -439,7 +466,25 @@ const MainPageContent: React.FC = () => {
          if (res.ok) {
            const data = await res.json();
            if (data.chat) {
-             console.log('Chat created, setting pending message');
+             console.log('Chat created, setting pending message with file info:', {
+               text: sendText,
+               fileUrl: options?.fileUrl,
+               fileType: options?.fileType,
+               fileName: options?.fileName,
+               fileSize: options?.fileSize
+             });
+             
+             // Store pending message with file info
+             const pendingMessageData = {
+               text: sendText,
+               fileUrl: options?.fileUrl,
+               fileType: options?.fileType,
+               fileName: options?.fileName,
+               fileSize: options?.fileSize
+             };
+             
+             // Store in sessionStorage to persist across navigation
+             sessionStorage.setItem('pendingMessageData', JSON.stringify(pendingMessageData));
              setPendingMessage(sendText);
              
              // Build query params to preserve options
@@ -469,10 +514,20 @@ const MainPageContent: React.FC = () => {
      } else {
             // Use selected model's name or fallback to 'GPT-4'
      console.log('Sending message to existing chat:', sendText);
+     console.log('page.tsx - Calling baseHandleSend with:', {
+       sendText,
+       modelType: modelTypeFinal,
+       webSearch: webSearchFinal,
+       reasoning: reasoningFinal,
+       fileUrl: options?.fileUrl,
+       options
+     });
+
      baseHandleSend(sendText, {
        modelType: modelTypeFinal,
        webSearch: webSearchFinal,
-       reasoning: reasoningFinal
+       reasoning: reasoningFinal,
+       fileUrl: options?.fileUrl
      });
        setInputText('');
      }
@@ -535,10 +590,20 @@ const MainPageContent: React.FC = () => {
             transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
             className="relative"
           >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
-            <Loader className="relative size-8 text-blue-500" />
+            <div className={`absolute inset-0 rounded-full opacity-50 blur-lg ${
+              content.brandName === 'کلمه'
+                ? 'bg-gradient-to-tr from-blue-500 to-blue-300'
+                : 'bg-gradient-to-tr from-purple-500 to-purple-300'
+            }`} />
+            <Loader className={`relative size-8 ${
+              content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+            }`} />
           </motion.div>
-          <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-lg font-medium text-transparent">
+          <span className={`bg-clip-text text-lg font-medium text-transparent ${
+            content.brandName === 'کلمه'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+              : 'bg-gradient-to-r from-purple-500 to-purple-600'
+          }`}>
             {user && isFetchingUserInfo ? 'در حال بارگذاری اطلاعات کاربر...' : 'در حال بارگذاری...'}
           </span>
         </motion.div>
@@ -561,10 +626,20 @@ const MainPageContent: React.FC = () => {
             transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
             className="relative"
           >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
-            <Loader className="relative size-8 text-blue-500" />
+            <div className={`absolute inset-0 rounded-full opacity-50 blur-lg ${
+              content.brandName === 'کلمه'
+                ? 'bg-gradient-to-tr from-blue-500 to-blue-300'
+                : 'bg-gradient-to-tr from-purple-500 to-purple-300'
+            }`} />
+            <Loader className={`relative size-8 ${
+              content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+            }`} />
           </motion.div>
-          <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-lg font-medium text-transparent">
+          <span className={`bg-clip-text text-lg font-medium text-transparent ${
+            content.brandName === 'کلمه'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+              : 'bg-gradient-to-r from-purple-500 to-purple-600'
+          }`}>
             در حال ایجاد چت جدید...
           </span>
         </motion.div>
@@ -587,10 +662,20 @@ const MainPageContent: React.FC = () => {
             transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
             className="relative"
           >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
-            <Loader className="relative size-8 text-blue-500" />
+            <div className={`absolute inset-0 rounded-full opacity-50 blur-lg ${
+              content.brandName === 'کلمه'
+                ? 'bg-gradient-to-tr from-blue-500 to-blue-300'
+                : 'bg-gradient-to-tr from-purple-500 to-purple-300'
+            }`} />
+            <Loader className={`relative size-8 ${
+              content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+            }`} />
           </motion.div>
-          <span className="bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-lg font-medium text-transparent">
+          <span className={`bg-clip-text text-lg font-medium text-transparent ${
+            content.brandName === 'کلمه'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+              : 'bg-gradient-to-r from-purple-500 to-purple-600'
+          }`}>
             در حال آماده‌سازی چت...
           </span>
         </motion.div>
@@ -651,11 +736,19 @@ const MainPageContent: React.FC = () => {
           {shouldShowEmptyState ? (
             <div className="flex flex-col items-center justify-center pb-20 h-full w-full">
               <div className="flex flex-col items-center gap-2 md:mb-4">
-                <div className="mb-2 flex size-16 items-center justify-center rounded-full bg-gradient-to-tr from-blue-300 to-blue-100 shadow-lg relative overflow-visible">
+                <div className={`mb-2 flex size-16 items-center justify-center rounded-full shadow-lg relative overflow-visible ${
+                  content.brandName === 'کلمه' 
+                    ? 'bg-gradient-to-tr from-blue-300 to-blue-100'
+                    : 'bg-gradient-to-tr from-purple-300 to-purple-100'
+                }`}>
                   <span className="absolute inset-0 flex items-center justify-center">
-                    <span className="block w-full h-full rounded-full animate-wave-ring bg-gradient-to-tr from-blue-400/40 to-blue-200/10 dark:from-blue-500/40 dark:to-blue-900/10"></span>
+                    <span className={`block w-full h-full rounded-full animate-wave-ring ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-gradient-to-tr from-blue-400/40 to-blue-200/10 dark:from-blue-500/40 dark:to-blue-900/10'
+                        : 'bg-gradient-to-tr from-purple-400/40 to-purple-200/10 dark:from-purple-500/40 dark:to-purple-900/10'
+                    }`}></span>
                   </span>
-                  <Image src="/kalame-logo.png" alt="Logo" width={48} height={48} className="size-12 rounded-full object-contain relative z-10" />
+                  <Image src={content.logo} alt="Logo" width={48} height={48} className="size-12 rounded-full object-contain relative z-10" />
                 </div>
                 <h2 className="text-center text-2xl font-semibold text-gray-900 dark:text-gray-100">چطور می تونم کمکت کنم؟</h2>
                 <p className="text-center text-base text-gray-500 dark:text-gray-400">هر سوالی که در هر زمینه ای داری بپرس</p>
@@ -687,8 +780,14 @@ const MainPageContent: React.FC = () => {
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
                         className="relative"
                       >
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
-                        <Loader className="relative size-6 text-blue-500" />
+                        <div className={`absolute inset-0 rounded-full opacity-50 blur-lg ${
+                          content.brandName === 'کلمه'
+                            ? 'bg-gradient-to-tr from-blue-500 to-blue-300'
+                            : 'bg-gradient-to-tr from-purple-500 to-purple-300'
+                        }`} />
+                        <Loader className={`relative size-6 ${
+                          content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                        }`} />
                       </motion.div>
                     </div>
                   )}
@@ -700,8 +799,14 @@ const MainPageContent: React.FC = () => {
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
                         className="relative"
                       >
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-500 to-blue-300 opacity-50 blur-lg" />
-                        <Loader className="relative size-6 text-blue-500" />
+                        <div className={`absolute inset-0 rounded-full opacity-50 blur-lg ${
+                          content.brandName === 'کلمه'
+                            ? 'bg-gradient-to-tr from-blue-500 to-blue-300'
+                            : 'bg-gradient-to-tr from-purple-500 to-purple-300'
+                        }`} />
+                        <Loader className={`relative size-6 ${
+                          content.brandName === 'کلمه' ? 'text-blue-500' : 'text-purple-500'
+                        }`} />
                       </motion.div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         در حال دریافت پاسخ...
@@ -732,7 +837,11 @@ const MainPageContent: React.FC = () => {
                 <span>{streamingError}</span>
                 <button
                   onClick={() => retryStreamingMessage({ continueLast: true })}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold shadow hover:from-blue-600 hover:to-blue-800 transition-all"
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2 mt-1 rounded-lg text-white font-bold shadow transition-all ${
+                    content.brandName === 'کلمه'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800'
+                      : 'bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800'
+                  }`}
                   disabled={isStreaming}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.635 19.364A9 9 0 104.582 9.582" /></svg>

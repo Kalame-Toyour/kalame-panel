@@ -150,9 +150,10 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
         }
         
         // Test notification to confirm it works
+        const logo = window.location.hostname === 'kalame.chat' ? '/kalame-logo.png' : '/okian-logo.svg'
         const notificationCreated = createSafeNotification('اعلان‌ها فعال شد!', {
           body: 'شما اکنون اعلان‌های مهم را دریافت خواهید کرد.',
-          icon: '/kalame-logo.png',
+          icon: logo,
           tag: 'permission-granted'
         })
         

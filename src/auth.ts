@@ -155,7 +155,7 @@ const config = {
       const bufferTime = 2 * 60 * 1000; // 2 minutes in milliseconds
       if (typeof token.expiresAt === 'number' && Date.now() < (token.expiresAt - bufferTime)) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('JWT Callback - Token still valid, time left:', Math.round((token.expiresAt - Date.now()) / 1000), 'seconds');
+          // console.log('JWT Callback - Token still valid, time left:', Math.round((token.expiresAt - Date.now()) / 1000), 'seconds');
         }
         return token;
       }
@@ -163,7 +163,7 @@ const config = {
       // Access token has expired or is close to expiring, try to update it
       if (token.refreshToken) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Token expired or close to expiring, attempting refresh...');
+          // console.log('Token expired or close to expiring, attempting refresh...');
         }
         const refreshedToken = await refreshAccessToken(token);
         

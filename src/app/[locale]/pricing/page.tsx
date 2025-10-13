@@ -16,6 +16,7 @@ import { useUserInfoContext } from '../contexts/UserInfoContext';
 import PurchaseAuthNotification from '../components/PurchaseAuthNotification';
 import IPWarningBanner from '../components/IPWarningBanner';
 import { checkUserLocationComprehensive } from '../services/ipService';
+import { useDynamicContent } from '@/utils/dynamicContent';
 
 
 interface Package {
@@ -80,6 +81,7 @@ export default function PricingPage() {
   const [discountMessage, setDiscountMessage] = useState('');
   const [showDiscountAuthModal, setShowDiscountAuthModal] = useState(false);
   const [userType, setUserType] = useState<string>('free');
+  const content = useDynamicContent();
 
   // Function to determine active package based on user type
   const getActivePackage = () => {
@@ -337,7 +339,11 @@ export default function PricingPage() {
   // Show loading state when fetching user info for authenticated users
   if (user && isFetchingUserInfo) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${
+        content.brandName === 'کلمه'
+          ? 'bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'
+          : 'bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'
+      }`}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -361,7 +367,11 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className={`min-h-screen ${
+      content.brandName === 'کلمه'
+        ? 'bg-gradient-to-br from-blue-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'
+        : 'bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'
+    }`}>
       {/* Header */}
       {/* <div className="absolute top-6 right-6 z-20">
         <button
@@ -427,10 +437,18 @@ export default function PricingPage() {
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 mb-6">
-            <div className="p-3 rounded-2xl bg-gradient-to-br mb-4 from-amber-400 to-orange-500 shadow-lg">
+            <div className={`p-3 rounded-2xl shadow-lg ${
+              content.brandName === 'کلمه'
+                ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                : 'bg-gradient-to-br from-purple-500 to-purple-700'
+            }`}>
               <Crown className="size-8 text-white " />
             </div>
-            <h1 className="text-4xl md:text-5xl justify-center  font-bold bg-gradient-to-r pb-4 from-amber-500 to-orange-600 bg-clip-text text-transparent">
+            <h1 className={`text-4xl md:text-5xl justify-center font-bold pb-4 bg-clip-text text-transparent ${
+              content.brandName === 'کلمه'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                : 'bg-gradient-to-r from-purple-500 to-purple-700'
+            }`}>
               {isRTL ? 'انتخاب پکیج' : 'Choose Your Plan'}
             </h1>
           </div>
@@ -450,24 +468,44 @@ export default function PricingPage() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="max-w-3xl mx-auto mb-8"
           >
-            <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-6 border-2 border-amber-200 dark:border-amber-700 shadow-lg">
+            <div className={`rounded-2xl p-6 border-2 shadow-lg ${
+              content.brandName === 'کلمه'
+                ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-700'
+                : 'bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 dark:from-purple-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border-purple-200 dark:border-purple-700'
+            }`}>
               <div className="text-center">
                 <div className="inline-flex items-center gap-3 mb-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md">
+                  <div className={`p-3 rounded-xl shadow-md ${
+                    content.brandName === 'کلمه'
+                      ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                      : 'bg-gradient-to-br from-purple-500 to-purple-700'
+                  }`}>
                     <Crown className="size-8 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                    <h2 className={`text-2xl font-bold bg-clip-text text-transparent ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600'
+                        : 'bg-gradient-to-r from-purple-600 to-purple-700'
+                    }`}>
                       {isRTL ? 'اکانت شما پیشرفته است' : 'Your Advanced Account'}
                     </h2>
-                    <p className="text-amber-700 dark:text-amber-300 font-medium text-sm">
+                    <p className={`font-medium text-sm ${
+                      content.brandName === 'کلمه'
+                        ? 'text-amber-700 dark:text-amber-300'
+                        : 'text-purple-700 dark:text-purple-300'
+                    }`}>
                       {isRTL ? 'شما از تمامی امکانات بهره‌مند هستید' : 'You have access to all features'}
                     </p>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-700">
+                  <div className={`bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border ${
+                    content.brandName === 'کلمه'
+                      ? 'border-amber-200 dark:border-amber-700'
+                      : 'border-purple-200 dark:border-purple-700'
+                  }`}>
                     <div className="p-2 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 w-fit mx-auto mb-2">
                       <Check className="size-4 text-white" />
                     </div>
@@ -479,8 +517,16 @@ export default function PricingPage() {
                     </p>
                   </div>
                   
-                  <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-700">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 w-fit mx-auto mb-2">
+                  <div className={`bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border ${
+                    content.brandName === 'کلمه'
+                      ? 'border-amber-200 dark:border-amber-700'
+                      : 'border-purple-200 dark:border-purple-700'
+                  }`}>
+                    <div className={`p-2 rounded-lg w-fit mx-auto mb-2 ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-gradient-to-br from-blue-400 to-cyan-500'
+                        : 'bg-gradient-to-br from-purple-400 to-purple-600'
+                    }`}>
                       <Check className="size-4 text-white" />
                     </div>
                     <h3 className="font-bold text-gray-900 dark:text-white mb-1 text-sm">
@@ -491,8 +537,16 @@ export default function PricingPage() {
                     </p>
                   </div>
                   
-                  <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-amber-200 dark:border-amber-700">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 w-fit mx-auto mb-2">
+                  <div className={`bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border ${
+                    content.brandName === 'کلمه'
+                      ? 'border-amber-200 dark:border-amber-700'
+                      : 'border-purple-200 dark:border-purple-700'
+                  }`}>
+                    <div className={`p-2 rounded-lg w-fit mx-auto mb-2 ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-gradient-to-br from-purple-400 to-pink-500'
+                        : 'bg-gradient-to-br from-indigo-400 to-purple-500'
+                    }`}>
                       <Check className="size-4 text-white" />
                     </div>
                     <h3 className="font-bold text-gray-900 dark:text-white mb-1 text-sm">
@@ -509,7 +563,11 @@ export default function PricingPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => router.push('/')}
-                    className="px-6 py-2.5 rounded-lg font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md hover:shadow-lg transition-all text-sm"
+                    className={`px-6 py-2.5 rounded-lg font-bold text-white shadow-md hover:shadow-lg transition-all text-sm ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                        : 'bg-gradient-to-r from-purple-500 to-purple-700'
+                    }`}
                   >
                     {isRTL ? 'شروع گفت‌وگو' : 'Start Chatting'}
                   </motion.button>
@@ -518,7 +576,11 @@ export default function PricingPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => router.push('/image')}
-                    className="px-6 py-2.5 rounded-lg font-bold bg-white/80 dark:bg-gray-800/80 text-amber-600 dark:text-amber-400 border-2 border-amber-300 dark:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-sm"
+                    className={`px-6 py-2.5 rounded-lg font-bold bg-white/80 dark:bg-gray-800/80 border-2 transition-all text-sm ${
+                      content.brandName === 'کلمه'
+                        ? 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                        : 'text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                    }`}
                   >
                     {isRTL ? 'تولید تصویر' : 'Generate Images'}
                   </motion.button>
@@ -554,7 +616,11 @@ export default function PricingPage() {
                     value={discountCode}
                     onChange={(e) => setDiscountCode(e.target.value)}
                     placeholder={isRTL ? 'کد تخفیف را وارد کنید...' : 'Enter discount code...'}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:border-transparent transition-all ${
+                      content.brandName === 'کلمه'
+                        ? 'focus:ring-amber-500'
+                        : 'focus:ring-purple-500'
+                    }`}
                     dir={isRTL ? 'rtl' : 'ltr'}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
@@ -568,7 +634,11 @@ export default function PricingPage() {
                   whileTap={{ scale: 0.98 }}
                   onClick={handleApplyDiscount}
                   disabled={isApplyingDiscount || !discountCode.trim()}
-                  className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full py-3 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    content.brandName === 'کلمه'
+                      ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                      : 'bg-gradient-to-r from-purple-500 to-purple-700'
+                  }`}
                 >
                   {isApplyingDiscount ? (
                     <div className="flex items-center justify-center gap-2">
@@ -686,8 +756,12 @@ export default function PricingPage() {
                         isActive
                           ? 'border-green-400 shadow-xl scale-105 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
                           : idx === 1
-                          ? 'border-amber-400 shadow-xl scale-105'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-amber-300'
+                          ? content.brandName === 'کلمه'
+                            ? 'border-amber-400 shadow-xl scale-105'
+                            : 'border-purple-400 shadow-xl scale-105'
+                          : content.brandName === 'کلمه'
+                            ? 'border-gray-200 dark:border-gray-700 hover:border-amber-300'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
                       } ${showIPWarning ? 'opacity-75' : ''}`}
                     >
                       {isActive && (
@@ -700,7 +774,11 @@ export default function PricingPage() {
                       )}
                       {!isActive && idx === 1 && (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                          <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                          <div className={`text-white px-4 py-1 rounded-full text-sm font-bold ${
+                            content.brandName === 'کلمه'
+                              ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                              : 'bg-gradient-to-r from-purple-500 to-purple-700'
+                          }`}>
                             {isRTL ? 'محبوب‌ترین' : 'Most Popular'}
                           </div>
                         </div>
@@ -833,7 +911,9 @@ export default function PricingPage() {
                           showIPWarning
                             ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 cursor-not-allowed'
                             : idx === 1
-                            ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl'
+                            ? content.brandName === 'کلمه'
+                              ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl'
+                              : 'bg-gradient-to-r from-purple-500 to-purple-700 text-white shadow-lg hover:shadow-xl'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
                       >
@@ -923,7 +1003,11 @@ export default function PricingPage() {
               href="https://t.me/Kalame_support" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-amber-500 hover:text-amber-600 font-medium"
+              className={`font-medium ${
+                content.brandName === 'کلمه'
+                  ? 'text-amber-500 hover:text-amber-600'
+                  : 'text-purple-500 hover:text-purple-600'
+              }`}
             >
               {isRTL ? 'تیم پشتیبانی' : 'support team'}
             </a>
@@ -1008,7 +1092,11 @@ export default function PricingPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleDiscountAuthRedirect}
-                className="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg hover:shadow-xl transition-all"
+                className={`flex-1 py-3 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                    : 'bg-gradient-to-r from-purple-500 to-purple-700'
+                }`}
               >
                 {isRTL ? 'ورود' : 'Login'}
               </motion.button>

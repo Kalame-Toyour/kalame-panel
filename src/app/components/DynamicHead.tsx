@@ -17,8 +17,8 @@ export default async function DynamicHead() {
       <meta name="theme-color" content="#000000" />
       
       {/* Favicon */}
-      <link rel="icon" href={domain === 'okian.ai' ? '/okian-favicon.ico' : '/favicon.ico'} />
-      <link rel="apple-touch-icon" href={domain === 'okian.ai' ? '/okian-logo.svg' : '/kalame-logo.png'} />
+      <link rel="icon" href={domain === 'okian.ai' || domain === 'localhost' ? '/okian-favicon.ico' : '/favicon.ico'} />
+      <link rel="apple-touch-icon" href={domain === 'okian.ai' || domain === 'localhost' ? '/okian-logo.svg' : '/kalame-logo.png'} />
     </>
   )
 }

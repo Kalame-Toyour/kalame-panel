@@ -5,6 +5,7 @@ import { useRouter } from '../contexts/RouterContext';
 import { useAuth } from '../hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { useDynamicContent } from '../utils/dynamicContent';
 
 interface ChatInputModernProps {
   inputText: string;
@@ -41,6 +42,7 @@ function ChatInputModern({
   const { navigate } = useRouter();
   const { user } = useAuth();
   const { scrollToInput } = useKeyboard();
+  const content = useDynamicContent();
 
   const supportsReasoning = selectedModel?.features?.supportsReasoning || false;
   const supportsWebSearch = selectedModel?.features?.supportsWebSearch || false;
@@ -262,7 +264,11 @@ function ChatInputModern({
           
           <button
             type="button"
-            className="rounded-full w-10 h-10 mt-2 bg-blue-600 text-white disabled:opacity-60 disabled:bg-gray-400 disabled:text-gray-200 transition-all border-2 border-blue-700 disabled:border-gray-400 flex items-center justify-center"
+            className={`rounded-full w-10 h-10 mt-2 text-white disabled:opacity-60 disabled:bg-gray-400 disabled:text-gray-200 transition-all border-2 disabled:border-gray-400 flex items-center justify-center ${
+              content.brandName === 'کلمه'
+                ? 'bg-blue-600 border-blue-700'
+                : 'bg-purple-600 border-purple-700'
+            }`}
             onClick={handleSendMessage}
             disabled={isLoading || localInputText.trim().length === 0}
             aria-label="ارسال پیام"
@@ -275,9 +281,13 @@ function ChatInputModern({
           <div
             className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all duration-200 group border ${
               reasoning 
-                ? 'bg-purple-600 text-white dark:bg-purple-700 dark:text-white border-purple-600 dark:border-purple-700' 
+                ? content.brandName === 'کلمه'
+                  ? 'bg-purple-600 text-white dark:bg-purple-700 dark:text-white border-purple-600 dark:border-purple-700'
+                  : 'bg-purple-600 text-white dark:bg-purple-700 dark:text-white border-purple-600 dark:border-purple-700'
                 : supportsReasoning
-                  ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  ? content.brandName === 'کلمه'
+                    ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50'
             } text-xs min-w-[0]`}
             onClick={handleReasoningToggle}
@@ -290,9 +300,13 @@ function ChatInputModern({
           <div
             className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all duration-200 group border ${
               webSearch 
-                ? 'bg-blue-600 text-white dark:bg-blue-700 dark:text-white border-blue-600 dark:border-blue-700' 
+                ? content.brandName === 'کلمه'
+                  ? 'bg-blue-600 text-white dark:bg-blue-700 dark:text-white border-blue-600 dark:border-blue-700'
+                  : 'bg-purple-600 text-white dark:bg-purple-700 dark:text-white border-purple-600 dark:border-purple-700'
                 : supportsWebSearch
-                  ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                  ? content.brandName === 'کلمه'
+                    ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50'
             } text-xs min-w-[0]`}
             onClick={handleWebSearchToggle}
@@ -303,7 +317,11 @@ function ChatInputModern({
           </div>
           
           <div
-            className="rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all group bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs min-w-[0] border border-gray-300 dark:border-gray-600"
+            className={`rounded-full px-2 py-2 flex items-center gap-1 font-bold transition-all group text-xs min-w-[0] border ${
+              content.brandName === 'کلمه'
+                ? 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600'
+            }`}
             onClick={handleImageGenerationClick}
           >
             <ImageIcon size={14} className="mr-1" />
@@ -312,7 +330,11 @@ function ChatInputModern({
           
           {file && (
             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 ml-2">
-              <span className="truncate max-w-[120px] text-xs text-blue-700 dark:text-blue-300">{file.name}</span>
+              <span className={`truncate max-w-[120px] text-xs ${
+                content.brandName === 'کلمه'
+                  ? 'text-blue-700 dark:text-blue-300'
+                  : 'text-purple-700 dark:text-purple-300'
+              }`}>{file.name}</span>
               <button type="button" className="p-0 ml-1" onClick={handleRemoveFile} aria-label="حذف فایل">
                 <X size={16} />
               </button>

@@ -1971,7 +1971,7 @@ const MainAppContent: React.FC = () => {
                       {msg.sender === 'ai' && !msg.isStreaming && !msg.isError && msg.text && msg.text.trim().length > 0 && (
                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
                           {/* Left side: Action buttons */}
-                          <div className="flex items-center gap-2">
+                          <div className="message-actions flex items-center gap-2">
                             {/* Copy button */}
                             <button
                               onClick={() => handleCopy(msg.text)}
