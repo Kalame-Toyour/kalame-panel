@@ -66,7 +66,7 @@ export default function JWTExpirationHandler() {
     if (process.env.NODE_ENV === 'development') {
       console.log('JWT Expiration Handler - Session is valid')
     }
-  }, [session, status, router])
+  }, [session?.user, status, router])
 
   const handleLogout = (reason: string) => {
     if (logoutInProgress.current) return

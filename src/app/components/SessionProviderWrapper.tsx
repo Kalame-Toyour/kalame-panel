@@ -10,8 +10,8 @@ interface SessionProviderWrapperProps {
 export default function SessionProviderWrapper({ children }: SessionProviderWrapperProps) {
   return (
     <SessionProvider
-      refetchInterval={10 * 60} // Refetch session every 10 minutes
-      refetchOnWindowFocus={true} // Refetch when window regains focus
+      refetchInterval={30 * 60} // Refetch session every 30 minutes (reduced frequency)
+      refetchOnWindowFocus={false} // Disable refetch on window focus to reduce calls
       refetchWhenOffline={false} // Don't refetch when offline
     >
       {children}

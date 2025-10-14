@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Download, Crown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Image as ImageIcon, Download, Crown, Upload, X, FileImage } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import fetchWithAuth from '../components/utils/fetchWithAuth';
 import { motion } from 'framer-motion';
@@ -10,6 +10,8 @@ import { AppConfig } from '@/utils/AppConfig';
 import { ModelDropdown, type LanguageModel } from '../components/ModelDropdown'
 import { SimpleDropdown } from '../components/SimpleDropdown'
 import { useDynamicContent } from '@/utils/dynamicContent'
+import { fileUploadService } from '@/services/fileUpload'
+import toast, { Toaster } from 'react-hot-toast';
 
 interface MediaItem {
   ID: number;
@@ -68,6 +70,16 @@ const ImageGenerationPage = () => {
   const [modelsLoading, setModelsLoading] = useState<boolean>(true)
   const [selectedModel, setSelectedModel] = useState<LanguageModel | null>(null)
   const [showGuide, setShowGuide] = useState(false);
+  
+  // Image upload states
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchUserImages();
@@ -179,8 +191,9 @@ const ImageGenerationPage = () => {
       const requestBody = {
         chatId: '-1',
         prompt: prompt.trim(),
-        model:provider,
+        model: provider,
         resolution: selectedSize,
+        ...(uploadedImageUrl && { referenceImage: uploadedImageUrl })
       }
       console.log('Request body:', requestBody);
 
@@ -304,13 +317,97 @@ const ImageGenerationPage = () => {
     router.push('/pricing');
   };
 
+  // Image upload functions
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('لطفاً فقط فایل تصویر انتخاب کنید');
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('حجم فایل نباید بیشتر از 10 مگابایت باشد');
+      return;
+    }
+
+    setSelectedImage(file);
+    setUploadError(null);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Start upload
+    handleImageUpload(file);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadError(null);
+
+    try {
+      const result = await fileUploadService.uploadFile(
+        file,
+        'image-generation', // chatId for image generation
+        {
+          onProgress: (progress) => {
+            setUploadProgress(progress.percentage);
+          },
+          onSuccess: (result) => {
+            setUploadedImageUrl(result.url || null);
+            toast.success('عکس با موفقیت آپلود شد');
+          },
+          onError: (error) => {
+            setUploadError(error || 'خطا در آپلود');
+            toast.error(`خطا در آپلود: ${error}`);
+          }
+        }
+      );
+
+      if (result.success) {
+        setUploadedImageUrl(result.url || null);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'خطا در آپلود عکس';
+      setUploadError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setUploadedImageUrl(null);
+    setUploadError(null);
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
-    <motion.div
-    initial={{ opacity: 0, y: 50 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5 }}
-    className="flex flex-col overflow-visible min-h-full"
-  >
+    <>
+      <Toaster position="top-center" reverseOrder={false} />
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col overflow-visible min-h-full"
+      >
     <div className="flex-1 min-h-0 flex flex-col bg-gray-100 dark:bg-gray-900 py-8 pb-20" dir="rtl">
       <div className="max-w-4xl mx-auto px-1 md:px-4 w-full space-y-8">
         {/* Form Section */}
@@ -430,6 +527,195 @@ const ImageGenerationPage = () => {
               <div className="absolute bottom-2 left-2 text-xs text-gray-400">
                 {prompt.length}/1000
               </div>
+            </div>
+
+            {/* Image Upload Section */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                  content.brandName === 'کلمه'
+                    ? 'bg-blue-100 dark:bg-blue-800'
+                    : 'bg-purple-100 dark:bg-purple-800'
+                }`}>
+                  <FileImage size={16} className={
+                    content.brandName === 'کلمه'
+                      ? 'text-blue-600 dark:text-blue-300'
+                      : 'text-purple-600 dark:text-purple-300'
+                  } />
+                </div>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  اضافه کردن عکس
+                </label>
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  اختیاری
+                </span>
+              </div>
+              
+              {/* Upload Button */}
+              {!selectedImage && (
+                <div
+                  onClick={handleUploadClick}
+                  className={`w-full h-36 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg group ${
+                    content.brandName === 'کلمه'
+                      ? 'border-blue-300 dark:border-blue-600 bg-gradient-to-br from-blue-50/80 to-blue-100/40 dark:from-blue-900/20 dark:to-blue-800/30 hover:from-blue-100/80 hover:to-blue-200/60 dark:hover:from-blue-800/30 dark:hover:to-blue-700/40'
+                      : 'border-purple-300 dark:border-purple-600 bg-gradient-to-br from-purple-50/80 to-purple-100/40 dark:from-purple-900/20 dark:to-purple-800/30 hover:from-purple-100/80 hover:to-purple-200/60 dark:hover:from-purple-800/30 dark:hover:to-purple-700/40'
+                  }`}
+                >
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300 group-hover:scale-110 ${
+                    content.brandName === 'کلمه'
+                      ? 'bg-blue-100 dark:bg-blue-800'
+                      : 'bg-purple-100 dark:bg-purple-800'
+                  }`}>
+                    <Upload size={28} className={
+                      content.brandName === 'کلمه' ? 'text-blue-600 dark:text-blue-300' : 'text-purple-600 dark:text-purple-300'
+                    } />
+                  </div>
+                  <p className={`text-base font-semibold mb-1 ${
+                    content.brandName === 'کلمه' ? 'text-blue-800 dark:text-blue-200' : 'text-purple-800 dark:text-purple-200'
+                  }`}>
+                    عکس خود را اضافه کنید
+                  </p>
+                  <p className={`text-sm ${
+                    content.brandName === 'کلمه' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'
+                  }`}>
+                    برای الهام‌گیری یا تغییر سبک تصویر
+                  </p>
+                  <div className={`mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                    content.brandName === 'کلمه'
+                      ? 'bg-blue-200/50 dark:bg-blue-700/50 text-blue-700 dark:text-blue-300'
+                      : 'bg-purple-200/50 dark:bg-purple-700/50 text-purple-700 dark:text-purple-300'
+                  }`}>
+                    JPG, PNG, GIF, WebP • حداکثر 10MB
+                  </div>
+                </div>
+              )}
+
+              {/* Image Preview and Upload Progress */}
+              {selectedImage && (
+                <div className="space-y-4">
+                  {/* Image Preview */}
+                  <div className="relative group">
+                    <div className="relative overflow-hidden rounded-2xl border-2 border-gray-200 dark:border-gray-600 shadow-lg">
+                      <img
+                        src={imagePreview || ''}
+                        alt="پیش‌نمایش عکس"
+                        className="w-full h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <button
+                      onClick={handleRemoveImage}
+                      className="absolute top-3 right-3 w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg"
+                    >
+                      <X size={18} />
+                    </button>
+                    <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+                      عکس مرجع
+                    </div>
+                  </div>
+
+                  {/* Upload Progress */}
+                  {isUploading && (
+                    <div className={`p-4 rounded-2xl border-2 ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
+                        : 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700'
+                    }`}>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center animate-spin ${
+                          content.brandName === 'کلمه' ? 'bg-blue-100 dark:bg-blue-800' : 'bg-purple-100 dark:bg-purple-800'
+                        }`}>
+                          <Upload size={16} className={
+                            content.brandName === 'کلمه' ? 'text-blue-600 dark:text-blue-300' : 'text-purple-600 dark:text-purple-300'
+                          } />
+                        </div>
+                        <div>
+                          <p className={`font-semibold text-sm ${
+                            content.brandName === 'کلمه' ? 'text-blue-800 dark:text-blue-200' : 'text-purple-800 dark:text-purple-200'
+                          }`}>
+                            در حال آپلود عکس...
+                          </p>
+                          <p className={`text-xs ${
+                            content.brandName === 'کلمه' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'
+                          }`}>
+                            لطفاً صبر کنید
+                          </p>
+                        </div>
+                        <div className="ml-auto">
+                          <span className={`text-lg font-bold ${
+                            content.brandName === 'کلمه' ? 'text-blue-700 dark:text-blue-300' : 'text-purple-700 dark:text-purple-300'
+                          }`}>
+                            {uploadProgress.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-600 overflow-hidden">
+                        <div
+                          className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                            content.brandName === 'کلمه' ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-purple-500 to-purple-600'
+                          }`}
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload Success */}
+                  {uploadedImageUrl && !isUploading && (
+                    <div className={`flex items-center gap-3 p-4 rounded-2xl border-2 ${
+                      content.brandName === 'کلمه'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                        : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                    }`}>
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                        content.brandName === 'کلمه' ? 'bg-green-100 dark:bg-green-800' : 'bg-green-100 dark:bg-green-800'
+                      }`}>
+                        <svg className="w-5 h-5 text-green-600 dark:text-green-300" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className={`font-semibold text-sm ${
+                          content.brandName === 'کلمه' ? 'text-green-800 dark:text-green-200' : 'text-green-800 dark:text-green-200'
+                        }`}>
+                          عکس با موفقیت آپلود شد
+                        </p>
+                        <p className={`text-xs ${
+                          content.brandName === 'کلمه' ? 'text-green-600 dark:text-green-400' : 'text-green-600 dark:text-green-400'
+                        }`}>
+                          آماده برای استفاده در تولید تصویر
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload Error */}
+                  {uploadError && (
+                    <div className="flex items-center gap-3 p-4 rounded-2xl border-2 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
+                      <div className="w-10 h-10 rounded-2xl bg-red-100 dark:bg-red-800 flex items-center justify-center">
+                        <X size={20} className="text-red-600 dark:text-red-300" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-red-800 dark:text-red-200">
+                          خطا در آپلود عکس
+                        </p>
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          {uploadError}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Hidden File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
             </div>
 
             {/* نمونه پرامپت‌های آماده */}
@@ -768,8 +1054,9 @@ const ImageGenerationPage = () => {
         </div>
       </Dialog>
     )}
-  </motion.div>
-);
+      </motion.div>
+    </>
+  );
 };
 
 export default ImageGenerationPage;

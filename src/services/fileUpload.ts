@@ -74,15 +74,28 @@ class FileUploadService {
                 options.onSuccess?.(result);
                 resolve(result);
               } else {
-                throw new Error(result.error || 'Upload failed');
+                const errorMessage = result.error || 'آپلود فایل ناموفق بود. لطفاً دوباره تلاش کنید.';
+                options.onError?.(errorMessage);
+                reject(new Error(errorMessage));
               }
             } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'Failed to parse response';
+              const errorMessage = 'خطا در پردازش پاسخ سرور. لطفاً دوباره تلاش کنید.';
               options.onError?.(errorMessage);
               reject(new Error(errorMessage));
             }
           } else {
-            const errorMessage = `Upload failed with status ${xhr.status}`;
+            let errorMessage = 'آپلود فایل ناموفق بود. لطفاً دوباره تلاش کنید.';
+            
+            // Try to parse error response for more specific error message
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              }
+            } catch {
+              // Use default error message if parsing fails
+            }
+            
             options.onError?.(errorMessage);
             reject(new Error(errorMessage));
           }
@@ -90,7 +103,7 @@ class FileUploadService {
 
         // Handle upload error
         xhr.addEventListener('error', () => {
-          const errorMessage = 'Network error during upload';
+          const errorMessage = 'خطا در اتصال به سرور. لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.';
           options.onError?.(errorMessage);
           reject(new Error(errorMessage));
         });
@@ -98,7 +111,7 @@ class FileUploadService {
         // Handle upload abort
         xhr.addEventListener('abort', () => {
           options.onCancel?.();
-          reject(new Error('Upload cancelled'));
+          reject(new Error('آپلود لغو شد'));
         });
 
         // Set up request
@@ -119,7 +132,7 @@ class FileUploadService {
       });
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      const errorMessage = error instanceof Error ? error.message : 'آپلود فایل ناموفق بود. لطفاً دوباره تلاش کنید.';
       options.onError?.(errorMessage);
       return {
         success: false,
@@ -144,7 +157,7 @@ class FileUploadService {
     const ALLOWED_PDF_TYPES = ['application/pdf'];
 
     if (file.size > MAX_SIZE) {
-      return { valid: false, error: 'File size exceeds 10MB limit' };
+      return { valid: false, error: 'حجم فایل بیش از 10 مگابایت است' };
     }
 
     const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
@@ -153,7 +166,7 @@ class FileUploadService {
     if (!isImage && !isPDF) {
       return { 
         valid: false, 
-        error: 'Invalid file type. Only images (JPEG, PNG, GIF, WebP) and PDFs are allowed' 
+        error: 'نوع فایل نامعتبر است. فقط تصاویر (JPEG, PNG, GIF, WebP) و فایل‌های PDF مجاز هستند' 
       };
     }
 

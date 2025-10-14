@@ -123,8 +123,8 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
               fileSize: parsed.fileSize
             };
             console.log('Retrieved file info from sessionStorage:', fileInfo);
-            // Clear the stored data after reading
-            sessionStorage.removeItem('pendingMessageData');
+            // Don't clear the stored data here - we need it for the user message creation
+            // sessionStorage.removeItem('pendingMessageData');
           }
         }
       } catch (error) {
@@ -136,7 +136,7 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
       setShowInsightCards(false);
       setShowCompactInsights(true);
       
-      // Store file info for later use in streaming
+      // Store file info for later use in streaming and user message creation
       if (fileInfo) {
         // Store in a ref or state for use in handleStreamingMessage
         (window as any).pendingFileInfo = fileInfo;
@@ -467,11 +467,20 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
             );
             
             if (!userMessageExists) {
+              // Get file info from window if available
+              const pendingFileInfo = (window as any).pendingFileInfo;
               const userMessage: Message = {
                 id: generateMessageId(),
                 text: initialMessage,
                 sender: 'user',
                 type: 'text',
+                // Add file info if available
+                ...(pendingFileInfo && {
+                  fileUrl: pendingFileInfo.fileUrl,
+                  fileType: pendingFileInfo.fileType,
+                  fileName: pendingFileInfo.fileName,
+                  fileSize: pendingFileInfo.fileSize
+                })
               };
               setMessages(prev => [...prev, userMessage]);
             }
@@ -492,6 +501,8 @@ export const useChat = (options?: { pendingMessage?: string, clearPendingMessage
                 await handleStreamingMessageRef.current(initialMessage, options?.modelType || 'GPT-4', pendingFileInfo);
                 // Clear the pending file info after use
                 (window as any).pendingFileInfo = null;
+                // Also clear from sessionStorage
+                sessionStorage.removeItem('pendingMessageData');
               } else {
                 await handleStreamingMessageRef.current(initialMessage, options?.modelType || 'GPT-4');
               }

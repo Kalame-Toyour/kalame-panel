@@ -711,7 +711,7 @@ const MainPageContent: React.FC = () => {
       />
       {/* Sticky ModelDropdown at top of chat - Only show after models are loaded */}
       {!modelsLoading && models.length > 0 && (
-        <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md mx-auto md:mx-0 border-gray-100 dark:border-gray-800 flex items-center justify-between md:px-4 py-2 ">
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md mx-auto md:mx-0 border-gray-100 dark:border-gray-800 flex items-center justify-between md:px-4 py-2 ">
           <ModelDropdown
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
@@ -829,7 +829,7 @@ const MainPageContent: React.FC = () => {
       </div>
       {/* Fixed ChatInput at the bottom */}
       {/* <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl px-2 z-20 pt-2 pb-2"> */}
-      <div className="fixed md:static bottom-0 w-full flex justify-center px-2 z-20 pt-0 pb-2 bg-transparent">
+      <div className="fixed md:static bottom-0 w-full flex justify-center px-2 z-10 pt-0 pb-2 bg-transparent">
          <div className="max-w-4xl w-full">
           {streamingError && (
             <div className="w-full max-w-2xl md:max-w-[84%] mx-auto mb-2 flex flex-col items-center justify-center">

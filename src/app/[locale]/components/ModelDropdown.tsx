@@ -187,7 +187,7 @@ export function ModelDropdown({ selectedModel, setSelectedModel, className, mode
       </Button>
       {showDropdown && (
         <div
-          className={`absolute z-50 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl top-full animate-fade-in
+          className={`absolute z-30 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl top-full animate-fade-in
             left-1/2 -translate-x-1/2 md:right-0 md:translate-x-0`}
           style={{ 
             minWidth: '280px', 

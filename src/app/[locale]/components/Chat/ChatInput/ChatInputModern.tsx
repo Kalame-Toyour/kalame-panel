@@ -78,6 +78,25 @@ function ChatInputModern({
     setWebSearch(webSearchActive)
   }, [webSearchActive])
 
+  // Clear file state when chat is cleared or reset
+  useEffect(() => {
+    const clearHandler = () => {
+      handleRemoveFile();
+    };
+    
+    const resetHandler = () => {
+      handleRemoveFile();
+    };
+    
+    window.addEventListener('clear-chat-messages', clearHandler);
+    window.addEventListener('reset-chat-completely', resetHandler);
+    
+    return () => {
+      window.removeEventListener('clear-chat-messages', clearHandler);
+      window.removeEventListener('reset-chat-completely', resetHandler);
+    };
+  }, [])
+
   function handleReasoningToggle() { 
     if (!selectedModel?.features?.supportsReasoning) {
       toast.error('مدل انتخاب شده از قابلیت استدلال پشتیبانی نمی‌کند');
@@ -273,6 +292,7 @@ function ChatInputModern({
       file
     });
 
+    // Send the message
     handleSend(messageText, {
       modelType: selectedModel.shortName,
       webSearch,
@@ -280,6 +300,9 @@ function ChatInputModern({
       fileUrl: uploadedFileUrl || undefined,
       ...fileInfo
     });
+
+    // Clear file state after sending message
+    handleRemoveFile();
   }
 
   function handleImageGenerationClick() {
@@ -399,7 +422,7 @@ function ChatInputModern({
               <span className="whitespace-nowrap mr-0.5">جست‌و‌جو</span>
             </Button>
             {/* File Upload Button */}
-            {/* <Button
+            <Button
               type="button"
               variant="outline"
               size="sm"
@@ -412,7 +435,7 @@ function ChatInputModern({
             >
               <Upload size={12} className="mr-0.5" />
               <span className="whitespace-nowrap mr-0.5">آپلود فایل</span>
-            </Button> */}
+            </Button>
             {/* Image Generation Button */}
             <Button
               type="button"
@@ -570,15 +593,19 @@ function ChatInputModern({
       
       {/* File Type Selection Dialog */}
       {fileTypeDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4" 
+          style={{ pointerEvents: 'auto' }}
+          onClick={() => setFileTypeDialog(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700 relative z-[10000]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="text-center mb-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
                 نوع فایل را انتخاب کنید
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                می‌خواهید چه نوع فایلی آپلود کنید؟
-              </p>
             </div>
             
             <div className="space-y-3">
