@@ -68,6 +68,15 @@ export default function JWTExpirationHandler() {
     }
   }, [session?.user, status, router])
 
+  // Additional effect to handle cases where session becomes unauthenticated
+  useEffect(() => {
+    if (status === 'unauthenticated' && hasHandledExpiration.current) {
+      // Reset flags when user becomes unauthenticated
+      hasHandledExpiration.current = false
+      logoutInProgress.current = false
+    }
+  }, [status])
+
   const handleLogout = (reason: string) => {
     if (logoutInProgress.current) return
     
@@ -81,6 +90,7 @@ export default function JWTExpirationHandler() {
     try {
       localStorage.removeItem('session')
       localStorage.removeItem('next-auth.session-token')
+      localStorage.removeItem('userInfo') // Clear user info from UserInfoContext
       sessionStorage.clear()
     } catch (error) {
       console.warn('Error clearing storage:', error)

@@ -28,7 +28,7 @@ messaging.onBackgroundMessage((payload) => {
   const url = d.url || raw.url || '/'
   self.registration.showNotification(title, {
     body,
-    icon: '/kalamelogo.png',
+    icon: '/kalame-logo.png',
     data: { url, ...d },
   })
 })

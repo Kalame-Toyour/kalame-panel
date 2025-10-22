@@ -16,11 +16,25 @@ const UserInfoContext = createContext<UserInfoContextType | undefined>(undefined
 export function UserInfoProvider({ children }: { children: ReactNode }) {
   const [localUserInfo, setLocalUserInfo] = useState<PremiumUser | null>(null);
   const [isFetchingUserInfo, setIsFetchingUserInfo] = useState(false);
+  const [hasAuthError, setHasAuthError] = useState(false);
   const { data: session } = useSession();
+
+  const clearLocalUserInfo = useCallback(() => {
+    console.log('Clearing local user info and localStorage');
+    setLocalUserInfo(null);
+    setHasAuthError(false);
+    localStorage.removeItem('userInfo');
+  }, []);
 
   // Fetch user info from server when user is authenticated
   const fetchUserInfoFromServer = useCallback(async () => {
-    if (!session?.user?.id || isFetchingUserInfo) return;
+    if (!session?.user?.id || isFetchingUserInfo || hasAuthError) return;
+    
+    // Additional check: if session exists but no access token, don't fetch
+    if (!session.user.accessToken) {
+      console.log('Session exists but no access token - skipping user info fetch');
+      return;
+    }
     
     setIsFetchingUserInfo(true);
     try {
@@ -47,6 +61,13 @@ export function UserInfoProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('userInfo', JSON.stringify(data.user));
         setLocalUserInfo(premiumUser);
         console.log('User info updated in context:', premiumUser);
+      } else if (response.status === 401) {
+        // Token is expired or invalid - clear all local data and set auth error flag
+        console.log('User info fetch returned 401 - clearing local data and setting auth error flag');
+        setHasAuthError(true);
+        clearLocalUserInfo();
+        // Don't set isFetchingUserInfo to false here - let the component handle the logout
+        return;
       } else {
         console.error('Failed to fetch user info from server:', response.status);
       }
@@ -55,7 +76,7 @@ export function UserInfoProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsFetchingUserInfo(false);
     }
-  }, [session?.user?.id, isFetchingUserInfo]);
+  }, [session?.user?.id, isFetchingUserInfo, hasAuthError, clearLocalUserInfo]);
 
   useEffect(() => {
     // Load user info from localStorage on mount
@@ -90,13 +111,24 @@ export function UserInfoProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Reset auth error flag when session changes and clear data when unauthenticated
+  useEffect(() => {
+    if (session?.user?.id) {
+      setHasAuthError(false);
+    } else if (!session?.user) {
+      // Session is unauthenticated, clear local data
+      console.log('Session unauthenticated - clearing local user info');
+      clearLocalUserInfo();
+    }
+  }, [session?.user?.id, session?.user, clearLocalUserInfo]);
+
   // Fetch user info from server when user is authenticated but no local data exists
   useEffect(() => {
-    if (session?.user?.id && !localUserInfo && !isFetchingUserInfo) {
+    if (session?.user?.id && !localUserInfo && !isFetchingUserInfo && !hasAuthError && session.user.accessToken) {
       console.log('User is authenticated but no local user info, fetching from server...');
       fetchUserInfoFromServer();
     }
-  }, [session?.user?.id, localUserInfo, isFetchingUserInfo, fetchUserInfoFromServer]);
+  }, [session?.user?.id, localUserInfo, isFetchingUserInfo, hasAuthError, session?.user?.accessToken, fetchUserInfoFromServer]);
 
   const updateLocalUserInfo = useCallback((newUserInfo: Record<string, unknown>) => {
     try {
@@ -117,11 +149,6 @@ export function UserInfoProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to update local user info:', error);
     }
-  }, []);
-
-  const clearLocalUserInfo = useCallback(() => {
-    setLocalUserInfo(null);
-    localStorage.removeItem('userInfo');
   }, []);
 
   return (
