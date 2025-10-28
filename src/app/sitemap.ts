@@ -1,7 +1,14 @@
 import { MetadataRoute } from 'next'
+import { headers } from 'next/headers'
+import { getDynamicContent } from '@/utils/dynamicContent'
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://kalame.chat'
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const headersList = await headers()
+  const host = headersList.get('host') || 'okian.ai'
+  const domain = host.replace(/^www\./, '')
+  const content = getDynamicContent(domain)
+  
+  const baseUrl = `https://${content.brandName === 'کلمه' ? 'kalame.chat' : 'okian.ai'}`
   const currentDate = new Date().toISOString()
 
   return [

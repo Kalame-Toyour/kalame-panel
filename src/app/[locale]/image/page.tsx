@@ -785,11 +785,11 @@ const ImageGenerationPage = () => {
                       {selectedModel.description}
                     </div>
                   )}
-                  {typeof selectedModel.tokenCost === 'number' && (
+                  {/* {typeof selectedModel.tokenCost === 'number' && (
                     <div className="text-xs md:text-sm text-amber-700 dark:text-amber-300 font-medium">
                       هزینه تولید هر عکس: {selectedModel.tokenCost.toLocaleString('fa-IR')} تومان
                     </div>
-                  )}
+                  )} */}
                 </div>
               )}
             </div>

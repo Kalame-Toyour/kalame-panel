@@ -6,6 +6,8 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import '../globals.css';
 import ClientLayout from './ClientLayout';
 import { getServerDynamicContent } from '@/utils/serverDynamicContent';
+import { processMessagesWithDynamicContent } from '@/utils/processMessages';
+import { headers } from 'next/headers';
 
 export async function generateMetadata(): Promise<Metadata> {
   const content = await getServerDynamicContent()
@@ -68,6 +70,14 @@ export default async function RootLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const content = await getServerDynamicContent();
+  
+  // Get the domain from headers to process messages
+  const headersList = await headers();
+  const host = headersList.get('host') || 'okian.ai';
+  const domain = host.replace(/^www\./, '');
+  
+  // Process messages to replace hardcoded brand names
+  const processedMessages = processMessagesWithDynamicContent(messages, domain);
 
   return (
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
@@ -90,7 +100,7 @@ export default async function RootLayout({
         <meta name="twitter:site" content={content.brandName === 'کلمه' ? '@kalamechat' : '@okianai'} />
       </head>
       <body className='overflow-x-hidden'>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={processedMessages}>
           <ClientLayout>{children}</ClientLayout>
         </NextIntlClientProvider>
       </body>

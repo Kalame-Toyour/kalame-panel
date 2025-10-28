@@ -5,26 +5,26 @@ import { isRTL } from '@/libs/textUtils';
 import React, { useEffect, useRef } from 'react';
 import ChatMessageRenderer from './ChatMessageRenderer';
 
-const ChatMessageContainer: React.FC<ChatMessageContainerProps & { children?: React.ReactNode, isUserAtBottom: boolean }> = ({
+const ChatMessageContainer: React.FC<ChatMessageContainerProps & { children?: React.ReactNode }> = ({
   messages,
   onSelectAnswer,
   children,
-  isUserAtBottom,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const lastMsg = messages[messages.length - 1]
-    if (lastMsg?.isStreaming && isUserAtBottom) {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-          inline: 'nearest',
-        })
-      }, 30)
-    }
-  }, [messages, isUserAtBottom])
+  // اسکرول خودکار را حذف کردیم چون در page.tsx مدیریت می‌شود
+  // useEffect(() => {
+  //   const lastMsg = messages[messages.length - 1]
+  //   if (lastMsg?.isStreaming && isUserAtBottom && autoScroll) {
+  //     setTimeout(() => {
+  //       bottomRef.current?.scrollIntoView({
+  //         behavior: 'smooth',
+  //         block: 'end',
+  //         inline: 'nearest',
+  //       })
+  //     }, 30)
+  //   }
+  // }, [messages, isUserAtBottom, autoScroll])
 
   return (
     <div className="flex-1 min-h-0 flex flex-col md:mb-0 p-2 md:mr-8 mb-6 w-full max-w-full overflow-hidden">

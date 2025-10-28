@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDynamicContent } from '@/utils/dynamicContent'
 
 export async function GET(request: NextRequest) {
-  const host = request.headers.get('host') || 'kalame.chat'
+  const host = request.headers.get('host') || 'okian.ai'
   const domain = host.replace(/^www\./, '')
   const content = getDynamicContent(domain)
 

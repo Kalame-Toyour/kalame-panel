@@ -45,6 +45,28 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
     return await originalFetch(newRequest);
   }
   
+  // Check if this is an upload endpoint and redirect to web API
+  if (url.includes('/api/upload-media')) {
+    const realUrl = 'https://kalame.chat/api/upload-media';
+    console.log(`🔄 Redirecting upload request from ${url} to ${realUrl}`);
+    
+    // Create new request with real URL and CORS headers
+    const newRequest = new Request(realUrl, {
+      method: init?.method || 'POST',
+      headers: {
+        ...init?.headers,
+        'Origin': 'https://kalame.chat', // Set origin to match target domain
+        'Referer': 'https://kalame.chat/', // Set referer
+        // Don't override Content-Type for file uploads
+      },
+      body: init?.body,
+      mode: 'cors', // Explicitly set CORS mode
+      credentials: 'include', // Include credentials
+    });
+    
+    return await originalFetch(newRequest);
+  }
+  
   // For all other requests, use the original fetch
   return originalFetch(input, init);
 };

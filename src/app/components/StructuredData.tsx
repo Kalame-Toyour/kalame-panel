@@ -1,11 +1,15 @@
-export default function StructuredData() {
+import { getServerDynamicContent } from '@/utils/serverDynamicContent'
+
+export default async function StructuredData() {
+  const content = await getServerDynamicContent()
+  
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "هوش مصنوعی کلمه",
-    "alternateName": "کلمه",
-    "description": "با هوش مصنوعی کلمه به صورت رایگان با قوی‌ترین مدل (ChatGPT) به فارسی چت کنید، عکس تولید کنید و از یک دستیار هوشمند فارسی‌زبان بهره ببرید و هر روز اعتبار رایگان دریافت کنید!",
-    "url": "https://kalame.chat",
+    "name": content.siteName,
+    "alternateName": content.brandName,
+    "description": content.description,
+    "url": `https://${content.brandName === 'کلمه' ? 'kalame.chat' : 'okian.ai'}`,
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web Browser",
     "offers": {
@@ -16,8 +20,8 @@ export default function StructuredData() {
     },
     "creator": {
       "@type": "Organization",
-      "name": "تیم کلمه",
-      "url": "https://kalame.chat"
+      "name": `تیم ${content.brandName}`,
+      "url": `https://${content.brandName === 'کلمه' ? 'kalame.chat' : 'okian.ai'}`
     },
     "inLanguage": "fa-IR",
     "isAccessibleForFree": true,
@@ -25,7 +29,9 @@ export default function StructuredData() {
     "softwareVersion": "1.0",
     "datePublished": "2024-01-01",
     "dateModified": new Date().toISOString().split('T')[0],
-    "keywords": "هوش مصنوعی, ChatGPT, چت جی پی تی, دستیار هوش مصنوعی, هوش مصنوعی فارسی, تولید عکس, چت رایگان, AI فارسی",
+    "keywords": content.brandName === 'کلمه' 
+      ? "هوش مصنوعی, ChatGPT, چت جی پی تی, دستیار هوش مصنوعی, هوش مصنوعی فارسی, تولید عکس, چت رایگان, AI فارسی"
+      : "هوش مصنوعی, اوکیان, ChatGPT, دستیار هوش مصنوعی, هوش مصنوعی فارسی, تولید تصویر, چت هوش مصنوعی, AI فارسی, پلتفرم هوش مصنوعی",
     "featureList": [
       "چت با هوش مصنوعی",
       "تولید تصویر",

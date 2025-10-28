@@ -284,6 +284,7 @@ export type ChatInputProps = {
 export type ChatMessageContainerProps = {
   messages: Message[];
   onSelectAnswer: (text: string) => void;
+  autoScroll?: boolean;
 };
 
 export type Market = {

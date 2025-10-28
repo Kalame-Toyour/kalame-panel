@@ -58,6 +58,37 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
   const [shouldShow, setShouldShow] = useState(false)
   const [isSecureContext, setIsSecureContext] = useState(false)
 
+  // Helper function to check if this is first login
+  function isFirstLogin(): boolean {
+    try {
+      const firstLogin = localStorage.getItem('notif_first_login')
+      return firstLogin === null
+    } catch {
+      return false
+    }
+  }
+
+  // Helper function to get and increment visit count
+  function getAndIncrementVisitCount(): number {
+    try {
+      const currentCount = parseInt(localStorage.getItem('notif_visit_count') || '0')
+      const newCount = currentCount + 1
+      localStorage.setItem('notif_visit_count', newCount.toString())
+      return newCount
+    } catch {
+      return 0
+    }
+  }
+
+  // Helper function to reset visit count (when permission is granted)
+  function resetVisitCount(): void {
+    try {
+      localStorage.removeItem('notif_visit_count')
+    } catch {
+      // Ignore errors
+    }
+  }
+
   useEffect(() => {
     try {
       if (typeof window === 'undefined') return
@@ -72,10 +103,32 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
       const isSecure = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost'
       setIsSecureContext(isSecure)
       
-      // Only show if user is authenticated, notifications are supported, in secure context, and not dismissed
-      const dismissed = localStorage.getItem('notif_prompt_dismissed') === '1'
-      if (isNotificationSupported() && getNotificationPermission() === 'default' && !dismissed && isSecure) {
+      // Check if notifications are supported and permission is not granted
+      if (!isNotificationSupported() || getNotificationPermission() !== 'default' || !isSecure) {
+        setShouldShow(false)
+        return
+      }
+      
+      // Check if this is first login
+      const isFirst = isFirstLogin()
+      if (isFirst) {
+        // Mark first login as completed
+        localStorage.setItem('notif_first_login', '1')
         setShouldShow(true)
+        console.log('[NotificationPrompt] First login detected - showing notification prompt')
+        return
+      }
+      
+      // For subsequent visits, check visit count
+      const visitCount = getAndIncrementVisitCount()
+      const shouldShowBasedOnVisits = visitCount % 5 === 0
+      
+      if (shouldShowBasedOnVisits) {
+        setShouldShow(true)
+        console.log(`[NotificationPrompt] Visit ${visitCount} - showing notification prompt`)
+      } else {
+        setShouldShow(false)
+        console.log(`[NotificationPrompt] Visit ${visitCount} - not showing prompt (next prompt at visit ${Math.ceil(visitCount / 5) * 5})`)
       }
       
       // Log notification support status for debugging
@@ -85,7 +138,9 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
         hasNotification: isNotificationSupported(),
         permission: getNotificationPermission(),
         isSecureContext: isSecure,
-        dismissed,
+        isFirstLogin: isFirst,
+        visitCount,
+        shouldShowBasedOnVisits,
         protocol: window.location.protocol,
         hostname: window.location.hostname
       })
@@ -94,13 +149,13 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
     }
   }, [isAuthenticated, isLoading])
 
-  // Reset dismissal when user logs in (for testing purposes)
+  // Reset visit count when user logs in (for testing purposes)
   useEffect(() => {
     if (isAuthenticated) {
       // Only reset if permission is default (not granted or denied)
       if (getNotificationPermission() === 'default') {
-        localStorage.removeItem('notif_prompt_dismissed')
-        console.log('[NotificationPrompt] Reset dismissal for authenticated user')
+        resetVisitCount()
+        console.log('[NotificationPrompt] Reset visit count for authenticated user')
       }
     }
   }, [isAuthenticated])
@@ -131,7 +186,7 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
       
       if (perm === 'granted') {
         console.log('Notification permission granted')
-        localStorage.setItem('notif_prompt_dismissed', '1')
+        resetVisitCount() // Reset visit count since permission is granted
         setShouldShow(false)
         onGranted?.()
         
@@ -162,12 +217,12 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
         }
       } else if (perm === 'denied') {
         console.log('Notification permission denied')
-        localStorage.setItem('notif_prompt_dismissed', '1')
         setShouldShow(false)
         alert('اعلان‌ها مسدود شده‌اند. می‌توانید از تنظیمات مرورگر آن‌ها را فعال کنید.')
       } else {
         console.log('Notification permission dismissed')
-        // Don't mark as dismissed if user just closed the dialog
+        setShouldShow(false)
+        // Don't reset visit count if user just dismissed - they'll see it again in 5 visits
       }
     } catch (error) {
       console.error('Error requesting notification permission:', error)
@@ -176,8 +231,8 @@ export default function PromptNotificationPermission({ onGranted }: Props) {
   }
 
   function handleLater() {
-    localStorage.setItem('notif_prompt_dismissed', '1')
     setShouldShow(false)
+    // Don't reset visit count - user will see it again in 5 visits
   }
 
   // Check if current platform is Okian

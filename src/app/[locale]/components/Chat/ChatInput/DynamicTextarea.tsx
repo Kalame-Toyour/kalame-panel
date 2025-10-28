@@ -9,8 +9,8 @@ type DynamicTextareaProps = {
   isLoading: boolean;
 };
 
-const MAX_ROWS = 4;
-const LINE_HEIGHT = 32; // px, adjust if your font-size/line-height is different
+const MAX_ROWS = 3; // کاهش حداکثر خطوط برای جلوگیری از ارتفاع زیاد
+const LINE_HEIGHT = 20; // کاهش ارتفاع خط برای بهتر شدن محاسبات
 
 const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
   ({ inputText, setInputText, handleKeyPress, isRTL, isLoading }, ref) => {
@@ -28,36 +28,48 @@ const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
       if (!textareaRef.current || !shadowRef.current) return;
       const style = window.getComputedStyle(textareaRef.current);
       const shadow = shadowRef.current;
-      shadow.style.width = style.width;
+      
+      // کپی کردن تمام استایل‌های مهم
+      shadow.style.width = textareaRef.current.offsetWidth + 'px'; // استفاده از offsetWidth برای دقت بیشتر
       shadow.style.fontSize = style.fontSize;
       shadow.style.fontFamily = style.fontFamily;
       shadow.style.fontWeight = style.fontWeight;
       shadow.style.letterSpacing = style.letterSpacing;
-      shadow.style.lineHeight = style.lineHeight;
+      shadow.style.lineHeight = style.lineHeight; // استفاده از line-height اصلی
       shadow.style.padding = style.padding;
       shadow.style.border = style.border;
       shadow.style.boxSizing = style.boxSizing;
       shadow.style.direction = style.direction;
-      shadow.style.wordBreak = style.wordBreak;
-      shadow.style.whiteSpace = style.whiteSpace;
+      shadow.style.wordBreak = style.wordBreak; // استفاده از wordBreak اصلی
+      shadow.style.whiteSpace = style.whiteSpace; // استفاده از whiteSpace اصلی
+      shadow.style.overflowWrap = style.overflowWrap; // استفاده از overflowWrap اصلی
+      shadow.style.wordSpacing = style.wordSpacing;
+      shadow.style.textIndent = style.textIndent;
     }, [isRTL, isLoading]);
 
     useEffect(() => {
       if (!textareaRef.current || !shadowRef.current) return;
       const shadow = shadowRef.current;
+      
+      // محاسبه ارتفاع یک خط با استفاده از shadow textarea
       shadow.value = '';
       shadow.rows = 1;
       shadow.style.height = 'auto';
       const singleRowHeight = shadow.scrollHeight;
       setMinHeight(`${singleRowHeight}px`);
+      
+      // محاسبه حداکثر ارتفاع با استفاده از shadow textarea
       shadow.rows = MAX_ROWS;
       const computedMaxHeight = shadow.scrollHeight;
       setMaxHeight(`${computedMaxHeight}px`);
+      
+      // محاسبه ارتفاع محتوا
       shadow.rows = 1;
       shadow.value = inputText || '';
       shadow.style.height = 'auto';
       const contentHeight = shadow.scrollHeight;
 
+      // تنظیم ارتفاع نهایی
       if (contentHeight <= computedMaxHeight) {
         textareaRef.current.style.height = `${contentHeight}px`;
         setOverflow(false);
@@ -67,6 +79,17 @@ const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
       }
     }, [inputText]);
 
+    // اسکرول به پایین در صورت overflow
+    useEffect(() => {
+      if (overflow && textareaRef.current) {
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+          }
+        }, 0);
+      }
+    }, [overflow, inputText]);
+
     const handleChange = (e: { target: { value: string } }) => setInputText(e.target.value);
 
     return (
@@ -74,10 +97,12 @@ const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
         <textarea
           ref={textareaRef}
           placeholder={t('inputPlaceholder')}
-          className={`w-full block resize-none bg-transparent pl-16 pt-3 pb-3 text-gray-900
+          className={`w-full block resize-none bg-transparent pl-16 py-3 text-gray-900
             placeholder:text-gray-500 focus:outline-none dark:text-white dark:placeholder:text-gray-400
             ${isRTL ? 'text-right placeholder:text-right' : 'text-left placeholder:text-left'}
-            ${isLoading ? 'cursor-not-allowed opacity-50' : ''} ${overflow ? 'overflow-y-auto' : 'overflow-hidden'}`}
+            ${isLoading ? 'cursor-not-allowed opacity-50' : ''} 
+            ${overflow ? 'overflow-y-auto' : 'overflow-hidden'}
+            word-break break-word overflow-wrap break-word`}
           value={inputText}
           onChange={handleChange}
           onKeyPress={handleKeyPress}
@@ -87,8 +112,11 @@ const DynamicTextarea = forwardRef<HTMLTextAreaElement, DynamicTextareaProps>(
           style={{
             minHeight,
             maxHeight,
-            lineHeight: `${LINE_HEIGHT}px`,
-            boxSizing: 'border-box'
+            lineHeight: 'normal', // استفاده از line-height طبیعی
+            boxSizing: 'border-box',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            whiteSpace: 'pre-wrap'
           }}
         />
         {/* Hidden shadow textarea for measuring height */}

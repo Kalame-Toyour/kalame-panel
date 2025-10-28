@@ -1,6 +1,6 @@
 'use client'
 
-import { useSite } from '@/contexts/SiteContext'
+import { useDynamicContent } from '@/utils/dynamicContent'
 
 interface DynamicTextProps {
   children: string
@@ -8,14 +8,12 @@ interface DynamicTextProps {
 }
 
 export default function DynamicText({ children, className = '' }: DynamicTextProps) {
-  const { currentSite } = useSite()
+  const content = useDynamicContent()
 
-  // Map of text replacements based on current site
+  // Map of text replacements based on current brand
   const getDisplayText = (text: string) => {
-    if (!currentSite) return text
-    
-    if (currentSite.url === 'https://okian.ai' || currentSite.url === 'http://localhost:3000/') {
-      // Replace "کلمه" with "اوکیان" for Okian.ai
+    if (content.brandName === 'اُکیان') {
+      // Replace "کلمه" with "اوکیان" for Okian brand
       return text.replace(/کلمه/g, 'اوکیان')
     }
     

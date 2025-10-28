@@ -58,6 +58,7 @@ const MainPageContent: React.FC = () => {
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const userInfoUpdateRef = useRef<boolean>(false);
+  const userInfoErrorRef = useRef<boolean>(false);
 
   const [isSwitchingChat, setIsSwitchingChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -80,7 +81,7 @@ const MainPageContent: React.FC = () => {
 
   // Update user info only once on page load (no periodic updates)
   useEffect(() => {
-    if (!user?.id || userInfoUpdateRef.current) return;
+    if (!user?.id || userInfoUpdateRef.current || userInfoErrorRef.current) return;
 
     userInfoUpdateRef.current = true;
     
@@ -92,11 +93,21 @@ const MainPageContent: React.FC = () => {
         console.log('User info updated successfully on page load');
       } catch (error) {
         console.error('Failed to update user info on page load:', error);
+        // Set error flag to prevent retries
+        userInfoErrorRef.current = true;
       }
     };
 
     updateUserInfoOnce();
-  }, [user?.id, updateUserInfo]); // Keep updateUserInfo in dependencies but use ref to prevent multiple calls
+  }, [user?.id]); // Remove updateUserInfo from dependencies to prevent infinite loop
+
+  // Reset refs when user changes (login/logout)
+  useEffect(() => {
+    if (!user?.id) {
+      userInfoUpdateRef.current = false;
+      userInfoErrorRef.current = false;
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     window.addEventListener('beforeunload', startLoading);
@@ -356,30 +367,64 @@ const MainPageContent: React.FC = () => {
     const container = scrollContainerRef.current
     if (!container) return
     let ticking = false
+    let scrollTimeout: NodeJS.Timeout | null = null
+    
     function handleScroll() {
       if (!ticking) {
         window.requestAnimationFrame(() => {
-          if (!isUserAtBottom) setAutoScroll(false)
-          else setAutoScroll(true)
+          if (!container) return
+          
+          const threshold = 80
+          const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+          
+          // اگر کاربر اسکرول کرد و در پایین نیست، فوراً autoScroll را غیرفعال کن
+          if (!atBottom) {
+            setAutoScroll(false)
+            setIsUserAtBottom(false)
+          } else {
+            // اگر کاربر به پایین برگشت، کمی صبر کن تا مطمئن شوی واقعاً پایین است
+            if (scrollTimeout) clearTimeout(scrollTimeout)
+            scrollTimeout = setTimeout(() => {
+              if (!container) return
+              const stillAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+              if (stillAtBottom) {
+                setAutoScroll(true)
+                setIsUserAtBottom(true)
+              }
+            }, 150) // 150ms تاخیر برای جلوگیری از نوسان
+          }
+          
           ticking = false
         })
         ticking = true
       }
     }
+    
     container.addEventListener('scroll', handleScroll)
-    return () => container.removeEventListener('scroll', handleScroll)
-  }, [isUserAtBottom])
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) clearTimeout(scrollTimeout)
+    }
+  }, [])
 
   // 3. اسکرول خودکار فقط اگر autoScroll فعال باشد و کاربر پایین باشد
   useEffect(() => {
-    if (!autoScroll) return
+    if (!autoScroll || !isUserAtBottom) return
     const container = scrollContainerRef.current
     if (!container) return
-    setTimeout(() => {
-      if (autoScroll && isUserAtBottom) {
+    
+    // فقط برای پیام‌های استریم اسکرول خودکار انجام شود
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage?.isStreaming) return
+    
+    // Throttling برای جلوگیری از اسکرول مکرر
+    const timeoutId = setTimeout(() => {
+      if (autoScroll && isUserAtBottom && container) {
         container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
       }
-    }, 30)
+    }, 50) // افزایش تاخیر از 30 به 50ms
+    
+    return () => clearTimeout(timeoutId)
   }, [messages, autoScroll, isUserAtBottom])
 
   // Reset switching state when messages are loaded
@@ -771,7 +816,6 @@ const MainPageContent: React.FC = () => {
                 <ChatMessageContainer
                   messages={messages}
                   onSelectAnswer={handleSelectAnswer}
-                  isUserAtBottom={isUserAtBottom}
                 >
                   {isLoading && !isStreaming && (
                     <div className="flex items-center justify-center py-4">
@@ -829,8 +873,8 @@ const MainPageContent: React.FC = () => {
       </div>
       {/* Fixed ChatInput at the bottom */}
       {/* <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl px-2 z-20 pt-2 pb-2"> */}
-      <div className="fixed md:static bottom-0 w-full flex justify-center px-2 z-10 pt-0 pb-2 bg-transparent">
-         <div className="max-w-4xl w-full">
+      <div className="fixed md:static bottom-0 w-full flex justify-center px-0 md:px-2 z-10 pt-0 pb-2 bg-transparent">
+         <div className="max-w-4xl w-full px-2 md:px-0">
           {streamingError && (
             <div className="w-full max-w-2xl md:max-w-[84%] mx-auto mb-2 flex flex-col items-center justify-center">
               <div className="rounded-xl bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 px-4 py-3 text-center text-red-700 dark:text-red-200 font-semibold flex flex-col gap-2 shadow">

@@ -241,15 +241,7 @@ function TransactionsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                         <div className="flex items-center gap-2">
                           <span className="text-gray-500 dark:text-gray-400 text-sm">مبلغ:</span>
-                          <span className="font-semibold text-gray-800 dark:text-gray-200">{formatNumber(transaction.amount)} تومان</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500 dark:text-gray-400 text-sm">توکن:</span>
-                          <span className="font-semibold text-gray-800 dark:text-gray-200">{formatNumber(transaction.tokenNumber)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500 dark:text-gray-400 text-sm">کارت:</span>
-                          <span className="font-semibold text-gray-800 dark:text-gray-200">{transaction.cardNumber}</span>
+                          <span className="font-semibold text-gray-800 dark:text-gray-200">{formatNumber(transaction.amount/10)} تومان</span>
                         </div>
                       </div>
 

@@ -10,21 +10,7 @@ export interface DynamicContent {
 }
 
 export function getDynamicContent(domain?: string): DynamicContent {
-  // Default to okian.ai for localhost
-  if (domain === 'localhost' || domain === '127.0.0.1') {
-    return {
-      brandName: 'اُکیان',
-      logo: '/okian-logo.svg',
-      favicon: '/okian-favicon.ico',
-      appleTouchIcon: '/okian-logo.svg',
-      siteName: 'اوکیان هوش مصنوعی',
-      description: 'با اوکیان هوش مصنوعی قدرت هوش مصنوعی پیشرفته را تجربه کنید. با مدل‌های پیشرفته چت کنید، تصاویر تولید کنید و از دستیار هوشمند بهره ببرید.',
-      title: 'اوکیان هوش مصنوعی: پلتفرم پیشرفته هوش مصنوعی و چت جی پی تی',
-      shortName: 'اوکیان'
-    }
-  }
-
-  // For kalame.chat domain
+  // For kalame.chat domain only
   if (domain === 'kalame.chat') {
     return {
       brandName: 'کلمه',
@@ -38,7 +24,7 @@ export function getDynamicContent(domain?: string): DynamicContent {
     }
   }
 
-  // Default fallback to okian.ai
+  // Default to Okian for all other domains (including localhost, okian.ai, etc.)
   return {
     brandName: 'اُکیان',
     logo: '/okian-logo.svg',
@@ -54,7 +40,7 @@ export function getDynamicContent(domain?: string): DynamicContent {
 // Client-side hook for dynamic content
 export function useDynamicContent(): DynamicContent {
   if (typeof window === 'undefined') {
-    return getDynamicContent('kalame.chat') // Default for SSR
+    return getDynamicContent('okian.ai') // Default to Okian for SSR
   }
   
   const hostname = window.location.hostname
