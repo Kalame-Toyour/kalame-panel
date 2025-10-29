@@ -69,6 +69,15 @@ export class NotificationPermissionManager {
 
   public async getCurrentPermissionStatus(): Promise<'granted' | 'denied' | 'default' | 'unknown' | 'not_supported'> {
     try {
+      // First, check localStorage as primary source of truth for saved status
+      const localStatus = localStorage.getItem('kariz_notification_permission')
+      if (localStatus === 'granted') {
+        return 'granted'
+      }
+      if (localStatus === 'denied') {
+        return 'denied'
+      }
+
       if (this.platform === 'native' && this.androidVersion >= 13) {
         // For Android 13+ on native platform, check native permission status
         if ((window as any).AndroidInterface && typeof (window as any).AndroidInterface.getNotificationPermissionStatus === 'function') {
@@ -76,49 +85,59 @@ export class NotificationPermissionManager {
             const status = (window as any).AndroidInterface.getNotificationPermissionStatus()
             console.log('[NotificationManager] Native permission status:', status)
             
-            // Also check localStorage as a backup
-            const localStatus = localStorage.getItem('kariz_notification_permission')
-            if (status === 'granted' || localStatus === 'granted') {
-              return 'granted'
+            // Validate the status returned from native
+            if (status === 'granted' || status === 'denied' || status === 'default') {
+              // Update localStorage to match native status
+              if (status === 'granted') {
+                localStorage.setItem('kariz_notification_permission', 'granted')
+              } else if (status === 'denied') {
+                localStorage.setItem('kariz_notification_permission', 'denied')
+              }
+              return status as any
             }
             
-            return status as any
+            // If status is invalid, treat as default (user can request)
+            console.warn('[NotificationManager] Invalid native status, treating as default:', status)
+            return 'default'
           } catch (error) {
             console.error('[NotificationManager] Error getting native permission status:', error)
-            // Fallback to localStorage
-            const localStatus = localStorage.getItem('kariz_notification_permission')
-            if (localStatus === 'granted') {
-              return 'granted'
+            // If we had a denied status before, maintain it
+            if (localStatus === 'denied') {
+              return 'denied'
             }
-            return 'unknown'
+            // Otherwise, treat as default - user can still request permission
+            return 'default'
           }
         } else {
           console.warn('[NotificationManager] AndroidInterface not available')
-          // Check localStorage as fallback
-          const localStatus = localStorage.getItem('kariz_notification_permission')
-          if (localStatus === 'granted') {
-            return 'granted'
+          // AndroidInterface not available, but we're on Android 13+
+          // Treat as default so user can still request permission
+          // If we had a denied status before, maintain it
+          if (localStatus === 'denied') {
+            return 'denied'
           }
-          return 'unknown'
+          return 'default'
         }
       } else if ('Notification' in window) {
         // For web or older Android versions, use browser API
         const browserPermission = Notification.permission
         console.log('[NotificationManager] Browser permission status:', browserPermission)
         
-        // Also check localStorage as a backup
-        const localStatus = localStorage.getItem('kariz_notification_permission')
-        if (browserPermission === 'granted' || localStatus === 'granted') {
-          return 'granted'
+        // Validate browser permission
+        if (browserPermission === 'granted' || browserPermission === 'denied' || browserPermission === 'default') {
+          // Update localStorage to match browser status
+          if (browserPermission === 'granted') {
+            localStorage.setItem('kariz_notification_permission', 'granted')
+          } else if (browserPermission === 'denied') {
+            localStorage.setItem('kariz_notification_permission', 'denied')
+          }
+          return browserPermission as any
         }
         
-        return browserPermission as any
+        // If browser permission is invalid, treat as default
+        return 'default'
       } else {
-        // Check localStorage as last resort
-        const localStatus = localStorage.getItem('kariz_notification_permission')
-        if (localStatus === 'granted') {
-          return 'granted'
-        }
+        // Notifications not supported in this browser
         return 'not_supported'
       }
     } catch (error) {
@@ -129,10 +148,16 @@ export class NotificationPermissionManager {
         if (localStatus === 'granted') {
           return 'granted'
         }
+        if (localStatus === 'denied') {
+          return 'denied'
+        }
+        // If no saved status and error occurred, default to 'default' so user can still try
+        return 'default'
       } catch (localError) {
         console.error('[NotificationManager] Error checking localStorage:', localError)
+        // Last resort: return default so user can try requesting
+        return 'default'
       }
-      return 'unknown'
     }
   }
 

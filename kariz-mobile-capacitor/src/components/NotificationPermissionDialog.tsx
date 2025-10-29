@@ -32,11 +32,16 @@ export default function NotificationPermissionDialog({
   const checkPermissionInfo = async () => {
     try {
       const info = await notificationPermissionManager.getPermissionInfo()
-      setPermissionInfo(info)
-      console.log('[NotificationDialog] Permission info:', info)
+      
+      // Normalize status: convert 'unknown' to 'default' so user can still request
+      const normalizedStatus = info.status === 'unknown' ? 'default' : info.status
+      const normalizedInfo = { ...info, status: normalizedStatus }
+      
+      setPermissionInfo(normalizedInfo)
+      console.log('[NotificationDialog] Permission info:', normalizedInfo)
       
       // If permission is already granted, call the callback
-      if (info.status === 'granted') {
+      if (normalizedInfo.status === 'granted') {
         localStorage.setItem('kariz_notification_permission', 'granted')
         onPermissionGranted()
         setTimeout(() => {
@@ -45,6 +50,8 @@ export default function NotificationPermissionDialog({
       }
     } catch (error) {
       console.error('[NotificationDialog] Error checking permission info:', error)
+      // On error, set to default so user can still try
+      setPermissionInfo(prev => ({ ...prev, status: 'default', canRequest: true }))
     }
   }
 
@@ -118,7 +125,13 @@ export default function NotificationPermissionDialog({
 
   // Determine if we should show the request permission button
   const shouldShowRequestButton = () => {
-    return permissionInfo.canRequest && permissionInfo.status !== 'granted'
+    // Show button if:
+    // 1. Can request permission, and
+    // 2. Status is not granted, and
+    // 3. Status is not not_supported (no point showing button if not supported)
+    return permissionInfo.canRequest && 
+           permissionInfo.status !== 'granted' && 
+           permissionInfo.status !== 'not_supported'
   }
 
   // Determine if we should show the Android settings button
@@ -182,18 +195,18 @@ export default function NotificationPermissionDialog({
                   نوتیفیکیشن مسدود شده است
                 </span>
               </>
-            ) : permissionInfo.status === 'default' ? (
+            ) : permissionInfo.status === 'not_supported' ? (
               <>
-                <Bell size={16} className="text-blue-500" />
-                <span className="text-sm text-blue-700 dark:text-blue-300">
-                  در انتظار تصمیم کاربر
+                <AlertCircle size={16} className="text-gray-500" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  نوتیفیکیشن در این مرورگر پشتیبانی نمی‌شود
                 </span>
               </>
             ) : (
               <>
-                <Bell size={16} className="text-orange-500" />
-                <span className="text-sm text-orange-700 dark:text-orange-300">
-                  وضعیت مجوز نامشخص
+                <Bell size={16} className="text-blue-500" />
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  برای فعال‌سازی نوتیفیکیشن، روی دکمه زیر کلیک کنید
                 </span>
               </>
             )}
@@ -245,13 +258,20 @@ export default function NotificationPermissionDialog({
           )}
 
           {/* Skip Button for other cases */}
-          {permissionInfo.status !== 'granted' && !shouldShowRequestButton() && (
+          {permissionInfo.status !== 'granted' && !shouldShowRequestButton() && permissionInfo.status !== 'not_supported' && (
             <button
               onClick={onClose}
               className="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
             >
               بعداً
             </button>
+          )}
+
+          {/* Message for not_supported status */}
+          {permissionInfo.status === 'not_supported' && (
+            <div className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg text-center">
+              متأسفانه نوتیفیکیشن در این دستگاه/مرورگر شما پشتیبانی نمی‌شود
+            </div>
           )}
         </div>
 

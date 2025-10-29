@@ -56,11 +56,11 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [content.logo],
     },
     robots: {
-      index: true,
-      follow: true,
+      index: false,
+      follow: false,
       googleBot: {
-        index: true,
-        follow: true,
+        index: false,
+        follow: false,
         'max-video-preview': -1,
         'max-image-preview': 'large',
         'max-snippet': -1,
@@ -87,6 +87,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <head>
+        <meta name="robots" content="noindex, nofollow" />
         {/* Server-side Google Tag Manager */}
         <ServerGTM />
         

@@ -82,6 +82,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
       <head>
+        <meta name="robots" content="noindex, nofollow" />
         <title>{content.title}</title>
         <meta name="description" content={content.description} />
         <link rel="icon" href={content.favicon} type="image/png" />
