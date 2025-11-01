@@ -1586,8 +1586,8 @@ const MainAppContent: React.FC = () => {
         }
       />
 
-      {/* Mobile Header - Updated to match MobileHeader design */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900">
+      {/* Mobile Header - Updated to match MobileHeader design with safe area */}
+      <div className="mobile-header flex items-center justify-between border-b border-gray-200 bg-white p-2 dark:border-gray-800 dark:bg-gray-900">
         {/* Menu Button */}
         <button
           onClick={toggleSidebar}
@@ -2103,19 +2103,27 @@ const MainAppContent: React.FC = () => {
               </div>
             </div>
           )}
-          <ChatInputModern
-            inputText={inputText}
-            setInputText={handleInputChange}
-            handleSend={handleSend}
-            isLoading={isLoading || isCreatingChat || isPendingMessageLoading || isStreaming}
-            inputRef={inputRef}
-            webSearchActive={webSearchActive}
-            reasoningActive={reasoningActive}
-            onShowAuthNotification={handleImageAuthNotification}
-            selectedModel={selectedModel}
-            setWebSearchActive={setWebSearchActive}
-            setReasoningActive={setReasoningActive}
-          />
+          <div 
+            className="relative"
+            style={{
+              transform: isKeyboardVisible ? `translateY(-${keyboardHeight}px)` : 'translateY(0)',
+              transition: 'transform 0.3s ease-in-out'
+            }}
+          >
+            <ChatInputModern
+              inputText={inputText}
+              setInputText={handleInputChange}
+              handleSend={handleSend}
+              isLoading={isLoading || isCreatingChat || isPendingMessageLoading || isStreaming}
+              inputRef={inputRef}
+              webSearchActive={webSearchActive}
+              reasoningActive={reasoningActive}
+              onShowAuthNotification={handleImageAuthNotification}
+              selectedModel={selectedModel}
+              setWebSearchActive={setWebSearchActive}
+              setReasoningActive={setReasoningActive}
+            />
+          </div>
         </div>
       </div>
 

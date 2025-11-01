@@ -105,9 +105,9 @@ export default function NotificationPermissionDialog({
     }
   }
 
-  const openAndroidSettings = () => {
+  const openAndroidSettings = async () => {
     try {
-      notificationPermissionManager.openNotificationSettings()
+      await notificationPermissionManager.openNotificationSettings()
     } catch (error) {
       console.error('[NotificationDialog] Error opening notification settings:', error)
       showToast('خطا در باز کردن تنظیمات', 'error')
@@ -131,7 +131,8 @@ export default function NotificationPermissionDialog({
     // 3. Status is not not_supported (no point showing button if not supported)
     return permissionInfo.canRequest && 
            permissionInfo.status !== 'granted' && 
-           permissionInfo.status !== 'not_supported'
+           permissionInfo.status !== 'not_supported' &&
+           permissionInfo.platform !== 'web' // Don't show for web in native app context
   }
 
   // Determine if we should show the Android settings button
@@ -199,7 +200,7 @@ export default function NotificationPermissionDialog({
               <>
                 <AlertCircle size={16} className="text-gray-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                  نوتیفیکیشن در این مرورگر پشتیبانی نمی‌شود
+                  نوتیفیکیشن در این دستگاه پشتیبانی نمی‌شود
                 </span>
               </>
             ) : (
@@ -230,7 +231,7 @@ export default function NotificationPermissionDialog({
               ) : (
                 <>
                   <Bell size={16} />
-                  {permissionInfo.platform === 'native' && permissionInfo.androidVersion >= 13 ? 'درخواست مجوز نوتیفیکیشن' : 'دادن دسترسی'}
+                  {permissionInfo.platform === 'native' ? 'درخواست مجوز نوتیفیکیشن' : 'دادن دسترسی'}
                 </>
               )}
             </button>
@@ -270,7 +271,7 @@ export default function NotificationPermissionDialog({
           {/* Message for not_supported status */}
           {permissionInfo.status === 'not_supported' && (
             <div className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg text-center">
-              متأسفانه نوتیفیکیشن در این دستگاه/مرورگر شما پشتیبانی نمی‌شود
+              متأسفانه نوتیفیکیشن در این دستگاه شما پشتیبانی نمی‌شود
             </div>
           )}
         </div>

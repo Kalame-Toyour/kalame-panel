@@ -1,4 +1,6 @@
 import { AppConfig } from '../utils/AppConfig';
+import { Capacitor } from '@capacitor/core';
+import { getAuth } from '../hooks/useAuth';
 
 interface UploadProgress {
   loaded: number;
@@ -47,33 +49,22 @@ class MobileFileUploadService {
       formData.append('file', file);
       formData.append('chatId', chatId);
 
-      // Get auth token
-      const token = this.getAuthToken();
+      // Get auth token from getAuth utility (consistent with rest of app)
+      const user = getAuth();
+      const token = user?.accessToken || null;
       console.log(`[MobileFileUpload] File: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
       console.log(`[MobileFileUpload] ChatId: ${chatId}`);
       console.log(`[MobileFileUpload] Token available: ${!!token}`);
+      console.log(`[MobileFileUpload] Is native platform: ${Capacitor.isNativePlatform()}`);
+      console.log(`[MobileFileUpload] Current origin: ${window.location.origin}`);
 
-      // For development, we need to handle CORS differently
-      // In production mobile app, this won't be an issue
+      // Use relative URL to go through middleware (middleware handles CORS and redirects)
+      // The apiMiddleware will intercept this and redirect to the proper endpoint
+      const uploadUrl = '/api/upload-media';
+      console.log(`[MobileFileUpload] Uploading to: ${uploadUrl} (will be handled by middleware)`);
+      
       return new Promise(async (resolve, reject) => {
         try {
-          // Check if we're in development mode
-          const isDevelopment = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1');
-          
-          if (isDevelopment) {
-            // In development, show a clear message about the CORS issue
-            const errorMessage = 'آپلود فایل در حالت توسعه در دسترس نیست. این مشکل به دلیل محدودیت‌های CORS است. لطفاً از نسخه تولیدی موبایل استفاده کنید.';
-            console.warn(`[MobileFileUpload] Development mode detected - CORS issue prevents file upload`);
-            console.warn(`[MobileFileUpload] Solution: Use production mobile app or configure development server`);
-            options.onError?.(errorMessage);
-            reject(new Error(errorMessage));
-            return;
-          }
-          
-          // Use relative URL to go through middleware (for production)
-          const uploadUrl = '/api/upload-media';
-          console.log(`[MobileFileUpload] Uploading to: ${uploadUrl}`);
-          console.log(`[MobileFileUpload] Current origin: ${window.location.origin}`);
           
           // Simulate progress for fetch (since fetch doesn't have built-in progress)
           const progressInterval = setInterval(() => {
@@ -85,6 +76,7 @@ class MobileFileUploadService {
           }, 100);
           
           // Create headers
+          // Don't set Content-Type for FormData - browser will set it with boundary
           const headers: Record<string, string> = {
             'Accept': 'application/json',
           };
@@ -94,28 +86,47 @@ class MobileFileUploadService {
             headers['Authorization'] = `Bearer ${token}`;
           }
           
-          // Use fetch with middleware
+          console.log(`[MobileFileUpload] Sending request with headers:`, Object.keys(headers));
+          
+          // Use fetch - middleware will intercept and handle CORS
           const response = await fetch(uploadUrl, {
             method: 'POST',
             headers,
             body: formData,
             signal: abortController.signal,
+            // Don't set mode or credentials - let middleware handle it
           });
           
-          // Clear progress interval
+          // Set progress to 100% before processing response
           clearInterval(progressInterval);
+          options.onProgress?.({
+            loaded: file.size,
+            total: file.size,
+            percentage: 100
+          });
           
           console.log(`[MobileFileUpload] Response status: ${response.status}`);
+          console.log(`[MobileFileUpload] Response headers:`, Object.fromEntries(response.headers.entries()));
           
           if (response.ok) {
             const result = await response.json();
             console.log(`[MobileFileUpload] Parsed result:`, result);
             
-            if (result.success) {
-              options.onSuccess?.(result);
-              resolve(result);
+            // Backend API might return different format - check both
+            if (result.success || result.url) {
+              // Map backend response to expected format
+              const uploadResult: UploadResult = {
+                success: true,
+                url: result.url || result.data?.url,
+                type: file.type.startsWith('image/') ? 'image' : 'pdf',
+                filename: file.name,
+                size: file.size
+              };
+              console.log(`[MobileFileUpload] Upload successful:`, uploadResult);
+              options.onSuccess?.(uploadResult);
+              resolve(uploadResult);
             } else {
-              const errorMessage = result.error || 'آپلود فایل ناموفق بود. لطفاً دوباره تلاش کنید.';
+              const errorMessage = result.error || result.message || 'آپلود فایل ناموفق بود. لطفاً دوباره تلاش کنید.';
               console.error(`[MobileFileUpload] Upload failed: ${errorMessage}`);
               options.onError?.(errorMessage);
               reject(new Error(errorMessage));
@@ -127,9 +138,18 @@ class MobileFileUploadService {
               const errorData = await response.json();
               if (errorData.error) {
                 errorMessage = errorData.error;
+              } else if (errorData.message) {
+                errorMessage = errorData.message;
               }
             } catch {
               // Use default error message if parsing fails
+              if (response.status === 401) {
+                errorMessage = 'دسترسی غیرمجاز. لطفاً وارد حساب کاربری خود شوید.';
+              } else if (response.status === 413) {
+                errorMessage = 'حجم فایل بیش از حد مجاز است.';
+              } else if (response.status >= 500) {
+                errorMessage = 'خطا در سرور. لطفاً بعداً تلاش کنید.';
+              }
             }
             
             console.error(`[MobileFileUpload] HTTP error ${response.status}: ${errorMessage}`);
@@ -191,25 +211,6 @@ class MobileFileUploadService {
     return { valid: true };
   }
 
-  private getAuthToken(): string | null {
-    // Get token from localStorage, session storage, or cookies
-    if (typeof window !== 'undefined') {
-      // Try localStorage first
-      let token = localStorage.getItem('auth-token') || sessionStorage.getItem('auth-token');
-      
-      // If no token in storage, try to get from cookies
-      if (!token) {
-        const cookies = document.cookie.split(';');
-        const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth-token='));
-        if (authCookie) {
-          token = authCookie.split('=')[1] || null;
-        }
-      }
-      
-      return token;
-    }
-    return null;
-  }
 }
 
 export const mobileFileUploadService = new MobileFileUploadService();

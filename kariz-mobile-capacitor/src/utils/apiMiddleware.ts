@@ -45,24 +45,53 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Res
     return await originalFetch(newRequest);
   }
   
-  // Check if this is an upload endpoint and redirect to web API
+  // Check if this is an upload endpoint and redirect to backend API (not Next.js API route)
+  // Mobile app needs to use backend API directly with token, not Next.js session-based endpoint
   if (url.includes('/api/upload-media')) {
-    const realUrl = 'https://kalame.chat/api/upload-media';
-    console.log(`🔄 Redirecting upload request from ${url} to ${realUrl}`);
+    // Use backend API directly (not Next.js API route)
+    const backendUrl = `${AppConfig.baseApiUrl}/upload-media`;
+    console.log(`🔄 Redirecting upload request from ${url} to backend API: ${backendUrl}`);
     
-    // Create new request with real URL and CORS headers
-    const newRequest = new Request(realUrl, {
+    // Get headers from init, but don't override Content-Type for FormData
+    const requestHeaders: Record<string, string> = {};
+    if (init?.headers) {
+      if (init.headers instanceof Headers) {
+        init.headers.forEach((value, key) => {
+          // Skip Content-Type for FormData - browser will set it
+          if (key.toLowerCase() !== 'content-type') {
+            requestHeaders[key] = value;
+          }
+        });
+      } else if (Array.isArray(init.headers)) {
+        init.headers.forEach(([key, value]) => {
+          if (key.toLowerCase() !== 'content-type') {
+            requestHeaders[key] = value;
+          }
+        });
+      } else {
+        Object.entries(init.headers).forEach(([key, value]) => {
+          if (key.toLowerCase() !== 'content-type') {
+            requestHeaders[key] = value as string;
+          }
+        });
+      }
+    }
+    
+    // Add Accept header
+    requestHeaders['Accept'] = 'application/json';
+    
+    // Create new request with backend API URL
+    // Backend API should handle CORS properly for mobile apps
+    const newRequest = new Request(backendUrl, {
       method: init?.method || 'POST',
-      headers: {
-        ...init?.headers,
-        'Origin': 'https://kalame.chat', // Set origin to match target domain
-        'Referer': 'https://kalame.chat/', // Set referer
-        // Don't override Content-Type for file uploads
-      },
-      body: init?.body,
-      mode: 'cors', // Explicitly set CORS mode
-      credentials: 'include', // Include credentials
+      headers: requestHeaders,
+      body: init?.body, // FormData will be sent with proper Content-Type
+      mode: 'cors',
+      credentials: 'omit', // Don't include credentials in CORS request
     });
+    
+    console.log(`🔄 Upload request to backend API with headers:`, Object.keys(requestHeaders));
+    console.log(`🔄 Upload request has Authorization header:`, !!requestHeaders['Authorization']);
     
     return await originalFetch(newRequest);
   }

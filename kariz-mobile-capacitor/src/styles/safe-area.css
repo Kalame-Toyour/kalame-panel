@@ -10,3 +10,29 @@ body {
   width: 100%;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Safe area insets for mobile devices */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  
+  /* Fallback values for Android devices */
+  --safe-area-inset-top-fallback: 24px;
+  --safe-area-inset-bottom-fallback: 48px;
+}
+
+/* Mobile header with safe area support */
+.mobile-header {
+  padding-top: max(var(--safe-area-inset-top), var(--safe-area-inset-top-fallback));
+  padding-left: var(--safe-area-inset-left);
+  padding-right: var(--safe-area-inset-right);
+}
+
+/* Chat input container with safe area */
+.chat-input-container {
+  padding-bottom: max(var(--safe-area-inset-bottom), var(--safe-area-inset-bottom-fallback));
+  padding-left: var(--safe-area-inset-left);
+  padding-right: var(--safe-area-inset-right);
+}

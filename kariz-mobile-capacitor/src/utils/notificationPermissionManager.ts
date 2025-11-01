@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core'
+import { PushNotifications } from '@capacitor/push-notifications'
 
 export interface NotificationPermissionInfo {
   status: 'granted' | 'denied' | 'default' | 'unknown' | 'not_supported'
@@ -55,7 +56,7 @@ export class NotificationPermissionManager {
 
   public async getPermissionInfo(): Promise<NotificationPermissionInfo> {
     const status = await this.getCurrentPermissionStatus()
-    const canRequest = this.canRequestPermission()
+    const canRequest = await this.canRequestPermission()
     const needsDialog = this.needsPermissionDialog()
 
     return {
@@ -71,57 +72,53 @@ export class NotificationPermissionManager {
     try {
       // First, check localStorage as primary source of truth for saved status
       const localStatus = localStorage.getItem('kariz_notification_permission')
-      if (localStatus === 'granted') {
-        return 'granted'
-      }
-      if (localStatus === 'denied') {
-        return 'denied'
-      }
-
-      if (this.platform === 'native' && this.androidVersion >= 13) {
-        // For Android 13+ on native platform, check native permission status
-        if ((window as any).AndroidInterface && typeof (window as any).AndroidInterface.getNotificationPermissionStatus === 'function') {
-          try {
-            const status = (window as any).AndroidInterface.getNotificationPermissionStatus()
-            console.log('[NotificationManager] Native permission status:', status)
+      
+      // For native platform, use Capacitor PushNotifications API
+      if (this.platform === 'native' && Capacitor.isNativePlatform()) {
+        try {
+          if (Capacitor.isPluginAvailable('PushNotifications')) {
+            const perm = await PushNotifications.checkPermissions()
+            console.log('[NotificationManager] Capacitor permission status:', perm.receive)
             
-            // Validate the status returned from native
-            if (status === 'granted' || status === 'denied' || status === 'default') {
-              // Update localStorage to match native status
-              if (status === 'granted') {
-                localStorage.setItem('kariz_notification_permission', 'granted')
-              } else if (status === 'denied') {
-                localStorage.setItem('kariz_notification_permission', 'denied')
-              }
-              return status as any
+            // Map Capacitor permission to our status
+            let status: 'granted' | 'denied' | 'default'
+            if (perm.receive === 'granted') {
+              status = 'granted'
+            } else if (perm.receive === 'denied') {
+              status = 'denied'
+            } else {
+              status = 'default'
             }
             
-            // If status is invalid, treat as default (user can request)
-            console.warn('[NotificationManager] Invalid native status, treating as default:', status)
-            return 'default'
-          } catch (error) {
-            console.error('[NotificationManager] Error getting native permission status:', error)
+            // Update localStorage to match Capacitor status
+            if (status === 'granted') {
+              localStorage.setItem('kariz_notification_permission', 'granted')
+            } else if (status === 'denied') {
+              localStorage.setItem('kariz_notification_permission', 'denied')
+            }
+            
+            return status
+          } else {
+            console.warn('[NotificationManager] PushNotifications plugin not available')
             // If we had a denied status before, maintain it
             if (localStatus === 'denied') {
               return 'denied'
             }
-            // Otherwise, treat as default - user can still request permission
             return 'default'
           }
-        } else {
-          console.warn('[NotificationManager] AndroidInterface not available')
-          // AndroidInterface not available, but we're on Android 13+
-          // Treat as default so user can still request permission
+        } catch (error) {
+          console.error('[NotificationManager] Error getting Capacitor permission status:', error)
           // If we had a denied status before, maintain it
           if (localStatus === 'denied') {
             return 'denied'
           }
+          // Otherwise, treat as default - user can still request permission
           return 'default'
         }
       } else if ('Notification' in window) {
-        // For web or older Android versions, use browser API
+        // For web platform, use browser API
         const browserPermission = Notification.permission
-        console.log('[NotificationManager] Browser permission status:', browserPermission)
+        console.log('[NotificationManager] Web permission status:', browserPermission)
         
         // Validate browser permission
         if (browserPermission === 'granted' || browserPermission === 'denied' || browserPermission === 'default') {
@@ -137,7 +134,7 @@ export class NotificationPermissionManager {
         // If browser permission is invalid, treat as default
         return 'default'
       } else {
-        // Notifications not supported in this browser
+        // Notifications not supported
         return 'not_supported'
       }
     } catch (error) {
@@ -161,12 +158,22 @@ export class NotificationPermissionManager {
     }
   }
 
-  public canRequestPermission(): boolean {
-    if (this.platform === 'native' && this.androidVersion >= 13) {
-      // For Android 13+ on native platform, always allow request
-      return true
+  public async canRequestPermission(): Promise<boolean> {
+    if (this.platform === 'native' && Capacitor.isNativePlatform()) {
+      // For native platform, check Capacitor permissions
+      try {
+        if (Capacitor.isPluginAvailable('PushNotifications')) {
+          const perm = await PushNotifications.checkPermissions()
+          // Can request if not already granted or denied permanently
+          return perm.receive !== 'granted' && perm.receive !== 'denied'
+        }
+        return true // If plugin not available, allow trying
+      } catch (error) {
+        console.error('[NotificationManager] Error checking if can request:', error)
+        return true // Allow trying on error
+      }
     } else if ('Notification' in window) {
-      // For web or older Android versions, only allow for 'default' status
+      // For web platform, only allow for 'default' status
       return Notification.permission === 'default'
     }
     return false
@@ -219,13 +226,13 @@ export class NotificationPermissionManager {
 
   public async requestPermission(): Promise<'granted' | 'denied' | 'default'> {
     try {
-      if (this.platform === 'native' && this.androidVersion >= 13) {
-        // For Android 13+ on native platform, use native permission request
-        console.log('[NotificationManager] Requesting native notification permission for Android 13+')
-        return this.requestNativePermission()
+      if (this.platform === 'native' && Capacitor.isNativePlatform()) {
+        // For native platform, use Capacitor PushNotifications API
+        console.log('[NotificationManager] Requesting notification permission via Capacitor')
+        return this.requestCapacitorPermission()
       } else if ('Notification' in window) {
-        // For web or older Android versions, use browser API
-        console.log('[NotificationManager] Requesting browser notification permission')
+        // For web platform, use browser API
+        console.log('[NotificationManager] Requesting web notification permission')
         return this.requestBrowserPermission()
       } else {
         throw new Error('Notifications not supported in this environment')
@@ -236,71 +243,41 @@ export class NotificationPermissionManager {
     }
   }
 
-  private async requestNativePermission(): Promise<'granted' | 'denied' | 'default'> {
-    return new Promise((resolve, reject) => {
-      if (!(window as any).AndroidInterface || typeof (window as any).AndroidInterface.requestNotificationPermission !== 'function') {
-        reject(new Error('AndroidInterface.requestNotificationPermission not available'))
-        return
+  private async requestCapacitorPermission(): Promise<'granted' | 'denied' | 'default'> {
+    try {
+      if (!Capacitor.isPluginAvailable('PushNotifications')) {
+        throw new Error('PushNotifications plugin not available')
       }
 
-      // Set up one-time event listener for permission result
-      const handlePermissionResult = (result: string) => {
-        console.log('[NotificationManager] Native permission result received:', result)
-        
-        // Clean up event listeners
-        if ((window as any).__notificationPermissionCleanup) {
-          (window as any).__notificationPermissionCleanup()
-        }
-        delete (window as any).onNotificationPermissionResult
-        
-        if (result === 'granted') {
-          localStorage.setItem('kariz_notification_permission', 'granted')
-          // Dispatch custom event for permission granted
-          try {
-            window.dispatchEvent(new CustomEvent('notificationPermissionGranted', { detail: 'granted' }))
-            console.log('[NotificationManager] notificationPermissionGranted event dispatched successfully')
-          } catch (eventError) {
-            console.error('[NotificationManager] Error dispatching notificationPermissionGranted event:', eventError)
-          }
-          resolve('granted')
-        } else if (result === 'denied') {
-          localStorage.setItem('kariz_notification_permission', 'denied')
-          const deniedCount = parseInt(localStorage.getItem('kariz_notification_denied_count') || '0') + 1
-          localStorage.setItem('kariz_notification_denied_count', deniedCount.toString())
-          resolve('denied')
-        } else {
-          resolve('default')
-        }
-      }
-
-      // Set up global function for Android to call
-      ;(window as any).onNotificationPermissionResult = handlePermissionResult
-
-      // Set up custom event listener
-      const handlePermissionEvent = (event: CustomEvent) => {
-        handlePermissionResult(event.detail)
-      }
-
-      window.addEventListener('notificationPermissionResult', handlePermissionEvent as EventListener)
+      console.log('[NotificationManager] Requesting permission via PushNotifications.requestPermissions()')
+      const result = await PushNotifications.requestPermissions()
+      console.log('[NotificationManager] Capacitor permission request result:', result.receive)
       
-      // Store cleanup function
-      ;(window as any).__notificationPermissionCleanup = () => {
-        window.removeEventListener('notificationPermissionResult', handlePermissionEvent as EventListener)
-        delete (window as any).onNotificationPermissionResult
-      }
-
-      // Call native permission request
-      try {
-        (window as any).AndroidInterface.requestNotificationPermission()
-        console.log('[NotificationManager] Native permission request sent')
-      } catch (error) {
-        // Clean up on error
-        if ((window as any).__notificationPermissionCleanup) {
-          (window as any).__notificationPermissionCleanup()
+      let status: 'granted' | 'denied' | 'default'
+      if (result.receive === 'granted') {
+        status = 'granted'
+        localStorage.setItem('kariz_notification_permission', 'granted')
+        // Dispatch custom event for permission granted
+        try {
+          window.dispatchEvent(new CustomEvent('notificationPermissionGranted', { detail: 'granted' }))
+          console.log('[NotificationManager] notificationPermissionGranted event dispatched successfully')
+        } catch (eventError) {
+          console.error('[NotificationManager] Error dispatching notificationPermissionGranted event:', eventError)
         }
-        reject(error)
+      } else if (result.receive === 'denied') {
+        status = 'denied'
+        localStorage.setItem('kariz_notification_permission', 'denied')
+        const deniedCount = parseInt(localStorage.getItem('kariz_notification_denied_count') || '0') + 1
+        localStorage.setItem('kariz_notification_denied_count', deniedCount.toString())
+      } else {
+        status = 'default'
       }
-    })
+      
+      return status
+    } catch (error) {
+      console.error('[NotificationManager] Error requesting Capacitor permission:', error)
+      throw error
+    }
   }
 
   private async requestBrowserPermission(): Promise<'granted' | 'denied' | 'default'> {
@@ -323,16 +300,34 @@ export class NotificationPermissionManager {
     }
   }
 
-  public openNotificationSettings(): void {
+  public async openNotificationSettings(): Promise<void> {
     try {
-      if (this.platform === 'native' && (window as any).AndroidInterface && typeof (window as any).AndroidInterface.openNotificationSettings === 'function') {
-        // console.log('[NotificationManager] Opening native notification settings...')
-        (window as any).AndroidInterface.openNotificationSettings()
-      } else {
-        // Fallback: show instructions
-        console.log('[NotificationManager] Native settings not available, showing instructions')
-        this.showNotificationSettingsInstructions()
+      if (this.platform === 'native' && Capacitor.isNativePlatform()) {
+        // Use Capacitor App plugin to open settings
+        try {
+          const { App } = await import('@capacitor/app')
+          await App.openUrl({ url: 'app-settings:' })
+          console.log('[NotificationManager] Opened app settings via Capacitor')
+          return
+        } catch (appError) {
+          console.warn('[NotificationManager] Could not open settings via App plugin:', appError)
+        }
+        
+        // Fallback: try Browser plugin
+        try {
+          const { Browser } = await import('@capacitor/browser')
+          // Android settings URI
+          await Browser.open({ url: 'android.settings.APP_NOTIFICATION_SETTINGS' })
+          console.log('[NotificationManager] Opened settings via Browser plugin')
+          return
+        } catch (browserError) {
+          console.warn('[NotificationManager] Could not open settings via Browser plugin:', browserError)
+        }
       }
+      
+      // Fallback: show instructions
+      console.log('[NotificationManager] Native settings not available, showing instructions')
+      this.showNotificationSettingsInstructions()
     } catch (error) {
       console.error('[NotificationManager] Error opening notification settings:', error)
       this.showNotificationSettingsInstructions()

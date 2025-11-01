@@ -49,17 +49,24 @@ function ChatInputModern({
   const [reasoning, setReasoning] = useState(reasoningActive);
   const [webSearch, setWebSearch] = useState(webSearchActive);
   const [file, setFile] = useState<File | null>(null);
+  const [minHeight, setMinHeight] = useState('20px');
+  const [maxHeight, setMaxHeight] = useState('60px');
   const [textareaHeight, setTextareaHeight] = useState(20);
+  const [overflow, setOverflow] = useState(false);
   const [fileTypeDialog, setFileTypeDialog] = useState(false);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgressType | null>(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const shadowRef = useRef<HTMLTextAreaElement>(null);
    const { navigate } = useRouter();
   const { user } = useAuth();
   const { scrollToInput } = useKeyboard();
   const content = useDynamicContent();
+
+  const MAX_ROWS = 3;
+  const LINE_HEIGHT = 20;
 
   const supportsReasoning = selectedModel?.features?.supportsReasoning || false;
   const supportsWebSearch = selectedModel?.features?.supportsWebSearch || false;
@@ -128,18 +135,82 @@ function ChatInputModern({
     };
   }, [setInputText]);
 
-  // Set fixed height for single-line textarea
+  // Setup dynamic textarea height calculation (similar to web version)
   useEffect(() => {
-    if (inputRef.current) {
-      const textarea = inputRef.current;
-      // Fixed height for single line
-      const lineHeight = 20;
-      setTextareaHeight(lineHeight);
-      textarea.style.height = `${lineHeight}px`;
-      textarea.style.overflowY = 'hidden';
-      textarea.style.overflowX = 'auto';
-    }
+    if (!inputRef.current || !shadowRef.current) return;
+    
+    const textarea = inputRef.current;
+    const shadow = shadowRef.current;
+    const style = window.getComputedStyle(textarea);
+    
+    // Copy styles to shadow textarea
+    shadow.style.width = textarea.offsetWidth + 'px';
+    shadow.style.fontSize = style.fontSize;
+    shadow.style.fontFamily = style.fontFamily;
+    shadow.style.fontWeight = style.fontWeight;
+    shadow.style.letterSpacing = style.letterSpacing;
+    shadow.style.lineHeight = style.lineHeight;
+    shadow.style.padding = style.padding;
+    shadow.style.border = style.border;
+    shadow.style.boxSizing = style.boxSizing;
+    shadow.style.direction = style.direction;
+    shadow.style.wordBreak = style.wordBreak;
+    shadow.style.whiteSpace = style.whiteSpace;
+    shadow.style.overflowWrap = style.overflowWrap;
+    shadow.style.wordSpacing = style.wordSpacing;
+    shadow.style.textIndent = style.textIndent;
   }, []);
+
+  // Calculate dynamic height based on content
+  useEffect(() => {
+    if (!inputRef.current || !shadowRef.current) return;
+    
+    const textarea = inputRef.current;
+    const shadow = shadowRef.current;
+    
+    // Calculate single row height
+    shadow.value = '';
+    shadow.rows = 1;
+    shadow.style.height = 'auto';
+    const singleRowHeight = shadow.scrollHeight;
+    setMinHeight(`${singleRowHeight}px`);
+    
+    // Calculate max height for 3 rows
+    shadow.rows = MAX_ROWS;
+    const computedMaxHeight = shadow.scrollHeight;
+    setMaxHeight(`${computedMaxHeight}px`);
+    
+    // Calculate content height
+    shadow.rows = 1;
+    shadow.value = localInputText || '';
+    shadow.style.height = 'auto';
+    const contentHeight = shadow.scrollHeight;
+    
+    // Set final height
+    if (contentHeight <= computedMaxHeight) {
+      const finalHeight = Math.max(contentHeight, singleRowHeight);
+      textarea.style.height = `${finalHeight}px`;
+      setTextareaHeight(finalHeight);
+      setOverflow(false);
+      textarea.style.overflowY = 'hidden';
+    } else {
+      textarea.style.height = `${computedMaxHeight}px`;
+      setTextareaHeight(computedMaxHeight);
+      setOverflow(true);
+      textarea.style.overflowY = 'auto';
+    }
+  }, [localInputText, inputRef]);
+
+  // Scroll to bottom when overflow
+  useEffect(() => {
+    if (overflow && inputRef.current) {
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.scrollTop = inputRef.current.scrollHeight;
+        }
+      }, 0);
+    }
+  }, [overflow, localInputText, inputRef]);
 
   // Reset capabilities when model changes
   useEffect(() => {
@@ -309,13 +380,14 @@ function ChatInputModern({
   function handleKeyPress(e: React.KeyboardEvent) {
     e.stopPropagation();
     
-    // Prevent Enter key from creating new lines in single-line mode
-    if (e.key === 'Enter') {
+    // Allow Enter to create new lines, Shift+Enter to send
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (!isLoading && localInputText.trim().length > 0) {
         handleSendMessage();
       }
     }
+    // Shift+Enter creates new line (default behavior)
   }
 
   function handleSendMessage() {
@@ -370,18 +442,17 @@ function ChatInputModern({
     }
   }
 
-  // MINIMAL React change handler
+  // MINIMAL React change handler - Allow multi-line up to 3 lines
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     // Let the polling system handle updates - this is just for immediate React sync
     const newValue = e.target.value;
-    // Remove any newlines to enforce single-line behavior
-    const singleLineValue = newValue.replace(/[\r\n]/g, '');
-    setLocalInputText(singleLineValue);
+    // Allow newlines but limit to reasonable length
+    setLocalInputText(newValue);
   }
 
   return (
     <div 
-      className="w-full" 
+      className="chat-input-container w-full" 
       dir="rtl"
       style={{
         display: 'flex',
@@ -389,7 +460,9 @@ function ChatInputModern({
         alignItems: 'stretch',
         justifyContent: 'flex-end',
         width: '100%',
-        maxWidth: '100%'
+        maxWidth: '100%',
+        position: 'relative',
+        zIndex: 100
       }}
     >
       <div 
@@ -419,20 +492,23 @@ function ChatInputModern({
               }
             }}
             placeholder="پیام خود را بنویسید..."
-            className="flex-1 resize-none border-none outline-none bg-transparent pb-3 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 text-sm font-sans overflow-x-auto overflow-y-hidden"
+            className={`flex-1 resize-none border-none outline-none bg-transparent pb-3 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 text-sm font-sans ${
+              overflow ? 'overflow-y-auto' : 'overflow-hidden'
+            } overflow-x-hidden`}
             style={{ 
               direction: 'rtl',
               textAlign: 'right',
-              height: `${textareaHeight}px`,
-              minHeight: '20px',
-              maxHeight: '20px',
+              minHeight: minHeight,
+              maxHeight: maxHeight,
               marginBottom: '10px',
               unicodeBidi: 'plaintext',
-              wordBreak: 'normal',
-              whiteSpace: 'nowrap',
+              wordBreak: 'break-word',
+              overflowWrap: 'break-word',
+              whiteSpace: 'pre-wrap',
               fontFamily: 'inherit',
               fontSize: '14px',
-              lineHeight: '1.5'
+              lineHeight: '1.5',
+              boxSizing: 'border-box'
             }}
             disabled={isLoading}
             rows={1}
@@ -444,6 +520,26 @@ function ChatInputModern({
             autoCorrect="on"
             spellCheck="true"
             autoCapitalize="off"
+          />
+          {/* Hidden shadow textarea for measuring height */}
+          <textarea
+            ref={shadowRef}
+            tabIndex={-1}
+            aria-hidden
+            rows={1}
+            readOnly
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '-9999px',
+              height: 0,
+              zIndex: -1,
+              overflow: 'hidden',
+              resize: 'none',
+              pointerEvents: 'none',
+              visibility: 'hidden',
+              boxSizing: 'border-box'
+            }}
           />
           
           <button
